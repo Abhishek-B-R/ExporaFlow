@@ -5,7 +5,7 @@ import { IssueBody, SprintBody } from "@/utils/types";
 import { IssueStatus, PriorityOptionsArray } from "@/utils/issues-view-options";
 import axios from "axios";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type WorkspaceMember = {
   id: string;
@@ -78,7 +78,7 @@ export default function Issue({
     loadParams();
   }, [params]);
 
-  const populateIssueForm = (issueData: FullIssue) => {
+  const populateIssueForm = useCallback((issueData: FullIssue) => {
     setTitleInput(issueData.title ?? "");
     setDescriptionInput(issueData.description ?? "");
     setStatusInput(issueData.status ?? "Backlog");
@@ -90,33 +90,36 @@ export default function Issue({
       issueData.dueDate ? new Date(issueData.dueDate).toISOString().slice(0, 10) : "",
     );
     setSprintInput(issueData.sprintId ?? "");
-  };
+  }, []);
 
-  const fetchIssueData = async (options?: { resetForm?: boolean }) => {
-    if (!issueId || !projectId) return;
-    const [issueRes, sprintRes, allIssuesRes, membersRes] = await Promise.all([
-      axios.post("/api/issues/getissue", { issueId }),
-      axios.post("/api/sprints/getsprints", { projectId }),
-      axios.post("/api/issues/getissues", { project_id: projectId }),
-      axios.get("/api/workflow/getmembers", { params: { projectId } }),
-    ]);
+  const fetchIssueData = useCallback(
+    async (options?: { resetForm?: boolean }) => {
+      if (!issueId || !projectId) return;
+      const [issueRes, sprintRes, allIssuesRes, membersRes] = await Promise.all([
+        axios.post("/api/issues/getissue", { issueId }),
+        axios.post("/api/sprints/getsprints", { projectId }),
+        axios.post("/api/issues/getissues", { project_id: projectId }),
+        axios.get("/api/workflow/getmembers", { params: { projectId } }),
+      ]);
 
-    const issueData = issueRes.data as FullIssue;
-    setIssue(issueData);
-    setSprints(sprintRes.data ?? []);
-    setIssuesInProject(allIssuesRes.data ?? []);
-    setMembers(membersRes.data ?? []);
-    if (options?.resetForm ?? true) {
-      populateIssueForm(issueData);
-    }
-  };
+      const issueData = issueRes.data as FullIssue;
+      setIssue(issueData);
+      setSprints(sprintRes.data ?? []);
+      setIssuesInProject(allIssuesRes.data ?? []);
+      setMembers(membersRes.data ?? []);
+      if (options?.resetForm ?? true) {
+        populateIssueForm(issueData);
+      }
+    },
+    [issueId, projectId, populateIssueForm],
+  );
 
   useEffect(() => {
     if (!issueId || !projectId) return;
     fetchIssueData().catch(() => {
       customToast.error({ title: "", description: "Failed to fetch issue details." });
     });
-  }, [issueId, projectId]);
+  }, [issueId, projectId, fetchIssueData]);
 
   const saveIssueMeta = async () => {
     if (!issueId || !issue) return;

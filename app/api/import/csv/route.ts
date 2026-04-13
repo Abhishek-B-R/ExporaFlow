@@ -8,11 +8,34 @@ import { Role } from "@prisma/client";
 function mapCsvStatusToCanonical(input?: string) {
   const value = (input ?? "").trim().toLowerCase();
   if (!value) return "Backlog";
-  if (["to do", "todo", "open", "new", "backlog"].includes(value)) return "Backlog";
-  if (["selected for development", "planned", "ready"].includes(value)) return "Planned";
-  if (["in progress", "doing", "working", "development"].includes(value)) return "Working";
-  if (["done", "completed", "closed", "resolved"].includes(value)) return "Completed";
-  if (["cancelled", "canceled", "wont do", "won't do", "rejected"].includes(value)) return "Cancelled";
+  if (["to do", "todo", "to-do", "open", "new", "backlog", "triage", "icebox"].includes(value))
+    return "Backlog";
+  if (
+    ["selected for development", "planned", "ready", "scheduled", "sprint", "queued", "next"].includes(
+      value,
+    )
+  )
+    return "Planned";
+  if (
+    [
+      "in progress",
+      "in-progress",
+      "doing",
+      "working",
+      "development",
+      "active",
+      "started",
+      "review",
+      "in review",
+      "qa",
+      "testing",
+    ].includes(value)
+  )
+    return "Working";
+  if (["done", "completed", "closed", "resolved", "fixed", "shipped"].includes(value))
+    return "Completed";
+  if (["cancelled", "canceled", "wont do", "won't do", "wontfix", "rejected", "duplicate"].includes(value))
+    return "Cancelled";
   return "Backlog";
 }
 
@@ -55,10 +78,18 @@ function parseCsv(content: string) {
   if (currentRow.some((cell) => cell.length > 0)) rows.push(currentRow);
   if (!rows.length) return [];
 
-  const headers = rows[0].map((header) => header.trim());
+  const headers = rows[0].map((header) => header.trim().toLowerCase());
   return rows.slice(1).map((cells) =>
     Object.fromEntries(headers.map((header, index) => [header, (cells[index] ?? "").trim()])),
   );
+}
+
+function pickRowField(record: Record<string, string>, ...names: string[]): string {
+  for (const name of names) {
+    const v = record[name];
+    if (v !== undefined && v !== "") return v;
+  }
+  return "";
 }
 
 export async function POST(request: NextRequest) {
@@ -72,6 +103,8 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "projectId and csv content are required." }, { status: 400 });
   }
 
+  const csvText = csv.replace(/^\uFEFF/, "");
+
   const access = await assertProjectRole({
     userId: session.user.id,
     projectId,
@@ -79,16 +112,18 @@ export async function POST(request: NextRequest) {
   });
   if (!access.ok) return Response.json({ message: access.message }, { status: access.status });
 
-  const records = parseCsv(csv);
+  const records = parseCsv(csvText);
   const created = [];
   for (const record of records) {
-    if (!record.title) continue;
+    const title = pickRowField(record, "title", "summary", "name", "issue");
+    if (!title) continue;
+    const statusRaw = pickRowField(record, "status", "state", "workflow", "workflow state", "column");
     const issue = await prisma.issue.create({
       data: {
-        title: record.title,
-        description: record.description || null,
-        status: mapCsvStatusToCanonical(record.status),
-        priority: record.priority || "No Priority",
+        title,
+        description: pickRowField(record, "description", "body", "details") || null,
+        status: mapCsvStatusToCanonical(statusRaw),
+        priority: pickRowField(record, "priority", "prio") || "No Priority",
         projectId,
       },
       select: { id: true, title: true },

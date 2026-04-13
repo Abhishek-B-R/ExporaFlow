@@ -10,6 +10,24 @@ type CommandItem = {
   run: () => void;
 };
 
+function formFieldHasFocus(): boolean {
+  const el = document.activeElement;
+  if (!(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  if (tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag === "INPUT") {
+    const type = (el as HTMLInputElement).type?.toLowerCase() ?? "text";
+    if (type === "checkbox" || type === "radio" || type === "button" || type === "submit" || type === "reset")
+      return false;
+    return true;
+  }
+  if (el.isContentEditable) return true;
+  if (el.closest("[contenteditable='true']")) return true;
+  const role = el.getAttribute("role");
+  if (role === "textbox" || role === "searchbox") return true;
+  return false;
+}
+
 export default function CommandPalette() {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,12 +57,6 @@ export default function CommandPalette() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const isCommand = event.metaKey || event.ctrlKey;
-      const target = event.target as HTMLElement | null;
-      const isTyping =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.tagName === "SELECT" ||
-        target?.isContentEditable;
       if (isCommand && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setOpen((prev) => !prev);
@@ -52,7 +64,7 @@ export default function CommandPalette() {
       if (event.key === "Escape") {
         setOpen(false);
       }
-      if (isCommand && event.key.toLowerCase() === "i" && projectId && !isTyping) {
+      if (isCommand && event.key.toLowerCase() === "i" && projectId && !formFieldHasFocus()) {
         event.preventDefault();
         router.push(`/workflow/project/${projectId}/issues`);
       }

@@ -12,10 +12,12 @@ export const CreateIssueWindow = ({
   setClose,
   project_id,
   project_title,
+  onCreated,
 }: {
   setClose: React.Dispatch<React.SetStateAction<boolean>>;
   project_id: string | null;
   project_title: string | undefined;
+  onCreated?: () => void | Promise<void>;
 }) => {
   const [issueTitle, setIssueTitle] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
@@ -43,14 +45,14 @@ export const CreateIssueWindow = ({
           title: "Success",
           description: "Issue created successfully",
         });
+        await onCreated?.();
+        setClose(false);
       }
     } catch (error) {
       customToast.error({
         title: "Action failed",
         description: "Failed to create issue, try again.",
       });
-    } finally {
-      setClose(false);
     }
   };
 

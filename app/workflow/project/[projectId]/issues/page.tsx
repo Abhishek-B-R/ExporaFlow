@@ -5,7 +5,7 @@ import SVGIcon from "@/lib/svg-icon";
 import { IssueBody, ProjectBody } from "@/utils/types";
 import axios from "axios";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import IssueLabel from "@/components/workflow/issues/issue-label";
 import { IssueViewOptArray } from "@/utils/issues-view-options";
@@ -18,6 +18,18 @@ const activeTab =
   "flex h-7 items-center gap-x-1 cursor-pointer border border-[color:var(--border-strong)] px-2 rounded bg-[color:var(--surface-2)] hover:bg-[color:var(--surface-3)] transition-all duration-300";
 const inactiveTab =
   "flex h-7 items-center gap-x-1 cursor-pointer border border-[color:var(--border)] px-2 rounded bg-[color:var(--surface-1)] hover:bg-[color:var(--surface-2)] transition-all duration-300";
+
+type AiDraftPayload = {
+  title?: string;
+  description?: string;
+  labels?: string[];
+} | null;
+
+type AiTriagePayload = {
+  priority?: string;
+  severity?: string;
+  routingTeamHint?: string;
+} | null;
 
 export default function Issue() {
   const routeParams = useParams<{ projectId: string }>();
@@ -38,24 +50,39 @@ export default function Issue() {
   const [isSavingView, setIsSavingView] = useState(false);
   const [selectedIssueIndex, setSelectedIssueIndex] = useState(0);
   const [aiInput, setAiInput] = useState("");
-  const [aiDraft, setAiDraft] = useState<any>(null);
-  const [aiTriage, setAiTriage] = useState<any>(null);
+  const [aiDraft, setAiDraft] = useState<AiDraftPayload>(null);
+  const [aiTriage, setAiTriage] = useState<AiTriagePayload>(null);
   const [aiDuplicates, setAiDuplicates] = useState<Array<{ id: string; title: string; score: number }>>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const searchParams = useSearchParams();
   const latestSearchRequest = useRef(0);
 
-  const filteredIssues = (issues ?? []).filter((issue) => {
-    const statusMatch = statusFilter
-      ? issue.status?.toLowerCase() === statusFilter.toLowerCase()
-      : true;
-    const searchMatch = matchingIssueIds ? matchingIssueIds.includes(issue.id) : true;
-    return statusMatch && searchMatch;
-  });
+  const filteredIssues = useMemo(
+    () =>
+      (issues ?? []).filter((issue) => {
+        const statusMatch = statusFilter
+          ? issue.status?.toLowerCase() === statusFilter.toLowerCase()
+          : true;
+        const searchMatch = matchingIssueIds ? matchingIssueIds.includes(issue.id) : true;
+        return statusMatch && searchMatch;
+      }),
+    [issues, statusFilter, matchingIssueIds],
+  );
+
+  const selectionScopeKey = `${statusFilter}|${searchQuery}|${
+    matchingIssueIds === null ? "null" : matchingIssueIds.join(",")
+  }`;
+  const prevSelectionScopeKey = useRef(selectionScopeKey);
 
   useEffect(() => {
-    setSelectedIssueIndex(0);
-  }, [statusFilter, searchQuery, matchingIssueIds, issues?.length]);
+    const scopeChanged = prevSelectionScopeKey.current !== selectionScopeKey;
+    prevSelectionScopeKey.current = selectionScopeKey;
+    setSelectedIssueIndex((prev) => {
+      if (!filteredIssues.length) return 0;
+      if (scopeChanged) return 0;
+      return Math.min(prev, filteredIssues.length - 1);
+    });
+  }, [selectionScopeKey, filteredIssues]);
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -241,13 +268,25 @@ export default function Issue() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!filteredIssues.length) return;
-      const target = event.target as HTMLElement | null;
-      const isInteractiveElement = Boolean(
-        target?.closest("input, textarea, select, button, a, [contenteditable='true'], [role='button'], [role='link']"),
+      const active =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const el = active ?? target;
+      const inFormField = Boolean(
+        el &&
+          (el.tagName === "INPUT" ||
+            el.tagName === "TEXTAREA" ||
+            el.tagName === "SELECT" ||
+            el.isContentEditable ||
+            el.closest("[contenteditable='true']")),
       );
-      const isTyping =
-        target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
-      if (isTyping) return;
+      const onOtherInteractive = Boolean(
+        el?.closest(
+          "button, a[href], select, option, [role='button'], [role='link'], [role='menuitem'], [role='tab'], [role='combobox'], [role='listbox'], [role='switch']",
+        ),
+      );
+      if (inFormField || onOtherInteractive) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       if (event.key.toLowerCase() === "j") {
         event.preventDefault();
@@ -258,7 +297,6 @@ export default function Issue() {
         setSelectedIssueIndex((prev) => Math.max(prev - 1, 0));
       }
       if (event.key === "Enter") {
-        if (isInteractiveElement) return;
         const issue = filteredIssues[selectedIssueIndex];
         if (issue?.id && project_id) {
           event.preventDefault();
@@ -461,6 +499,11 @@ export default function Issue() {
           setClose={setCreateIssueWindowOpen}
           project_id={project_id}
           project_title={project?.title}
+          onCreated={async () => {
+            if (!project_id) return;
+            const response = await axios.post("/api/issues/getissues", { project_id });
+            setIssues(response.data);
+          }}
         />
       )}
     </>
@@ -478,15 +521,13 @@ const IssuesViewButton = ({
   filter: string;
   setFilter: React.Dispatch<React.SetStateAction<string>>;
 }) => {
+  const isAll = title.toLowerCase() === "all issues";
+  const isActive = isAll ? filter === "" : filter === title;
   return (
     <button
-      onClick={
-        title.toLowerCase() === "all issues"
-          ? () => setFilter("")
-          : () => setFilter(title)
-      }
+      onClick={isAll ? () => setFilter("") : () => setFilter(title)}
       className={
-        (filter === title ? "bg-[#1C1D21] " : "") +
+        (isActive ? "bg-[#1C1D21] " : "") +
         "flex items-center gap-x-1 border border-[#2C2E34] h-7 px-2 rounded-md text-[#9a9a9a] text-sm hover:bg-[#1c1e22] transition-all duration-300 min-w-[90px] shrink-0"
       }
     >
