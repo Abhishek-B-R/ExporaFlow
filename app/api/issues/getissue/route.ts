@@ -31,6 +31,30 @@ export async function POST(request: NextRequest) {
       },
       blockersFrom: true,
       blockedBy: true,
+      comments: {
+        include: {
+          author: {
+            select: { id: true, name: true, email: true },
+          },
+          mentions: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      },
+      activities: {
+        include: {
+          actor: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      },
     },
   });
   if (!issue) {

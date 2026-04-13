@@ -5,9 +5,9 @@ import SVGIcon from "@/lib/svg-icon";
 import { IssueBody, ProjectBody } from "@/utils/types";
 import axios from "axios";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 import IssueLabel from "@/components/workflow/issues/issue-label";
 import { IssueViewOptArray } from "@/utils/issues-view-options";
 import { CreateIssueWindow } from "@/components/workflow/issues/create-issue-window";
@@ -21,6 +21,7 @@ const inactiveTab =
   "flex h-7 items-center gap-x-1 cursor-pointer border border-[color:var(--border)] px-2 rounded bg-[color:var(--surface-1)] hover:bg-[color:var(--surface-2)] transition-all duration-300";
 
 export default function Issue() {
+  const routeParams = useParams<{ projectId: string }>();
   const path = usePathname();
   const [project_id, setProjectId] = useState<string | null>("");
   const [project, setProject] = useState<ProjectBody | null>(null);
@@ -32,12 +33,19 @@ export default function Issue() {
 
   const [createIssueWindowOpen, setCreateIssueWindowOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [matchingIssueIds, setMatchingIssueIds] = useState<string[] | null>(null);
+  const [isSavingView, setIsSavingView] = useState(false);
+  const searchParams = useSearchParams();
+  const latestSearchRequest = useRef(0);
 
-  const filteredIssues = statusFilter
-    ? issues?.filter(
-        (issue) => issue.status?.toLowerCase() === statusFilter.toLowerCase()
-      )
-    : issues;
+  const filteredIssues = (issues ?? []).filter((issue) => {
+    const statusMatch = statusFilter
+      ? issue.status?.toLowerCase() === statusFilter.toLowerCase()
+      : true;
+    const searchMatch = matchingIssueIds ? matchingIssueIds.includes(issue.id) : true;
+    return statusMatch && searchMatch;
+  });
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -80,8 +88,46 @@ export default function Issue() {
   }, [project_id]);
 
   useEffect(() => {
-    setProjectId(localStorage.getItem("EXPORA_PROJECT_ID"));
-  }, []);
+    setProjectId(routeParams?.projectId ?? "");
+  }, [routeParams?.projectId]);
+
+  useEffect(() => {
+    setStatusFilter(searchParams.get("status") ?? "");
+    setSearchQuery(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
+  useEffect(() => {
+    const currentRequest = ++latestSearchRequest.current;
+    const controller = new AbortController();
+
+    const runSearch = async () => {
+      if (!project_id || !searchQuery.trim()) {
+        setMatchingIssueIds(null);
+        return;
+      }
+      try {
+        const response = await axios.post("/api/search", {
+            query: searchQuery,
+            projectId: project_id,
+          },
+          { signal: controller.signal },
+        );
+        const ids = (response.data?.issues ?? []).map((issue: { id: string }) => issue.id);
+        if (latestSearchRequest.current === currentRequest) {
+          setMatchingIssueIds(ids);
+        }
+      } catch {
+        if (latestSearchRequest.current === currentRequest) {
+          setMatchingIssueIds([]);
+        }
+      }
+    };
+    runSearch();
+
+    return () => {
+      controller.abort();
+    };
+  }, [project_id, searchQuery]);
 
   const createIssue = async () => {
     try {
@@ -100,6 +146,35 @@ export default function Issue() {
         title: "Action failed",
         description: `Error while creating issue.`,
       });
+    }
+  };
+
+  const saveCurrentView = async () => {
+    if (!project_id) return;
+    const viewName = window.prompt("Name this view");
+    if (!viewName?.trim()) return;
+
+    try {
+      setIsSavingView(true);
+      await axios.post("/api/views", {
+        name: viewName,
+        projectId: project_id,
+        filters: {
+          statusFilter: statusFilter || undefined,
+          searchText: searchQuery || undefined,
+        },
+      });
+      customToast.success({
+        title: "View saved",
+        description: "Saved to Views for quick reuse.",
+      });
+    } catch {
+      customToast.error({
+        title: "Action failed",
+        description: "Unable to save current view.",
+      });
+    } finally {
+      setIsSavingView(false);
     }
   };
 
@@ -166,7 +241,14 @@ export default function Issue() {
               </p>
             </Link>
           </div>
-          <div className="flex ">
+          <div className="flex gap-1">
+            <button
+              onClick={saveCurrentView}
+              disabled={isSavingView}
+              className="flex h-7 items-center gap-x-1 cursor-pointer border border-[#2E3035] px-2 rounded-lg hover:bg-[#1C1D21] transition-all duration-300 text-xs"
+            >
+              {isSavingView ? "Saving..." : "Save view"}
+            </button>
             <div
               onClick={() => {
                 setCreateIssueWindowOpen(true);
@@ -199,6 +281,15 @@ export default function Issue() {
           ))}
         </div>
 
+        <div className="px-2 py-2 border-b border-[#2E3035]">
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search issues in this project"
+            className="w-full h-8 rounded border border-[#2E3035] bg-[#181A1E] px-2 text-sm"
+          />
+        </div>
+
         <IssuesTopTile />
 
         {isLoading ? (
@@ -207,8 +298,8 @@ export default function Issue() {
           </div>
         ) : (
           <div className="grow overflow-y-auto h-96 scrollbar-hide pt-1 ">
-            {filteredIssues && filteredIssues?.length > 0 ? (
-              filteredIssues?.map((elem, key) => {
+            {filteredIssues.length > 0 ? (
+              filteredIssues.map((elem, key) => {
                 return (
                   <IssueLabel
                     key={key}

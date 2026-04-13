@@ -8,25 +8,16 @@ export async function GET() {
     return Response.json({ message: "Log in first!" }, { status: 401 });
   }
 
-  const projectIds = await prisma.project.findMany({
-    where: {
-      OR: [{ createdBy: session.user.id }, { projectMembers: { some: { userId: session.user.id } } }],
-    },
-    select: { id: true },
-  });
-
-  const ids = projectIds.map((p) => p.id);
-  if (ids.length === 0) return Response.json([]);
-
-  const issues = await prisma.issue.findMany({
-    where: { projectId: { in: ids } },
+  const notifications = await prisma.notification.findMany({
+    where: { userId: session.user.id },
     include: {
-      Project: { select: { title: true, id: true } },
+      issue: { select: { id: true, title: true } },
+      project: { select: { title: true, id: true } },
     },
-    orderBy: { updatedAt: "desc" },
-    take: 20,
+    orderBy: { createdAt: "desc" },
+    take: 50,
   });
 
-  return Response.json(issues);
+  return Response.json(notifications);
 }
 

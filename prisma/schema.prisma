@@ -61,6 +61,11 @@ model User {
   workspaceMembers WorkspaceMember[]
   teamMembers      TeamMember[]
   projectMembers   ProjectMember[]
+  issueComments    IssueComment[]
+  mentionsReceived CommentMention[]
+  notifications    Notification[]
+  issueActivities  IssueActivity[]
+  savedViews       SavedView[]
 }
 
 model VerificationToken {
@@ -96,6 +101,8 @@ model Project {
 
   projectMembers ProjectMember[]
   sprints        Sprint[]
+  notifications  Notification[]
+  savedViews     SavedView[]
 }
 
 model Issue {
@@ -123,6 +130,9 @@ model Issue {
 
   sprint   Sprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
   sprintId String?
+  comments IssueComment[]
+  activities IssueActivity[]
+  notifications Notification[]
 }
 
 model Workspace {
@@ -223,4 +233,81 @@ model Sprint {
   issues Issue[]
 
   @@unique([projectId, name])
+}
+
+model IssueComment {
+  id        String   @id @default(uuid())
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue   Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId String
+
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+
+  mentions CommentMention[]
+}
+
+model CommentMention {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  comment   IssueComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String
+
+  user   User   @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  mentionedUserId String
+
+  @@unique([commentId, mentionedUserId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String
+  title     String
+  body      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId String?
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+}
+
+model IssueActivity {
+  id        String   @id @default(uuid())
+  action    String
+  field     String?
+  fromValue String?
+  toValue   String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  issue   Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId String
+
+  actor   User   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actorId String
+}
+
+model SavedView {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  filters     Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
 }

@@ -15,7 +15,10 @@ export async function GET() {
   if (userID) {
     const response = await prisma.project.findMany({
       where: {
-        createdBy: userID,
+        OR: [
+          { createdBy: userID },
+          { projectMembers: { some: { userId: userID } } },
+        ],
       },
     });
 

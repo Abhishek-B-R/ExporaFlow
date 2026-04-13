@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { prisma } from "@/db";
 import { assertProjectRole } from "@/lib/authz";
+import { logIssueActivity } from "@/lib/collaboration";
 import { Role } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
@@ -50,8 +51,19 @@ export async function POST(request: NextRequest) {
       },
     });
     if (response) {
+      try {
+        await logIssueActivity({
+          issueId: response.id,
+          actorId: session.user.id,
+          action: "ISSUE_CREATED",
+        });
+      } catch (sideEffectError) {
+        console.error("Non-fatal issue creation side-effect failure:", sideEffectError);
+      }
+
       return Response.json({
         message: "New issue created!",
+        issueId: response.id,
       });
     }
   }
