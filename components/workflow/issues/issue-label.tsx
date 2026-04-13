@@ -20,6 +20,7 @@ export default function IssueLabel({
   projectID,
   issueID,
   updatedAt,
+  selected,
 }: {
   title: string;
   description?: string;
@@ -32,6 +33,7 @@ export default function IssueLabel({
   projectID: string | null;
   issueID: string;
   updatedAt?: string;
+  selected?: boolean;
 }) {
   const date = new Date(updatedAt ? updatedAt : "");
   const router = useRouter();
@@ -157,7 +159,11 @@ export default function IssueLabel({
 
   return (
     <div
-      className="h-14 rounded-lg border border-transparent hover:bg-[#1C1D21]  hover:border-[#2E3035] transition-all duration-200 px-3 grid grid-cols-12 items-center text-xs md:text-sm xl:text-[15px] cursor-pointer"
+      className={`h-12 rounded-md border transition-colors duration-150 px-3 grid grid-cols-12 items-center text-xs md:text-sm xl:text-[15px] cursor-pointer ${
+        selected
+          ? "bg-(--surface-3) border-(--border-strong)"
+          : "border-transparent hover:bg-(--surface-2) hover:border-(--border)"
+      }`}
       onClick={() => {
         if (projectID) {
           router.push(`/workflow/project/${projectID}/issues/${issueID}`);

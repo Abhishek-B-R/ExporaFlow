@@ -4,6 +4,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/db";
 import { assertProjectRole } from "@/lib/authz";
 import { logIssueActivity } from "@/lib/collaboration";
+import { findDuplicateIssueCandidates } from "@/lib/ai/duplicates";
+import { logEvent } from "@/lib/observability/logger";
 import { Role } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
@@ -61,11 +63,27 @@ export async function POST(request: NextRequest) {
         console.error("Non-fatal issue creation side-effect failure:", sideEffectError);
       }
 
+      let duplicateSuggestions: Awaited<ReturnType<typeof findDuplicateIssueCandidates>> = [];
+      try {
+        duplicateSuggestions = await findDuplicateIssueCandidates({
+          projectId,
+          title: issueTitle,
+          description: issueDescription,
+        });
+      } catch (duplicateError) {
+        console.error("Non-fatal duplicate check failure:", duplicateError);
+      }
+
       return Response.json({
         message: "New issue created!",
         issueId: response.id,
+        duplicateSuggestions: duplicateSuggestions.filter((candidate) => candidate.id !== response.id),
       });
     }
   }
+  logEvent("warn", "Issue creation returned no response row.", {
+    projectId,
+    userId: session.user.id,
+  });
   return Response.json({ message: "Error occured!" });
 }

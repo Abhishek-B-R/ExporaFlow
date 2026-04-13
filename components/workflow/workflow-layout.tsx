@@ -13,12 +13,17 @@ export const WorkflowLayout: React.FC<WrapperProps> = ({
   windowSvg,
 }) => {
   return (
-    <div className="w-full  bg-[#0A0A0A] h-screen flex flex-col">
-      <div className="flex justify-center items-center gap-x-1 h-10 md:h-12">
-        <SVGIcon className="flex w-3 sm:w-4" svgString={windowSvg} />
-        <p className="text-[13px] sm:text-[15px]">{windowTitle}</p>
+    <div className="w-full h-screen flex flex-col bg-(--background)">
+      <div className="h-12 px-4 flex items-center justify-between border-b border-(--border)">
+        <div className="flex items-center gap-x-2">
+          <SVGIcon className="flex w-4" svgString={windowSvg} />
+          <p className="text-sm font-medium">{windowTitle}</p>
+        </div>
+        <p className="hidden md:block text-xs text-(--muted-2)">
+          Press <span className="px-1 py-0.5 rounded bg-(--surface-3)">⌘K</span> for commands
+        </p>
       </div>
-      <div className="flex-grow border border-[#414141] bg-[#0F1111] rounded-lg ml-2 md:ml-0 mr-2 mb-2 p-1">
+      <div className="flex-grow m-2 md:ml-0 linear-panel overflow-hidden">
         {children}
       </div>
     </div>

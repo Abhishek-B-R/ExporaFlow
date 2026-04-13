@@ -46,10 +46,10 @@ export default function InboxPage() {
     <WorkflowLayout windowSvg={RAW_ICONS.Inbox} windowTitle="Inbox">
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-lg font-medium">Notifications</p>
+          <p className="text-lg font-medium tracking-tight">Notifications</p>
           <button
             onClick={markAllRead}
-            className="text-xs rounded border border-(--border) bg-(--surface-2) px-2 py-1"
+            className="text-xs rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 hover:bg-(--surface-3)"
           >
             Mark all as read
           </button>
@@ -63,7 +63,7 @@ export default function InboxPage() {
                   ? `/workflow/project/${item.project.id}/issues/${item.issue.id}`
                   : "/workflow/project"
               }
-              className={`block rounded-lg border px-3 py-2 transition-colors ${
+              className={`block rounded-md border px-3 py-2 transition-colors ${
                 item.readAt
                   ? "border-(--border) bg-(--surface-1) hover:bg-(--surface-2)"
                   : "border-(--border-strong) bg-(--surface-2) hover:bg-(--surface-3)"

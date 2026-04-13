@@ -52,14 +52,18 @@ export async function PATCH(request: NextRequest) {
   });
 
   if ((issue.sprintId ?? null) !== (sprintId ?? null)) {
-    await logIssueActivity({
-      issueId,
-      actorId: session.user.id,
-      action: "SPRINT_UPDATED",
-      field: "sprintId",
-      fromValue: issue.sprintId ?? "",
-      toValue: sprintId ?? "",
-    });
+    try {
+      await logIssueActivity({
+        issueId,
+        actorId: session.user.id,
+        action: "SPRINT_UPDATED",
+        field: "sprintId",
+        fromValue: issue.sprintId ?? "",
+        toValue: sprintId ?? "",
+      });
+    } catch (sideEffectError) {
+      console.error("Non-fatal sprint assignment side-effect failure:", sideEffectError);
+    }
   }
 
   return Response.json(updated);

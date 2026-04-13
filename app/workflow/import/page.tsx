@@ -9,6 +9,7 @@ import { useState } from "react";
 export default function ImportIssuesPage() {
   const [projectId, setProjectId] = useState("");
   const [csv, setCsv] = useState("title,description,status,priority\n");
+  const [jiraJson, setJiraJson] = useState('{ "issues": [] }');
   const [isImporting, setIsImporting] = useState(false);
 
   const importCsv = async () => {
@@ -16,35 +17,46 @@ export default function ImportIssuesPage() {
       customToast.error({ title: "", description: "Project ID is required." });
       return;
     }
-    const rows = csv
-      .split("\n")
-      .slice(1)
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (rows.length === 0) {
+    if (!csv.trim()) {
       customToast.error({ title: "", description: "No rows to import." });
       return;
     }
 
     try {
       setIsImporting(true);
-      for (const row of rows) {
-        const [title, description, status, priority] = row
-          .split(",")
-          .map((cell) => cell.trim());
-        if (!title) continue;
-        await axios.post("/api/issues/createissue", {
-          issueTitle: title,
-          issueDescription: description || "",
-          issueStatus: status || "Backlog",
-          issuePriority: priority || "No Priority",
-          projectId: projectId.trim(),
-        });
-      }
-      customToast.success({ title: "", description: "CSV issues imported." });
+      const response = await axios.post("/api/import/csv", {
+        projectId: projectId.trim(),
+        csv,
+      });
+      customToast.success({
+        title: "",
+        description: `CSV import complete (${response.data.imported ?? 0} issues).`,
+      });
     } catch {
       customToast.error({ title: "", description: "Import failed." });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const importJira = async () => {
+    if (!projectId.trim()) {
+      customToast.error({ title: "", description: "Project ID is required." });
+      return;
+    }
+    try {
+      setIsImporting(true);
+      const parsed = JSON.parse(jiraJson);
+      const response = await axios.post("/api/import/jira", {
+        projectId: projectId.trim(),
+        issues: Array.isArray(parsed?.issues) ? parsed.issues : [],
+      });
+      customToast.success({
+        title: "",
+        description: `Jira import complete (${response.data.imported ?? 0} issues).`,
+      });
+    } catch {
+      customToast.error({ title: "", description: "Jira import failed. Check JSON format." });
     } finally {
       setIsImporting(false);
     }
@@ -53,7 +65,7 @@ export default function ImportIssuesPage() {
   return (
     <WorkflowLayout windowSvg={RAW_ICONS.Target} windowTitle="Import Issues">
       <div className="p-4">
-        <p className="text-lg font-medium mb-2">Import issues (CSV)</p>
+        <p className="text-lg font-medium mb-2">Import issues (CSV / Jira)</p>
         <p className="text-sm text-(--muted-2)">
           CSV columns: title, description, status, priority
         </p>
@@ -74,6 +86,20 @@ export default function ImportIssuesPage() {
           className="mt-3 h-9 px-3 rounded border border-(--border-strong) bg-(--surface-3) disabled:opacity-50"
         >
           {isImporting ? "Importing..." : "Import CSV"}
+        </button>
+
+        <p className="text-sm text-(--muted-2) mt-6">Jira JSON (expects {`{ issues: [...] }`})</p>
+        <textarea
+          value={jiraJson}
+          onChange={(e) => setJiraJson(e.target.value)}
+          className="mt-2 h-40 w-full rounded border border-(--border) bg-(--surface-1) px-2 py-2 text-sm"
+        />
+        <button
+          onClick={importJira}
+          disabled={isImporting}
+          className="mt-3 h-9 px-3 rounded border border-(--border-strong) bg-(--surface-3) disabled:opacity-50"
+        >
+          {isImporting ? "Importing..." : "Import Jira JSON"}
         </button>
       </div>
     </WorkflowLayout>

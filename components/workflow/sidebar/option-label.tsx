@@ -15,13 +15,13 @@ export default function OptionLabel({
   const content = (
     <>
       <div className="">
-        <SVGIcon className="flex w-5" svgString={svg} />
+        <SVGIcon className="flex w-4" svgString={svg} />
       </div>
-      <p className="">{optName}</p>
+      <p className="text-sm">{optName}</p>
     </>
   );
 
-  const cls = `${className} cursor-pointer h-8 flex px-4 rounded items-center gap-x-2 hover:bg-[#1d1d21] transition-all duration-200`;
+  const cls = `${className} cursor-pointer h-8 flex px-3 rounded-md items-center gap-x-2 hover:bg-(--surface-3) transition-colors`;
 
   if (href) {
     return (

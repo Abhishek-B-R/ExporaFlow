@@ -10,7 +10,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 
 const TabActive =
-  "rounded bg-[color:var(--surface-1)] border border-[color:var(--border-strong)] ";
+  "rounded-md bg-(--surface-3) border border-(--border-strong) ";
 
 interface CollapsedState {
   teams: boolean;
@@ -41,7 +41,7 @@ export default function WorkflowSidebar() {
   };
 
   return (
-    <div className=" w-72 min-h-screen hidden md:block font-extralight px-2">
+    <div className="w-72 min-h-screen hidden md:block px-2 border-r border-(--border) bg-(--surface-1)">
       <WorkflowTab />
       <div className="px-1 mt-2">
         <OptionLabel
@@ -59,10 +59,10 @@ export default function WorkflowSidebar() {
       </div>
       <div className=" mt-4">
         <div
-          className="flex px-4 mb-2 cursor-pointer"
+          className="flex px-3 mb-2 cursor-pointer text-(--muted-2) text-xs uppercase tracking-wide"
           onClick={toggleWorkspaceCollapse}
         >
-          <p className="text-sm">Workspace</p>
+          <p className="text-xs">Workspace</p>
           <SVGIcon
             className={`flex w-4 transition-transform duration-300 ${
               workspaceCollapsed ? "rotate-180" : "rotate-0"
@@ -105,8 +105,8 @@ export default function WorkflowSidebar() {
 
       <div className=" mt-4">
         <div className="cursor-pointer" onClick={() => toggleSection("teams")}>
-          <div className="flex px-4 mb-2">
-            <p className="text-sm">Teams</p>
+          <div className="flex px-3 mb-2 text-(--muted-2) text-xs uppercase tracking-wide">
+            <p className="text-xs">Teams</p>
             <SVGIcon
               className={`flex w-4 transition-transform duration-300 ${
                 collapsed.teams ? "rotate-180" : "rotate-0"
@@ -122,10 +122,7 @@ export default function WorkflowSidebar() {
           }`}
         >
           {/* Team's Workspace content */}
-          <div
-            className="flex px-4 cursor-pointer"
-            onClick={() => toggleSection("workspace")}
-          >
+          <div className="flex px-3 cursor-pointer" onClick={() => toggleSection("workspace")}>
             <Image
               className="h-5 w-5 mr-2"
               src={applogotwo}
@@ -133,7 +130,7 @@ export default function WorkflowSidebar() {
               width={100}
               height={100}
             />
-            <p className="text-sm">Workspace</p>
+            <p className="text-sm">ExporaFlow</p>
             <SVGIcon
               className={`flex w-4 transition-transform duration-300 ${
                 collapsed.workspace ? "rotate-180" : "rotate-0"
@@ -150,7 +147,7 @@ export default function WorkflowSidebar() {
                 : "max-h-[500px] opacity-100"
             }`}
           >
-            <div className="pl-5">
+            <div className="pl-4">
               <OptionLabel
                 className={pathname === "/workflow/my-issues" ? TabActive : ""}
                 svg={RAW_ICONS.Target}
@@ -176,9 +173,9 @@ export default function WorkflowSidebar() {
       <div className=" mt-4">
         <div
           onClick={toggleFeatureCollapse}
-          className="flex px-4 mb-2 cursor-pointer"
+          className="flex px-3 mb-2 cursor-pointer text-(--muted-2) text-xs uppercase tracking-wide"
         >
-          <p className="text-sm">Features</p>
+          <p className="text-xs">Features</p>
           <SVGIcon
             className={`flex w-4 transition-transform duration-300 ${
               featuresCollapsed ? "rotate-180" : "rotate-0"

@@ -95,21 +95,21 @@ export default function ViewsPage() {
   return (
     <WorkflowLayout windowSvg={RAW_ICONS.Eye} windowTitle="Views">
       <div className="p-4 space-y-4">
-        <div className="rounded-lg border border-(--border) bg-(--surface-1) p-3 space-y-2">
-          <p className="text-lg font-medium">Save issue filter view</p>
+        <div className="rounded-md border border-(--border) bg-(--surface-1) p-3 space-y-2">
+          <p className="text-lg font-medium tracking-tight">Save issue filter view</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <input
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
               placeholder="View name"
-              className="h-9 rounded border border-(--border) bg-(--surface-2) px-2"
+              className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-2"
             />
             <select
               value={form.projectId}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, projectId: event.target.value }))
               }
-              className="h-9 rounded border border-(--border) bg-(--surface-2) px-2"
+              className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-2"
             >
               <option value="">Select project</option>
               {projects.map((project) => (
@@ -125,7 +125,7 @@ export default function ViewsPage() {
               setForm((prev) => ({ ...prev, description: event.target.value }))
             }
             placeholder="Description (optional)"
-            className="w-full h-9 rounded border border-(--border) bg-(--surface-2) px-2"
+            className="w-full h-9 rounded-md border border-(--border) bg-(--surface-2) px-2"
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <input
@@ -134,7 +134,7 @@ export default function ViewsPage() {
                 setForm((prev) => ({ ...prev, statusFilter: event.target.value }))
               }
               placeholder="Status filter (e.g. In Progress)"
-              className="h-9 rounded border border-(--border) bg-(--surface-2) px-2"
+              className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-2"
             />
             <input
               value={form.searchText}
@@ -142,13 +142,13 @@ export default function ViewsPage() {
                 setForm((prev) => ({ ...prev, searchText: event.target.value }))
               }
               placeholder="Search text"
-              className="h-9 rounded border border-(--border) bg-(--surface-2) px-2"
+              className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-2"
             />
           </div>
           <button
             onClick={createView}
             disabled={isSubmitting}
-            className="h-9 px-3 rounded border border-(--border-strong) bg-(--surface-3)"
+            className="h-9 px-3 rounded-md border border-(--border-strong) bg-(--surface-3) hover:bg-(--surface-4)"
           >
             {isSubmitting ? "Saving..." : "Save view"}
           </button>
@@ -158,10 +158,7 @@ export default function ViewsPage() {
           <p className="text-lg font-medium mb-2">Saved views</p>
           <div className="space-y-2">
             {savedViews.map((view) => (
-              <div
-                key={view.id}
-                className="rounded-lg border border-(--border) bg-(--surface-1) px-3 py-2"
-              >
+              <div key={view.id} className="rounded-md border border-(--border) bg-(--surface-1) px-3 py-2">
                 <p className="text-sm">{view.name}</p>
                 <p className="text-xs text-(--muted-2) mt-1">
                   {view.description || "No description"} · {view.project?.title || "Project"}
@@ -172,7 +169,7 @@ export default function ViewsPage() {
                       href={`/workflow/project/${view.project.id}/issues?status=${encodeURIComponent(
                         view.filters?.statusFilter || "",
                       )}&q=${encodeURIComponent(view.filters?.searchText || "")}`}
-                      className="text-xs rounded border border-(--border) bg-(--surface-2) px-2 py-1"
+                      className="text-xs rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 hover:bg-(--surface-3)"
                     >
                       Open
                     </Link>
@@ -180,14 +177,14 @@ export default function ViewsPage() {
                     <button
                       disabled
                       title="Project no longer exists."
-                      className="text-xs rounded border border-(--border) bg-(--surface-2) px-2 py-1 opacity-50 cursor-not-allowed"
+                      className="text-xs rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 opacity-50 cursor-not-allowed"
                     >
                       Open
                     </button>
                   )}
                   <button
                     onClick={() => deleteView(view.id)}
-                    className="text-xs rounded border border-(--border) bg-(--surface-2) px-2 py-1"
+                    className="text-xs rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 hover:bg-(--surface-3)"
                   >
                     Delete
                   </button>

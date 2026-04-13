@@ -27,9 +27,9 @@ export default function ProjectBoardPage() {
   const [project, setProject] = useState<ProjectBody | null>(null);
 
   const activeTab =
-    "flex h-7 items-center gap-x-1 cursor-pointer border border-[#3a3a3a] px-2 rounded bg-[#0A0A0A] hover:bg-[#151515] transition-all duration-300";
+    "flex h-7 items-center gap-x-1 cursor-pointer border border-(--border-strong) px-2 rounded-md bg-(--surface-3) hover:bg-(--surface-4) transition-all duration-300";
   const inactiveTab =
-    "flex h-7 items-center gap-x-1 cursor-pointer border border-[#2b2b2b] px-2 rounded bg-[#0A0A0A] hover:bg-[#131313] transition-all duration-300";
+    "flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded-md bg-(--surface-1) hover:bg-(--surface-2) transition-all duration-300";
 
   const grouped = useMemo(() => {
     const map: Record<IssueStatus, IssueBody[]> = {
@@ -92,7 +92,7 @@ export default function ProjectBoardPage() {
 
   return (
     <WorkflowLayout windowSvg={RAW_ICONS.Issue} windowTitle="Issues">
-      <div className="border h-10 rounded border-[#2d3036] flex items-center justify-between px-4">
+      <div className="border-b h-10 border-(--border) flex items-center justify-between px-4 bg-(--surface-2)">
         <div className=" flex gap-x-2 items-center ">
           <Link
             href={"/workflow/project"}
@@ -100,7 +100,7 @@ export default function ProjectBoardPage() {
           >
             Projects
           </Link>
-          <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-[#2E3035] px-2 rounded hover:bg-[#1C1D21] transition-all duration-300">
+          <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded-md hover:bg-(--surface-3) transition-all duration-300">
             <SVGIcon className="flex w-4" svgString={RAW_ICONS.Cube} />
             <p className="text-[12px] sm:text-[13px] md:text-[15px]">
               {project ? project.title : "Loading…"}
@@ -183,7 +183,7 @@ function BoardColumn(props: {
 
   return (
     <div
-      className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] overflow-hidden"
+      className="rounded-lg border border-(--border) bg-(--surface-1) overflow-hidden"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -198,7 +198,7 @@ function BoardColumn(props: {
         }
       }}
     >
-      <div className="px-3 py-2 border-b border-[#2d2d2d] bg-[#101010] flex items-center justify-between">
+      <div className="px-3 py-2 border-b border-(--border) bg-(--surface-2) flex items-center justify-between">
         <p className="text-sm font-medium">{status}</p>
         <p className="text-xs text-(--muted-2)">{issues.length}</p>
       </div>
@@ -229,7 +229,7 @@ function BoardCard(props: {
         e.dataTransfer.setData("application/json", JSON.stringify(payload));
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="rounded-lg border border-[#2f2f2f] bg-[#0F0F0F] hover:bg-[#151515] transition-colors px-3 py-2 cursor-grab active:cursor-grabbing"
+      className="rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors px-3 py-2 cursor-grab active:cursor-grabbing"
     >
       <p className="text-sm font-medium leading-snug">{issue.title}</p>
       <div className="mt-2">
@@ -238,7 +238,7 @@ function BoardCard(props: {
           onChange={(e) =>
             void onQuickMove(e.target.value as IssueStatus, { issueId: issue.id })
           }
-          className="h-7 w-full text-xs rounded border border-[#2f2f2f] bg-[#0A0A0A] px-2 cursor-pointer"
+          className="h-7 w-full text-xs rounded-md border border-(--border) bg-(--surface-1) px-2 cursor-pointer"
         >
           {ISSUE_STATUSES.map((status) => (
             <option key={status} value={status}>
