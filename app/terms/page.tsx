@@ -45,7 +45,7 @@ export default function TermsConditions() {
             If you have any queries regarding the terms of service
           </p>
           <Link
-            href={"https://github.com/your-org/exporaflow/issues"}
+            href={"https://github.com/Abhishek-B-R/ExporaFlow/issues"}
             className="flex items-center gap-x-1 md:gap-x-2 mt-2"
           >
             <SVGIcon

@@ -16,9 +16,9 @@ export const siteConfig: Metadata = {
     icon: "/favicon.ico",
   },
   applicationName: "ExporaFlow",
-  creator: "KartikeyStack",
+  creator: "abhitwt",
   twitter: {
-    creator: "@KartikeyStack",
+    creator: "@abhitwt",
     title: TITLE,
     description: DESCRIPTION,
     card: "summary_large_image",

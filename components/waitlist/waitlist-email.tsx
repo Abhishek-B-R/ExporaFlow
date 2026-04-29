@@ -53,7 +53,7 @@ export const WaitlistEmail: React.FC<WaitlistEmailProps> = ({ userEmail }) => (
 
         <div style={{ textAlign: "center", margin: "25px 0" }}>
           <a
-            href="https://twitter.com/kartikeystack"
+            href="https://x.com/abhitwt"
             style={{
               backgroundColor: "#363635",
               color: "white",

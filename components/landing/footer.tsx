@@ -88,21 +88,21 @@ export default function Footer() {
 
           <ul className="flex flex-col mt-8 gap-y-4 text-[#c9c9cc]">
             <a
-              href="https://x.com/KartikeyStack"
+              href="https://x.com/abhitwt"
               target="_blank"
               className="text-lg flex items-center"
             >
               <SVGIcon className="flex w-4" svgString={RAW_ICONS.X} />
             </a>
             <a
-              href="https://github.com/your-org/exporaflow"
+              href="https://github.com/Abhishek-B-R"
               target="_blank"
               className=" flex items-center"
             >
               <SVGIcon className="flex w-5" svgString={RAW_ICONS.GitHub} />
             </a>
             <a
-              href="https://www.linkedin.com/in/kartikeyverma "
+              href="https://www.linkedin.com/in/abhi-br"
               target="_blank"
               className=" flex items-center"
             >
