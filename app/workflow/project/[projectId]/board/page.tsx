@@ -154,7 +154,23 @@ export default function ProjectBoardPage() {
           </div>
         </div>
         {isLoading ? (
-          <div className="text-sm text-(--muted-2)">Loading…</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="rounded-lg border border-(--border) bg-(--surface-1) overflow-hidden">
+                <div className="px-3 py-2 border-b border-(--border) bg-(--surface-2)">
+                  <div className="h-3.5 bg-(--surface-3) rounded w-1/2 animate-pulse" />
+                </div>
+                <div className="p-2 space-y-2">
+                  {[...Array(2)].map((_, j) => (
+                    <div key={j} className="rounded-md border border-(--border) bg-(--surface-2) px-3 py-3 animate-pulse">
+                      <div className="h-3 bg-(--surface-3) rounded w-3/4 mb-2" />
+                      <div className="h-2.5 bg-(--surface-3) rounded w-1/2" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
             {ISSUE_STATUSES.map((status) => (

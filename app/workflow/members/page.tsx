@@ -14,6 +14,7 @@ type Member = {
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -22,6 +23,8 @@ export default function MembersPage() {
         setMembers(res.data ?? []);
       } catch {
         customToast.error({ title: "", description: "Failed to load members." });
+      } finally {
+        setIsLoading(false);
       }
     };
     load();
@@ -40,9 +43,18 @@ export default function MembersPage() {
               </p>
             </div>
           ))}
-          {members.length === 0 && (
+          {isLoading ? (
+            <>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="rounded-lg border border-(--border) bg-(--surface-1) px-3 py-3 animate-pulse">
+                  <div className="h-3.5 bg-(--surface-3) rounded w-1/3 mb-2" />
+                  <div className="h-2.5 bg-(--surface-3) rounded w-1/2" />
+                </div>
+              ))}
+            </>
+          ) : members.length === 0 ? (
             <p className="text-sm text-(--muted-2)">No members found.</p>
-          )}
+          ) : null}
         </div>
       </div>
     </WorkflowLayout>
