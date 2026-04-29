@@ -15,15 +15,30 @@ function daysBetween(start: Date, end: Date) {
   return Math.max(1, Math.round((end.getTime() - start.getTime()) / oneDay));
 }
 
-type SprintDragPayload = {
-  issueId: string;
-};
+function fmtDate(d: string | Date): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 type SprintPlanning = {
   effortEstimateByIssue?: Record<string, number>;
   recommendedScope?: string[];
   riskFlags?: string[];
   summary?: string;
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  Backlog: "text-[#a4a6aa]",
+  Planned: "text-[#6f86ff]",
+  Working: "text-[#e5a63b]",
+  Completed: "text-[#30b27a]",
+  Cancelled: "text-[#e05f5f]",
+};
+
+const SPRINT_STATUS_BADGE: Record<string, string> = {
+  Planned: "border-[#6f86ff]/30 bg-[#6f86ff]/10 text-[#6f86ff]",
+  Active: "border-[#30b27a]/30 bg-[#30b27a]/10 text-[#30b27a]",
+  Closed: "border-[#a4a6aa]/30 bg-[#a4a6aa]/10 text-[#a4a6aa]",
 };
 
 export default function SprintsPage() {
@@ -40,11 +55,24 @@ export default function SprintsPage() {
   const [endDate, setEndDate] = useState("");
   const [planning, setPlanning] = useState<SprintPlanning | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [showCreateSprint, setShowCreateSprint] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [aiSprintName, setAiSprintName] = useState("");
 
   const activeTab =
-    "flex h-7 items-center gap-x-1 cursor-pointer border border-[#3a3a3a] px-2 rounded bg-[#0A0A0A] hover:bg-[#151515] transition-all duration-300";
+    "flex h-7 items-center gap-x-1 cursor-pointer border border-(--border-strong) px-2 rounded bg-(--surface-2) hover:bg-(--surface-3) transition-all duration-300";
   const inactiveTab =
-    "flex h-7 items-center gap-x-1 cursor-pointer border border-[#2b2b2b] px-2 rounded bg-[#0A0A0A] hover:bg-[#131313] transition-all duration-300";
+    "flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded bg-(--surface-1) hover:bg-(--surface-2) transition-all duration-300";
+
+  const toggleSection = (id: string) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const refresh = useCallback(async () => {
     if (!projectId) return;
@@ -92,6 +120,7 @@ export default function SprintsPage() {
       setName("");
       setStartDate("");
       setEndDate("");
+      setShowCreateSprint(false);
       customToast.success({ title: "", description: "Sprint created." });
       await refresh();
     } catch {
@@ -124,10 +153,49 @@ export default function SprintsPage() {
       setIsPlanning(true);
       const res = await axios.post("/api/ai/sprint-plan", { projectId });
       setPlanning(res.data?.planning ?? null);
+      setAiSprintName(`AI Sprint ${fmtDate(new Date())}`);
     } catch {
       customToast.error({ title: "", description: "AI sprint planning failed." });
     } finally {
       setIsPlanning(false);
+    }
+  };
+
+  const acceptAiPlan = async () => {
+    if (!projectId || !planning) return;
+    const sprintName = aiSprintName.trim() || `AI Sprint ${fmtDate(new Date())}`;
+    try {
+      setIsAccepting(true);
+      // 1. Create the sprint
+      const sprintRes = await axios.post("/api/sprints/createsprint", {
+        projectId,
+        name: sprintName,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks
+      });
+      const newSprintId = sprintRes.data?.id;
+      if (!newSprintId) throw new Error("Sprint creation returned no ID");
+
+      // 2. Assign recommended issues to the sprint
+      const scopeIds = planning.recommendedScope ?? issues.slice(0, 8).map((i) => i.id);
+      for (const issueId of scopeIds) {
+        try {
+          await axios.patch("/api/sprints/assignissue", { issueId, sprintId: newSprintId });
+        } catch {
+          // skip issues that fail (e.g. wrong project)
+        }
+      }
+
+      customToast.success({
+        title: "Sprint created",
+        description: `"${sprintName}" created with ${scopeIds.length} issues.`,
+      });
+      setPlanning(null);
+      await refresh();
+    } catch {
+      customToast.error({ title: "", description: "Failed to create sprint from AI plan." });
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -160,121 +228,164 @@ export default function SprintsPage() {
 
   return (
     <WorkflowLayout windowSvg={RAW_ICONS.Issue} windowTitle="Issues">
-      <div className="border h-10 rounded border-[#2d3036] flex items-center justify-between px-4">
-        <div className=" flex gap-x-2 items-center ">
+      {/* Top navigation bar */}
+      <div className="border h-10 rounded border-(--border) flex items-center justify-between px-4">
+        <div className="flex gap-x-2 items-center">
           <Link
-            href={"/workflow/project"}
-            className="flex items-center rounded text-[12px] sm:text-[13px] md:text-[15px] border border-transparent hover:border-[#2E3035] px-2 h-7 hover:bg-[#1C1D21] transition-all duration-300"
+            href="/workflow/project"
+            className="flex items-center rounded text-[12px] sm:text-[13px] md:text-[15px] border border-transparent hover:border-(--border-strong) px-2 h-7 hover:bg-(--surface-2) transition-all duration-300"
           >
             Projects
           </Link>
-          <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-[#2E3035] px-2 rounded hover:bg-[#1C1D21] transition-all duration-300">
+          <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-(--border-strong) px-2 rounded hover:bg-(--surface-2) transition-all duration-300">
             <SVGIcon className="flex w-4" svgString={RAW_ICONS.Cube} />
             <p className="text-[12px] sm:text-[13px] md:text-[15px]">
               {project ? project.title : "Loading…"}
             </p>
           </div>
-          <Link
-            href={`/workflow/project/${projectId}`}
-            className={path.includes("/issues") ? inactiveTab : activeTab}
-          >
+          <Link href={`/workflow/project/${projectId}`} className={path?.includes("/issues") ? inactiveTab : activeTab}>
             <SVGIcon className="flex w-4" svgString={RAW_ICONS.Docs} />
             <p className="text-[12px] sm:text-[13px] md:text-[15px]">Overview</p>
           </Link>
-          <Link
-            href={`/workflow/project/${projectId}/issues`}
-            className={path.includes("/issues") ? activeTab : inactiveTab}
-          >
+          <Link href={`/workflow/project/${projectId}/issues`} className={path?.includes("/issues") ? activeTab : inactiveTab}>
             <SVGIcon className="flex w-4" svgString={RAW_ICONS.Issue} />
             <p className="text-[12px] sm:text-[13px] md:text-[15px]">Issues</p>
           </Link>
-          <Link
-            href={`/workflow/project/${projectId}/sprints`}
-            className={path.includes("/sprints") ? activeTab : inactiveTab}
-          >
+          <Link href={`/workflow/project/${projectId}/sprints`} className={path?.includes("/sprints") ? activeTab : inactiveTab}>
             <SVGIcon className="flex w-4" svgString={RAW_ICONS.PlannedIssue} />
             <p className="text-[12px] sm:text-[13px] md:text-[15px]">Sprints</p>
           </Link>
-          <Link
-            href={`/workflow/project/${projectId}/backlog`}
-            className={path.includes("/backlog") ? activeTab : inactiveTab}
-          >
+          <Link href={`/workflow/project/${projectId}/backlog`} className={path?.includes("/backlog") ? activeTab : inactiveTab}>
             <SVGIcon className="flex w-4" svgString={RAW_ICONS.DashedCircle} />
             <p className="text-[12px] sm:text-[13px] md:text-[15px]">Backlog</p>
           </Link>
-          <Link
-            href={`/workflow/project/${projectId}/board`}
-            className={path.includes("/board") ? activeTab : inactiveTab}
-          >
+          <Link href={`/workflow/project/${projectId}/board`} className={path?.includes("/board") ? activeTab : inactiveTab}>
             <SVGIcon className="flex w-4" svgString={RAW_ICONS.Stack} />
             <p className="text-[12px] sm:text-[13px] md:text-[15px]">Board</p>
           </Link>
         </div>
       </div>
 
-      <div className="grow min-h-screen px-4 md:px-8 py-5 space-y-5">
-        <div>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xl font-medium">Sprints</p>
-              <p className="text-sm text-(--muted-2)">
-                Create, start, close sprints and move issues between backlog and sprint.
-              </p>
-            </div>
+      {/* Main content */}
+      <div className="grow overflow-y-auto px-4 md:px-6 py-5 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xl font-medium">Sprints</p>
+            <p className="text-sm text-(--muted-2)">
+              {sprints.length} sprint{sprints.length !== 1 ? "s" : ""} · {issues.length} issue{issues.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowCreateSprint(!showCreateSprint)}
+              className="h-8 px-3 rounded-md border border-(--border-strong) bg-(--surface-2) text-sm hover:bg-(--surface-3) transition-colors"
+            >
+              + New sprint
+            </button>
             <button
               onClick={runAiSprintPlan}
               disabled={isPlanning || issues.length === 0}
-              className="h-9 px-3 rounded-md border border-(--border-strong) bg-(--surface-3) text-sm disabled:opacity-50"
+              className="h-8 px-3 rounded-md border border-[#7c5cff]/30 bg-[#7c5cff]/10 text-[#7c5cff] text-sm hover:bg-[#7c5cff]/20 transition-colors disabled:opacity-50"
             >
-              {isPlanning ? "Planning..." : "AI sprint plan"}
+              {isPlanning ? "Planning…" : "✨ AI Sprint Plan"}
             </button>
           </div>
         </div>
 
-        {planning ? (
-          <div className="rounded-xl border border-(--border-strong) bg-(--surface-1) p-4 space-y-3">
+        {/* Create sprint form (collapsible) */}
+        {showCreateSprint && (
+          <div className="rounded-xl border border-(--border) bg-(--surface-1) p-4">
+            <p className="text-sm font-medium mb-3">Create sprint</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Sprint name"
+                className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-3 text-sm"
+              />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-3 text-sm"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-3 text-sm"
+              />
+              <button
+                onClick={createSprint}
+                disabled={!name.trim()}
+                className="h-9 rounded-md border border-(--border-strong) bg-(--surface-3) text-sm disabled:opacity-50 hover:bg-(--surface-4) transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* AI Sprint Planning Panel */}
+        {planning && (
+          <div className="rounded-xl border border-[#7c5cff]/20 bg-[#7c5cff]/5 p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium">AI sprint planning recommendation</p>
+                <p className="text-sm font-medium text-[#7c5cff]">AI Sprint Planning Recommendation</p>
                 <p className="text-xs text-(--muted-2)">
-                  Suggested scope, effort, and risks for the current project backlog.
+                  {(planning.recommendedScope ?? []).length || issues.length} issues scoped · Review before committing
                 </p>
               </div>
-              <span className="rounded border border-(--border) bg-(--surface-2) px-2 py-1 text-xs">
-                {(planning.recommendedScope ?? []).length || issues.length} issues scoped
-              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={acceptAiPlan}
+                  disabled={isAccepting}
+                  className="text-xs px-3 py-1.5 rounded-md bg-[#7c5cff] text-white hover:bg-[#6a4de0] transition-colors disabled:opacity-50 font-medium"
+                >
+                  {isAccepting ? "Creating…" : "✓ Accept & Create Sprint"}
+                </button>
+                <button
+                  onClick={() => setPlanning(null)}
+                  className="text-xs text-(--muted-2) hover:text-white px-2 py-1.5 rounded border border-(--border) hover:bg-(--surface-3)"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
-            {planning.summary ? (
-              <p className="text-sm text-(--muted-2)">{planning.summary}</p>
-            ) : null}
+            {planning.summary && <p className="text-sm text-(--muted)">{planning.summary}</p>}
+            <div className="flex items-center gap-2 mt-1">
+              <label className="text-xs text-(--muted-2)">Sprint name:</label>
+              <input
+                value={aiSprintName}
+                onChange={(e) => setAiSprintName(e.target.value)}
+                className="h-7 rounded border border-(--border) bg-(--surface-2) px-2 text-xs flex-1 max-w-xs"
+                placeholder="Sprint name"
+              />
+            </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-              <div className="rounded-lg border border-(--border) bg-(--surface-2) p-3">
-                <p className="text-xs text-(--muted-2) mb-2">Recommended scope</p>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {(planning.recommendedScope ?? issues.slice(0, 8).map((issue) => issue.id)).map((issueId) => {
+              <div className="rounded-lg border border-(--border) bg-(--surface-1) p-3">
+                <p className="text-xs text-(--muted-2) mb-2 uppercase tracking-wide">Recommended Scope</p>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {(planning.recommendedScope ?? issues.slice(0, 8).map((i) => i.id)).map((issueId) => {
                     const issue = issues.find((item) => item.id === issueId);
                     if (!issue) return null;
                     return (
-                      <div key={issue.id} className="rounded border border-(--border) bg-(--surface-1) px-2 py-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm truncate">{issue.title}</p>
-                          <span className="text-xs text-(--muted-2)">
-                            {planning.effortEstimateByIssue?.[issue.id] ?? 3} pts
-                          </span>
-                        </div>
-                        <p className="text-xs text-(--muted-2)">{issue.status ?? "Backlog"}</p>
+                      <div key={issue.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-(--surface-2) text-sm">
+                        <span className="truncate">{issue.title}</span>
+                        <span className="shrink-0 text-xs text-(--muted-2)">
+                          {planning.effortEstimateByIssue?.[issue.id] ?? 3} pts
+                        </span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-              <div className="rounded-lg border border-(--border) bg-(--surface-2) p-3">
-                <p className="text-xs text-(--muted-2) mb-2">Risk flags</p>
-                <div className="space-y-2">
-                  {(planning.riskFlags ?? []).map((risk) => (
-                    <p key={risk} className="rounded border border-(--border) bg-(--surface-1) px-2 py-2 text-sm">
-                      {risk}
-                    </p>
+              <div className="rounded-lg border border-(--border) bg-(--surface-1) p-3">
+                <p className="text-xs text-(--muted-2) mb-2 uppercase tracking-wide">Risk Flags</p>
+                <div className="space-y-1">
+                  {(planning.riskFlags ?? []).map((risk, idx) => (
+                    <p key={idx} className="text-sm text-(--muted) px-2 py-1.5 rounded bg-(--surface-2)">{risk}</p>
                   ))}
                   {(!planning.riskFlags || planning.riskFlags.length === 0) && (
                     <p className="text-sm text-(--muted-2)">No major risks identified.</p>
@@ -283,216 +394,216 @@ export default function SprintsPage() {
               </div>
             </div>
           </div>
-        ) : null}
+        )}
 
-        <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Sprint name"
-          className="h-9 rounded-md border border-[#2f2f2f] bg-[#0F0F0F] px-2"
-        />
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="h-9 rounded-md border border-[#2f2f2f] bg-[#0F0F0F] px-2"
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="h-9 rounded-md border border-[#2f2f2f] bg-[#0F0F0F] px-2"
-        />
-        <button
-          onClick={createSprint}
-          className="h-9 rounded-md border border-[#3a3a3a] bg-[#141414]"
-        >
-          Create sprint
-        </button>
-        </div>
+        {/* Sprint Sections — compact table-style */}
+        {sprints.map((sprint) => {
+          const sprintIssues = sprintIssueMap[sprint.id] ?? [];
+          const isCollapsed = collapsedSections.has(sprint.id);
+          const badgeClass = SPRINT_STATUS_BADGE[sprint.status] ?? SPRINT_STATUS_BADGE.Planned;
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] p-4">
-          <p className="text-sm font-medium mb-2">Sprint list</p>
-          <div className="space-y-2">
-            {sprints.map((s) => (
-              <div key={s.id} className="rounded-md border border-[#2f2f2f] bg-[#0F0F0F] p-3">
-                <div className="flex items-center justify-between">
-                  <p>{s.name}</p>
-                  <span className="text-xs text-(--muted-2)">{s.status}</span>
-                </div>
-                <p className="text-xs text-(--muted-2) mt-1">
-                  {s.startDate ? new Date(s.startDate).toLocaleDateString() : "No start"} -{" "}
-                  {s.endDate ? new Date(s.endDate).toLocaleDateString() : "No end"}
-                </p>
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => setSprintStatus(s.id, "Active")}
-                    className="text-xs h-7 px-2 rounded border border-(--border)"
-                  >
-                    Start
-                  </button>
-                  <button
-                    onClick={() => setSprintStatus(s.id, "Closed")}
-                    className="text-xs h-7 px-2 rounded border border-(--border)"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            ))}
-            {sprints.length === 0 && (
-              <p className="text-sm text-(--muted-2)">No sprints created yet.</p>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] p-4">
-          <p className="text-sm font-medium mb-3">
-            Drag and drop: Backlog ↔ Sprint lanes
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            <SprintLane
-              title="Backlog"
-              issueCount={backlogIssues.length}
-              onDropIssue={(payload) => assignIssue(payload.issueId, null)}
-            >
-              {backlogIssues.map((issue) => (
-                <SprintIssueCard key={issue.id} issue={issue} />
-              ))}
-            </SprintLane>
-
-            {sprints.map((sprint) => (
-              <SprintLane
-                key={sprint.id}
-                title={`${sprint.name} (${sprint.status})`}
-                issueCount={sprintIssueMap[sprint.id]?.length ?? 0}
-                onDropIssue={(payload) => assignIssue(payload.issueId, sprint.id)}
+          return (
+            <div key={sprint.id} className="rounded-xl border border-(--border) bg-(--surface-1) overflow-hidden">
+              {/* Sprint header */}
+              <div
+                className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-(--surface-2) transition-colors"
+                onClick={() => toggleSection(sprint.id)}
               >
-                {(sprintIssueMap[sprint.id] ?? []).map((issue) => (
-                  <SprintIssueCard key={issue.id} issue={issue} />
-                ))}
-              </SprintLane>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] p-4">
-          <p className="text-sm font-medium mb-2">Backlog to sprint assignment</p>
-          <div className="space-y-2 max-h-[420px] overflow-y-auto">
-            {backlogIssues.map((issue) => (
-              <div key={issue.id} className="rounded-md border border-[#2f2f2f] bg-[#0F0F0F] p-2">
-                <p className="text-sm">{issue.title}</p>
-                <select
-                  className="mt-2 h-8 text-xs rounded border border-[#2f2f2f] bg-[#0A0A0A] px-2 w-full"
-                  onChange={(e) => assignIssue(issue.id, e.target.value || null)}
-                  defaultValue=""
-                >
-                  <option value="">Move to sprint...</option>
-                  {sprints.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-            {backlogIssues.length === 0 && (
-              <p className="text-sm text-(--muted-2)">No backlog issues right now.</p>
-            )}
-          </div>
-        </div>
-        </div>
-
-        <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] p-4">
-        <p className="text-sm font-medium mb-3">Timeline view (date-range bars)</p>
-        {timelineData.rows.length === 0 ? (
-          <p className="text-sm text-(--muted-2)">
-            Add start/end dates to sprints to see timeline bars.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {timelineData.rows.map((row) => {
-              const left = (row.offsetDays / timelineData.totalDays) * 100;
-              const width = (row.widthDays / timelineData.totalDays) * 100;
-              return (
-                <div key={row.id} className="grid grid-cols-[200px_1fr] gap-3 items-center">
-                  <p className="text-sm truncate">{row.name}</p>
-                  <div className="h-7 rounded bg-[#0F0F0F] relative overflow-hidden border border-[#2f2f2f]">
-                    <div
-                      className="absolute top-1 bottom-1 rounded bg-[#2a2a2a]"
-                      style={{ left: `${left}%`, width: `${Math.max(width, 2)}%` }}
-                    />
-                  </div>
+                <div className="flex items-center gap-3">
+                  <SVGIcon
+                    className={`flex w-4 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : "rotate-0"}`}
+                    svgString={RAW_ICONS.ArrowDown}
+                  />
+                  <p className="text-sm font-medium">{sprint.name}</p>
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                    {sprint.status}
+                  </span>
+                  <span className="text-xs text-(--muted-2)">
+                    {sprintIssues.length} issue{sprintIssues.length !== 1 ? "s" : ""}
+                  </span>
+                  {sprint.startDate && sprint.endDate && (
+                    <span className="text-xs text-(--muted-2) hidden md:inline">
+                      {fmtDate(sprint.startDate)} — {fmtDate(sprint.endDate)}
+                    </span>
+                  )}
                 </div>
-              );
-            })}
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  {sprint.status !== "Active" && (
+                    <button
+                      onClick={() => setSprintStatus(sprint.id, "Active")}
+                      className="text-xs h-7 px-2 rounded border border-(--border) hover:bg-(--surface-3) transition-colors"
+                    >
+                      Start
+                    </button>
+                  )}
+                  {sprint.status !== "Closed" && (
+                    <button
+                      onClick={() => setSprintStatus(sprint.id, "Closed")}
+                      className="text-xs h-7 px-2 rounded border border-(--border) hover:bg-(--surface-3) transition-colors"
+                    >
+                      Close
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Sprint issues table */}
+              {!isCollapsed && (
+                <div className="border-t border-(--border)">
+                  {sprintIssues.length === 0 ? (
+                    <p className="text-sm text-(--muted-2) px-4 py-3">No issues in this sprint.</p>
+                  ) : (
+                    <div className="divide-y divide-(--border)">
+                      {sprintIssues.map((issue) => (
+                        <div
+                          key={issue.id}
+                          className="flex items-center gap-3 px-4 py-2 hover:bg-(--surface-2) transition-colors group"
+                        >
+                          <span className={`text-xs w-20 shrink-0 ${STATUS_COLORS[issue.status ?? "Backlog"] ?? "text-(--muted-2)"}`}>
+                            {issue.status ?? "Backlog"}
+                          </span>
+                          <Link
+                            href={`/workflow/project/${projectId}/issues/${issue.id}`}
+                            className="text-sm truncate flex-1 hover:text-[#6f86ff] transition-colors"
+                          >
+                            {issue.title}
+                          </Link>
+                          <span className="text-xs text-(--muted-2) w-20 shrink-0 text-right">
+                            {issue.priority ?? "—"}
+                          </span>
+                          <select
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs rounded border border-(--border) bg-(--surface-2) px-1 w-28 shrink-0"
+                            onChange={(e) => {
+                              if (e.target.value === "__backlog__") {
+                                assignIssue(issue.id, null);
+                              } else if (e.target.value) {
+                                assignIssue(issue.id, e.target.value);
+                              }
+                              e.target.value = "";
+                            }}
+                            defaultValue=""
+                          >
+                            <option value="">Move to…</option>
+                            <option value="__backlog__">Backlog</option>
+                            {sprints
+                              .filter((s) => s.id !== sprint.id)
+                              .map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.name}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Backlog Section */}
+        <div className="rounded-xl border border-(--border) bg-(--surface-1) overflow-hidden">
+          <div
+            className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-(--surface-2) transition-colors"
+            onClick={() => toggleSection("__backlog__")}
+          >
+            <div className="flex items-center gap-3">
+              <SVGIcon
+                className={`flex w-4 transition-transform duration-200 ${collapsedSections.has("__backlog__") ? "-rotate-90" : "rotate-0"}`}
+                svgString={RAW_ICONS.ArrowDown}
+              />
+              <p className="text-sm font-medium">Backlog</p>
+              <span className="text-[11px] px-2 py-0.5 rounded-full border border-(--border) text-(--muted-2)">
+                Unassigned
+              </span>
+              <span className="text-xs text-(--muted-2)">
+                {backlogIssues.length} issue{backlogIssues.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
+
+          {!collapsedSections.has("__backlog__") && (
+            <div className="border-t border-(--border)">
+              {backlogIssues.length === 0 ? (
+                <p className="text-sm text-(--muted-2) px-4 py-3">No backlog issues.</p>
+              ) : (
+                <div className="divide-y divide-(--border)">
+                  {backlogIssues.map((issue) => (
+                    <div
+                      key={issue.id}
+                      className="flex items-center gap-3 px-4 py-2 hover:bg-(--surface-2) transition-colors group"
+                    >
+                      <span className={`text-xs w-20 shrink-0 ${STATUS_COLORS[issue.status ?? "Backlog"] ?? "text-(--muted-2)"}`}>
+                        {issue.status ?? "Backlog"}
+                      </span>
+                      <Link
+                        href={`/workflow/project/${projectId}/issues/${issue.id}`}
+                        className="text-sm truncate flex-1 hover:text-[#6f86ff] transition-colors"
+                      >
+                        {issue.title}
+                      </Link>
+                      <span className="text-xs text-(--muted-2) w-20 shrink-0 text-right">
+                        {issue.priority ?? "—"}
+                      </span>
+                      <select
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs rounded border border-(--border) bg-(--surface-2) px-1 w-28 shrink-0"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            assignIssue(issue.id, e.target.value);
+                          }
+                          e.target.value = "";
+                        }}
+                        defaultValue=""
+                      >
+                        <option value="">Move to…</option>
+                        {sprints.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Timeline view */}
+        {timelineData.rows.length > 0 && (
+          <div className="rounded-xl border border-(--border) bg-(--surface-1) p-4">
+            <p className="text-sm font-medium mb-3">Timeline</p>
+            <div className="space-y-2">
+              {timelineData.rows.map((row) => {
+                const left = (row.offsetDays / timelineData.totalDays) * 100;
+                const width = (row.widthDays / timelineData.totalDays) * 100;
+                const badgeClass = SPRINT_STATUS_BADGE[row.status] ?? SPRINT_STATUS_BADGE.Planned;
+                return (
+                  <div key={row.id} className="grid grid-cols-[160px_1fr] gap-3 items-center">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm truncate">{row.name}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${badgeClass}`}>
+                        {row.status}
+                      </span>
+                    </div>
+                    <div className="h-7 rounded bg-(--surface-2) relative overflow-hidden border border-(--border)">
+                      <div
+                        className="absolute top-1 bottom-1 rounded bg-[#6f86ff]/30 border border-[#6f86ff]/40"
+                        style={{ left: `${left}%`, width: `${Math.max(width, 2)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
-        </div>
 
-        {isLoading && <p className="text-sm text-(--muted-2)">Refreshing...</p>}
+        {isLoading && <p className="text-sm text-(--muted-2)">Refreshing…</p>}
       </div>
     </WorkflowLayout>
-  );
-}
-
-function SprintLane({
-  title,
-  issueCount,
-  children,
-  onDropIssue,
-}: {
-  title: string;
-  issueCount: number;
-  children: React.ReactNode;
-  onDropIssue: (payload: SprintDragPayload) => void;
-}) {
-  return (
-    <div
-      className="rounded-lg border border-[#2f2f2f] bg-[#0F0F0F] min-h-40"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault();
-        const raw = e.dataTransfer.getData("application/json");
-        if (!raw) return;
-        try {
-          const payload = JSON.parse(raw) as SprintDragPayload;
-          if (!payload?.issueId) return;
-          onDropIssue(payload);
-        } catch {
-          return;
-        }
-      }}
-    >
-      <div className="px-3 py-2 border-b border-(--border) flex items-center justify-between">
-        <p className="text-sm">{title}</p>
-        <p className="text-xs text-(--muted-2)">{issueCount}</p>
-      </div>
-      <div className="p-2 space-y-2">
-        {children}
-        {issueCount === 0 && (
-          <p className="text-xs text-(--muted-2)">Drop issue here.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SprintIssueCard({ issue }: { issue: IssueBody }) {
-  return (
-    <div
-      draggable
-      onDragStart={(e) => {
-        const payload: SprintDragPayload = { issueId: issue.id };
-        e.dataTransfer.setData("application/json", JSON.stringify(payload));
-        e.dataTransfer.effectAllowed = "move";
-      }}
-      className="rounded-md border border-[#2f2f2f] bg-[#0A0A0A] px-2 py-2 cursor-grab active:cursor-grabbing"
-    >
-      <p className="text-sm">{issue.title}</p>
-      <p className="text-xs text-(--muted-2) mt-1">{issue.status || "Backlog"}</p>
-    </div>
   );
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { runAI } from "@/lib/ai/providers";
 import { cleanString, cleanStringArray, extractJsonObject } from "@/lib/ai/json";
+import { checkAIRateLimit } from "@/lib/ai/rate-limit-guard";
 
 type DraftPayload = {
   title: string;
@@ -45,6 +46,9 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return Response.json({ message: "Log in first!" }, { status: 401 });
   }
+
+  const rateLimited = await checkAIRateLimit(session.user.id);
+  if (rateLimited) return rateLimited;
 
   const { text } = await request.json();
   if (!text || typeof text !== "string") {

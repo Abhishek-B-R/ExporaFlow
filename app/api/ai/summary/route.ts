@@ -5,12 +5,16 @@ import { prisma } from "@/db";
 import { assertProjectRole } from "@/lib/authz";
 import { Role } from "@prisma/client";
 import { runAI } from "@/lib/ai/providers";
+import { checkAIRateLimit } from "@/lib/ai/rate-limit-guard";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return Response.json({ message: "Log in first!" }, { status: 401 });
   }
+
+  const rateLimited = await checkAIRateLimit(session.user.id);
+  if (rateLimited) return rateLimited;
 
   const { projectId, period = "daily" } = await request.json();
   if (!projectId) return Response.json({ message: "projectId is required." }, { status: 400 });

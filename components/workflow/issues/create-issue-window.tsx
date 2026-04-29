@@ -3,10 +3,16 @@ import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import axios from "axios";
 import { useRef, useState } from "react";
-import { toast } from "sonner";
 import { renderPrioritySvg, RenderStatusSvg } from "./issue-label";
 import { IssueStatus, PriorityOptionsArray } from "@/utils/issues-view-options";
 import { customToast } from "@/lib/custom-toast";
+
+type DuplicateCandidate = {
+  id: string;
+  title: string;
+  status?: string | null;
+  score: number;
+};
 
 export const CreateIssueWindow = ({
   setClose,
@@ -21,7 +27,6 @@ export const CreateIssueWindow = ({
 }) => {
   const [issueTitle, setIssueTitle] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
-
   const [selectedPriorityOption, setSelectedPriorityOption] =
     useState("No Priority");
   const [selectedStatusOption, setSelectedStatusOption] = useState("Working");
@@ -29,6 +34,19 @@ export const CreateIssueWindow = ({
     "status" | "priority" | boolean
   >(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // AI states
+  const [isDrafting, setIsDrafting] = useState(false);
+  const [isTriaging, setIsTriaging] = useState(false);
+  const [triageSuggestion, setTriageSuggestion] = useState<{
+    priority: string;
+    severity: string;
+    routingTeamHint: string;
+    effortHint: string;
+    risk: string;
+    rationale: string;
+  } | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<DuplicateCandidate | null>(null);
 
   const createIssue = async () => {
     try {
@@ -49,6 +67,18 @@ export const CreateIssueWindow = ({
         setClose(false);
       }
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        const dup = error.response.data?.duplicate;
+        if (dup) {
+          setDuplicateWarning({
+            id: dup.id,
+            title: dup.title,
+            status: dup.status,
+            score: dup.score ?? 1,
+          });
+          return;
+        }
+      }
       const description = axios.isAxiosError(error)
         ? error.response?.data?.message ?? "Failed to create issue, try again."
         : "Failed to create issue, try again.";
@@ -57,6 +87,63 @@ export const CreateIssueWindow = ({
         description,
       });
     }
+  };
+
+  const aiDraft = async () => {
+    const rawText = `${issueTitle}\n${issueDescription}`.trim();
+    if (!rawText) {
+      customToast.error({ title: "", description: "Type something first so AI can draft an issue." });
+      return;
+    }
+    try {
+      setIsDrafting(true);
+      const res = await axios.post("/api/ai/draft", { text: rawText });
+      const draft = res.data?.draft;
+      if (draft) {
+        setIssueTitle(draft.title ?? issueTitle);
+        setIssueDescription(draft.description ?? issueDescription);
+        if (draft.priority && draft.priority !== "No Priority") {
+          setSelectedPriorityOption(draft.priority);
+        }
+        if (draft.status) {
+          setSelectedStatusOption(draft.status);
+        }
+        customToast.success({ title: "AI Draft", description: "Issue drafted by AI. Review and edit before creating." });
+      }
+    } catch {
+      customToast.error({ title: "", description: "AI drafting failed." });
+    } finally {
+      setIsDrafting(false);
+    }
+  };
+
+  const aiTriage = async () => {
+    if (!issueTitle.trim()) {
+      customToast.error({ title: "", description: "Add a title first for AI triage." });
+      return;
+    }
+    try {
+      setIsTriaging(true);
+      const res = await axios.post("/api/ai/triage", {
+        title: issueTitle,
+        description: issueDescription,
+      });
+      const suggestions = res.data?.suggestions;
+      if (suggestions) {
+        setTriageSuggestion(suggestions);
+      }
+    } catch {
+      customToast.error({ title: "", description: "AI triage failed." });
+    } finally {
+      setIsTriaging(false);
+    }
+  };
+
+  const applyTriageSuggestion = () => {
+    if (!triageSuggestion) return;
+    setSelectedPriorityOption(triageSuggestion.priority);
+    setTriageSuggestion(null);
+    customToast.success({ title: "", description: "Applied AI triage suggestion." });
   };
 
   const handlePriorityOptionClick = async (option: string) => {
@@ -70,10 +157,9 @@ export const CreateIssueWindow = ({
   };
 
   return (
-    <div className="absolute bg-[rgba(0,0,0,0.1)] backdrop-blur-lg w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44">
+    <div className="absolute bg-[rgba(0,0,0,0.1)] backdrop-blur-lg w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44 z-40">
       {/* Issue Box */}
-
-      <div className="border border-[#393B42] bg-[#0F1111] rounded-xl h-96 w-[95%] xl:w-[70%] p-4 flex flex-col">
+      <div className="border border-[#393B42] bg-[#0F1111] rounded-xl w-[95%] xl:w-[70%] p-4 flex flex-col max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <div className="w-20 border border-[#2D3035] h-8 rounded-lg flex items-center justify-center font-medium">
@@ -92,15 +178,16 @@ export const CreateIssueWindow = ({
           </div>
         </div>
         <input
-          className="mt-4 text-2xl flex-shrink-0 outline-none"
+          className="mt-4 text-2xl flex-shrink-0 outline-none bg-transparent"
           onChange={(e) => {
             setIssueTitle(e.target.value);
+            setDuplicateWarning(null);
           }}
           placeholder="Issue title"
           value={issueTitle}
         />
         <textarea
-          className="w-full mt-4 text-lg outline-none flex-1 resize-none"
+          className="w-full mt-4 text-lg outline-none flex-1 resize-none min-h-[120px] bg-transparent"
           onChange={(e) => {
             setIssueDescription(e.target.value);
           }}
@@ -108,8 +195,75 @@ export const CreateIssueWindow = ({
           name="description"
           value={issueDescription}
         ></textarea>
-        <div className=" h-fit mb-4 items-center flex text-[#caccd4]">
-          <div className="flex items-center gap-x-2">
+
+        {/* Duplicate warning */}
+        {duplicateWarning && (
+          <div className="mt-3 rounded-lg border border-[#e05f5f]/40 bg-[#e05f5f]/10 p-3 text-sm">
+            <p className="font-medium text-[#e05f5f]">Possible duplicate detected</p>
+            <p className="text-[#a4a6aa] mt-1">
+              &quot;{duplicateWarning.title}&quot; ({duplicateWarning.status ?? "Open"}) — {Math.round(duplicateWarning.score * 100)}% match
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setDuplicateWarning(null)}
+                className="text-xs px-2 py-1 rounded border border-[#e05f5f]/30 hover:bg-[#e05f5f]/20"
+              >
+                Create anyway
+              </button>
+              <button
+                onClick={() => {
+                  setDuplicateWarning(null);
+                  setClose(false);
+                }}
+                className="text-xs px-2 py-1 rounded border border-[#6A6C75] hover:bg-[#2D3035]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* AI Triage Suggestion Panel */}
+        {triageSuggestion && (
+          <div className="mt-3 rounded-lg border border-[#6f86ff]/30 bg-[#6f86ff]/5 p-3 text-sm">
+            <div className="flex items-center justify-between">
+              <p className="font-medium text-[#6f86ff]">AI Triage Suggestion</p>
+              <button
+                onClick={() => setTriageSuggestion(null)}
+                className="text-xs text-[#a4a6aa] hover:text-white"
+              >
+                Dismiss
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 text-xs text-[#caccd4]">
+              <div>
+                <span className="text-[#a4a6aa]">Priority:</span> {triageSuggestion.priority}
+              </div>
+              <div>
+                <span className="text-[#a4a6aa]">Severity:</span> {triageSuggestion.severity}
+              </div>
+              <div>
+                <span className="text-[#a4a6aa]">Effort:</span> {triageSuggestion.effortHint}
+              </div>
+              <div>
+                <span className="text-[#a4a6aa]">Team:</span> {triageSuggestion.routingTeamHint}
+              </div>
+              <div className="col-span-2">
+                <span className="text-[#a4a6aa]">Risk:</span> {triageSuggestion.risk}
+              </div>
+            </div>
+            <p className="text-xs text-[#a4a6aa] mt-2">{triageSuggestion.rationale}</p>
+            <button
+              onClick={applyTriageSuggestion}
+              className="mt-2 text-xs px-2 py-1 rounded border border-[#6f86ff]/40 bg-[#6f86ff]/10 hover:bg-[#6f86ff]/20 text-[#6f86ff]"
+            >
+              Apply priority suggestion
+            </button>
+          </div>
+        )}
+
+        <div className="h-fit my-4 items-center flex text-[#caccd4]">
+          <div className="flex items-center gap-x-2 flex-wrap">
             <div className=" relative" ref={dropdownRef}>
               <div
                 className="flex border border-[#6A6C75] bg-[#1f2025] items-center text-sm justify-center h-7 w-8 rounded-md hover:bg-[#212227] transition-all duration-300 cursor-pointer"
@@ -166,6 +320,22 @@ export const CreateIssueWindow = ({
 
             <button className="border border-[#696c75] bg-[#1f2025] rounded-md text-sm px-2 h-7">
               Assignee
+            </button>
+
+            {/* AI Buttons */}
+            <button
+              onClick={aiDraft}
+              disabled={isDrafting}
+              className="border border-[#6f86ff]/30 bg-[#6f86ff]/10 text-[#6f86ff] rounded-md text-sm px-2 h-7 hover:bg-[#6f86ff]/20 transition-colors disabled:opacity-50"
+            >
+              {isDrafting ? "Drafting…" : "✨ AI Draft"}
+            </button>
+            <button
+              onClick={aiTriage}
+              disabled={isTriaging}
+              className="border border-[#7c5cff]/30 bg-[#7c5cff]/10 text-[#7c5cff] rounded-md text-sm px-2 h-7 hover:bg-[#7c5cff]/20 transition-colors disabled:opacity-50"
+            >
+              {isTriaging ? "Triaging…" : "⚡ AI Triage"}
             </button>
           </div>
         </div>
