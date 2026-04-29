@@ -21,18 +21,32 @@ export async function getUserProjectRole(params: {
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { createdBy: true },
+    select: { createdBy: true, workspaceId: true },
   });
 
   if (!project) return null;
+
+  // 1. Project creator → ADMIN
   if (project.createdBy === userId) return Role.ADMIN;
 
-  const membership = await prisma.projectMember.findUnique({
+  // 2. Direct project member → their assigned role
+  const projectMembership = await prisma.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
     select: { role: true },
   });
+  if (projectMembership) return projectMembership.role;
 
-  return membership?.role ?? null;
+  // 3. Workspace member → use workspace role (workspace members can access
+  //    all projects in the workspace)
+  if (project.workspaceId) {
+    const workspaceMembership = await prisma.workspaceMember.findFirst({
+      where: { workspaceId: project.workspaceId, userId },
+      select: { role: true },
+    });
+    if (workspaceMembership) return workspaceMembership.role;
+  }
+
+  return null;
 }
 
 export async function assertProjectRole(params: {
@@ -50,4 +64,3 @@ export async function assertProjectRole(params: {
   }
   return { ok: true as const, role };
 }
-

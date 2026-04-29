@@ -82,9 +82,10 @@ export default function InvitePage() {
       } else {
         // Email failed to send — show the manual link
         setFallbackLink(data.inviteLink ?? null);
+        const reason = data.emailError ? ` Reason: ${data.emailError}` : "";
         customToast.warning({
           title: "Invitation created",
-          description: "Email could not be sent. Copy the invite link below.",
+          description: `Email could not be sent.${reason} Copy the invite link below.`,
         });
       }
       setEmail("");

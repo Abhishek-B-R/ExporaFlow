@@ -7,24 +7,33 @@ export async function GET() {
   const session = await getServerSession(authOptions);
 
   if (!session?.user.id) {
-    return Response.json({ message: "Log in first!" });
+    return Response.json({ message: "Log in first!" }, { status: 401 });
   }
 
   const userID = session.user.id;
 
-  if (userID) {
-    const response = await prisma.project.findMany({
-      where: {
-        OR: [
-          { createdBy: userID },
-          { projectMembers: { some: { userId: userID } } },
-        ],
-      },
-    });
+  // Find ALL workspaces the user belongs to
+  const workspaceMemberships = await prisma.workspaceMember.findMany({
+    where: { userId: userID },
+    select: { workspaceId: true },
+  });
+  const workspaceIds = workspaceMemberships.map((m) => m.workspaceId);
 
-    if (response) {
-      return Response.json(response);
-    }
-  }
-  return Response.json({ message: "Failed" });
+  const projects = await prisma.project.findMany({
+    where: {
+      OR: [
+        // Projects the user created
+        { createdBy: userID },
+        // Projects where user is a direct member
+        { projectMembers: { some: { userId: userID } } },
+        // Projects belonging to any workspace the user is a member of
+        ...(workspaceIds.length > 0
+          ? [{ workspaceId: { in: workspaceIds } }]
+          : []),
+      ],
+    },
+    orderBy: { title: "asc" },
+  });
+
+  return Response.json(projects);
 }

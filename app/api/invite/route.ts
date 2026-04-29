@@ -102,9 +102,10 @@ export async function POST(request: NextRequest) {
   const senderName = session.user.name ?? session.user.email ?? "A teammate";
 
   let emailSent = false;
+  let emailError = "";
   if (resend) {
     try {
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? "ExporaFlow <onboarding@resend.dev>",
         to: [email],
         subject: `${senderName} invited you to join "${workspaceName}" on ExporaFlow`,
@@ -135,16 +136,25 @@ export async function POST(request: NextRequest) {
           </div>
         `,
       });
-      emailSent = true;
+      // Resend returns { data, error }
+      if (result.error) {
+        console.error("Resend API error:", result.error);
+        emailError = result.error.message ?? "Resend rejected the request.";
+      } else {
+        emailSent = true;
+      }
     } catch (error) {
       console.error("Failed to send invite email:", error);
+      emailError = error instanceof Error ? error.message : "Unknown email error.";
     }
+  } else {
+    emailError = "RESEND_API_KEY is not configured.";
   }
 
   return Response.json({
     message: emailSent
       ? `Invitation sent to ${email}`
-      : `Invitation created for ${email} but email could not be sent. Share this link manually: ${inviteLink}`,
+      : `Invitation created for ${email} but email could not be sent. Share this link manually.`,
     invitation: {
       id: invitation.id,
       email: invitation.email,
@@ -153,6 +163,7 @@ export async function POST(request: NextRequest) {
     },
     inviteLink: emailSent ? undefined : inviteLink,
     emailSent,
+    emailError: emailSent ? undefined : emailError,
   });
 }
 

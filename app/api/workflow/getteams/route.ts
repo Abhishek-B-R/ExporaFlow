@@ -8,15 +8,17 @@ export async function GET() {
     return Response.json({ message: "Log in first!" }, { status: 401 });
   }
 
-  const userWorkspaceMembership = await prisma.workspaceMember.findFirst({
+  // Find ALL workspaces the user belongs to
+  const workspaceMemberships = await prisma.workspaceMember.findMany({
     where: { userId: session.user.id },
     select: { workspaceId: true },
   });
+  const workspaceIds = workspaceMemberships.map((m) => m.workspaceId);
 
-  if (!userWorkspaceMembership) return Response.json([]);
+  if (workspaceIds.length === 0) return Response.json([]);
 
   const teams = await prisma.team.findMany({
-    where: { workspaceId: userWorkspaceMembership.workspaceId },
+    where: { workspaceId: { in: workspaceIds } },
     include: {
       members: {
         include: {
@@ -31,4 +33,3 @@ export async function GET() {
 
   return Response.json(teams);
 }
-

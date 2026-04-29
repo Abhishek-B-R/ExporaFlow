@@ -58,15 +58,17 @@ export async function GET(request: NextRequest) {
     return Response.json(Array.from(byUserId.values()));
   }
 
-  const userWorkspaceMembership = await prisma.workspaceMember.findFirst({
+  // Find ALL workspaces the user belongs to
+  const workspaceMemberships = await prisma.workspaceMember.findMany({
     where: { userId: session.user.id },
     select: { workspaceId: true },
   });
+  const workspaceIds = workspaceMemberships.map((m) => m.workspaceId);
 
-  if (!userWorkspaceMembership) return Response.json([]);
+  if (workspaceIds.length === 0) return Response.json([]);
 
   const members = await prisma.workspaceMember.findMany({
-    where: { workspaceId: userWorkspaceMembership.workspaceId },
+    where: { workspaceId: { in: workspaceIds } },
     include: {
       user: {
         select: { id: true, name: true, email: true, image: true },
@@ -75,6 +77,14 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  return Response.json(members);
+  // Deduplicate by userId (a user might appear in multiple workspaces)
+  const seen = new Set<string>();
+  const unique = members.filter((m) => {
+    if (seen.has(m.user.id)) return false;
+    seen.add(m.user.id);
+    return true;
+  });
+
+  return Response.json(unique);
 }
 
