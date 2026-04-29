@@ -34,7 +34,7 @@ export default function ImportIssuesPage() {
 
   // GitHub state
   const [githubRepo, setGithubRepo] = useState("");
-  const [githubToken, setGithubToken] = useState("");
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -52,6 +52,15 @@ export default function ImportIssuesPage() {
 
   useEffect(() => {
     fetchProjects();
+    // Check if the user has a GitHub account linked
+    axios.get("/api/auth/session").then((res) => {
+      // Session won't expose provider directly, so check via a lightweight endpoint
+      setGithubConnected(null); // we'll check on the server side
+    }).catch(() => {});
+    // Check GitHub connection
+    axios.get("/api/import/github/status").then((res) => {
+      setGithubConnected(res.data?.connected ?? false);
+    }).catch(() => setGithubConnected(false));
   }, [fetchProjects]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,7 +146,6 @@ export default function ImportIssuesPage() {
       const res = await axios.post("/api/import/github", {
         projectId,
         repo: githubRepo.trim(),
-        token: githubToken.trim() || undefined,
       });
       const count = res.data.imported ?? 0;
       setImportResult({ count, source: "GitHub" });
@@ -318,32 +326,39 @@ export default function ImportIssuesPage() {
             <div>
               <p className="text-sm font-medium">Import from GitHub Issues</p>
               <p className="text-xs text-(--muted-2) mt-1">
-                Import open issues directly from a GitHub repository. Supports public repos out of the box, and private repos with a personal access token.
+                Import open issues directly from a GitHub repository. Public repos work automatically.
+                For private repos, sign in with your GitHub account.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-(--muted-2) block mb-1">Repository (owner/repo)</label>
-                <input
-                  value={githubRepo}
-                  onChange={(e) => setGithubRepo(e.target.value)}
-                  placeholder="e.g. facebook/react"
-                  className="h-10 w-full max-w-md rounded-lg border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus:border-[#6f86ff]/40 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-(--muted-2) block mb-1">
-                  GitHub Personal Access Token <span className="text-(--muted-2)">(optional, for private repos)</span>
-                </label>
-                <input
-                  type="password"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  placeholder="ghp_xxxxxxxxxxxxxxx"
-                  className="h-10 w-full max-w-md rounded-lg border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus:border-[#6f86ff]/40 transition-colors"
-                />
-              </div>
+            {/* GitHub connection status */}
+            <div className={`rounded-lg border p-3 flex items-center gap-3 ${
+              githubConnected
+                ? "border-[#30b27a]/30 bg-[#30b27a]/5"
+                : "border-[#e5a63b]/30 bg-[#e5a63b]/5"
+            }`}>
+              <div className={`w-2 h-2 rounded-full shrink-0 ${
+                githubConnected ? "bg-[#30b27a]" : "bg-[#e5a63b]"
+              }`} />
+              <p className="text-xs flex-1">
+                {githubConnected === null
+                  ? <span className="text-(--muted-2)">Checking GitHub connection…</span>
+                  : githubConnected
+                    ? <span className="text-[#30b27a]">GitHub account connected — you can import from private repos</span>
+                    : <span className="text-[#e5a63b]">No GitHub account linked — only public repos are accessible. Sign in with GitHub to access private repos.</span>
+                }
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs text-(--muted-2) block mb-1">Repository (owner/repo)</label>
+              <input
+                value={githubRepo}
+                onChange={(e) => setGithubRepo(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && importGitHub()}
+                placeholder="e.g. facebook/react"
+                className="h-10 w-full max-w-md rounded-lg border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus:border-[#6f86ff]/40 transition-colors"
+              />
             </div>
 
             <button

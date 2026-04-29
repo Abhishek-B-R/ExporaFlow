@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "Log in first!" }, { status: 401 });
   }
 
-  const { projectId, repo, token } = await request.json();
+  const { projectId, repo } = await request.json();
 
   if (!projectId || !repo || typeof repo !== "string") {
     return Response.json(
@@ -68,13 +68,19 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: access.message }, { status: access.status });
   }
 
-  // Fetch issues from GitHub API (paginated, up to 100)
+  // Auto-fetch GitHub access token from the user's linked GitHub account
+  const githubAccount = await prisma.account.findFirst({
+    where: { userId: session.user.id, provider: "github" },
+    select: { access_token: true },
+  });
+
+  // Build request headers
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "ExporaFlow-Import",
   };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  if (githubAccount?.access_token) {
+    headers.Authorization = `Bearer ${githubAccount.access_token}`;
   }
 
   let allIssues: GitHubIssue[] = [];
@@ -90,13 +96,13 @@ export async function POST(request: NextRequest) {
       if (!response.ok) {
         if (response.status === 404) {
           return Response.json(
-            { message: `Repository "${repo}" not found. Check the name or add a GitHub token for private repos.` },
+            { message: `Repository "${repo}" not found. If it's private, make sure you signed in with GitHub.` },
             { status: 404 },
           );
         }
         if (response.status === 403) {
           return Response.json(
-            { message: "GitHub API rate limit exceeded. Try adding a personal access token." },
+            { message: "GitHub API rate limit exceeded. Make sure you're signed in with GitHub." },
             { status: 429 },
           );
         }
