@@ -2,6 +2,43 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { runAI } from "@/lib/ai/providers";
+import { cleanString, cleanStringArray, extractJsonObject } from "@/lib/ai/json";
+
+type DraftPayload = {
+  title: string;
+  description: string;
+  labels: string[];
+  severityHint: string;
+  acceptanceCriteria: string[];
+  priority: string;
+  status: string;
+};
+
+function fallbackDraft(text: string): DraftPayload {
+  return {
+    title: text.split("\n")[0]?.slice(0, 90) || "Untitled issue",
+    description: text,
+    labels: [],
+    severityHint: "Medium",
+    acceptanceCriteria: ["Issue is reproducible or clearly described", "Expected behavior is verified"],
+    priority: "Medium",
+    status: "Backlog",
+  };
+}
+
+function normalizeDraft(raw: unknown, text: string): DraftPayload {
+  const source = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const fallback = fallbackDraft(text);
+  return {
+    title: cleanString(source.title, fallback.title).slice(0, 120),
+    description: cleanString(source.description, fallback.description),
+    labels: cleanStringArray(source.labels),
+    severityHint: cleanString(source.severityHint, fallback.severityHint),
+    acceptanceCriteria: cleanStringArray(source.acceptanceCriteria),
+    priority: cleanString(source.priority, fallback.priority),
+    status: cleanString(source.status, fallback.status),
+  };
+}
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -15,9 +52,20 @@ export async function POST(request: NextRequest) {
   }
 
   const prompt = `
-Turn this rough issue idea into JSON with:
-title, description, labels (string[]), severityHint, acceptanceCriteria (string[]).
-Return only valid JSON.
+Turn this rough issue idea into production-quality issue JSON.
+Return one JSON object with exactly these keys:
+title, description, labels, severityHint, acceptanceCriteria, priority, status.
+
+Rules:
+- title: crisp, action-oriented, max 90 chars.
+- description: include context, expected behavior, actual behavior, and useful implementation notes when inferable.
+- labels: 1-5 lowercase product/engineering labels.
+- severityHint: Low, Medium, High, or Critical.
+- priority: No Priority, Low, Medium, High, or Urgent.
+- status: Backlog unless the text explicitly says it is already planned or in progress.
+- acceptanceCriteria: 2-5 concrete checkable bullets.
+- Return only valid JSON.
+
 Input:
 ${text}
 `;
@@ -28,31 +76,12 @@ ${text}
       { role: "user", content: prompt },
     ]);
 
-    let parsed: unknown = null;
-    try {
-      parsed = JSON.parse(completion);
-    } catch {
-      parsed = {
-        title: text.slice(0, 80),
-        description: text,
-        labels: [],
-        severityHint: "Medium",
-        acceptanceCriteria: [],
-      };
-    }
-
-    return Response.json({ draft: parsed });
+    const parsed = extractJsonObject(completion, fallbackDraft(text));
+    return Response.json({ draft: normalizeDraft(parsed, text) });
   } catch (error) {
     console.error("AI draft failed:", error);
-    const fallbackDraft = {
-      title: text.slice(0, 80),
-      description: text,
-      labels: [],
-      severityHint: "Medium",
-      acceptanceCriteria: [],
-    };
     return Response.json(
-      { message: "AI drafting failed.", draft: fallbackDraft },
+      { message: "AI drafting failed.", draft: fallbackDraft(text) },
       { status: 200 },
     );
   }

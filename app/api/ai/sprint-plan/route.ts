@@ -5,6 +5,7 @@ import { prisma } from "@/db";
 import { assertProjectRole } from "@/lib/authz";
 import { Role } from "@prisma/client";
 import { runAI } from "@/lib/ai/providers";
+import { extractJsonObject } from "@/lib/ai/json";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -33,16 +34,26 @@ export async function POST(request: NextRequest) {
   });
 
   try {
+    const fallbackPlanning = {
+      effortEstimateByIssue: Object.fromEntries(issues.map((issue) => [issue.id, 3])),
+      recommendedScope: issues.slice(0, 8).map((issue) => issue.id),
+      riskFlags: ["Fallback estimation used because AI provider is unavailable."],
+      summary: "Review issue scope, dependencies, and risk before committing.",
+    };
     const completion = await runAI([
-      { role: "system", content: "Provide sprint planning suggestions in JSON only." },
+      { role: "system", content: "You are a senior engineering manager. Return valid sprint planning JSON only." },
       {
         role: "user",
         content:
-          `Return JSON with effortEstimateByIssue (map id->storyPoints) and riskFlags (array).\nIssues:\n` +
+          `Return JSON with effortEstimateByIssue (map id->storyPoints), recommendedScope (array of issue ids), riskFlags (array), and summary (string).\n` +
+          `Use small story point values: 1, 2, 3, 5, 8, 13. Prefer a realistic sprint scope, not all issues.\nIssues:\n` +
           JSON.stringify(issues),
       },
     ]);
-    return Response.json({ planning: JSON.parse(completion), sourceIssues: issues.length });
+    return Response.json({
+      planning: extractJsonObject(completion, fallbackPlanning),
+      sourceIssues: issues.length,
+    });
   } catch (error) {
     console.error("AI sprint planning failed:", error);
     return Response.json({

@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
 
   const tsQuery = Prisma.sql`plainto_tsquery('simple', ${searchQuery})`;
   const ids = Prisma.sql`ARRAY[${Prisma.join(allowedProjectIds)}]::text[]`;
+  const likeQuery = `%${searchQuery}%`;
 
   const issues = await prisma.$queryRaw<
     Array<{
@@ -71,8 +72,14 @@ export async function POST(request: NextRequest) {
     FROM "Issue" i
     JOIN "Project" p ON p."id" = i."projectId"
     WHERE i."projectId" = ANY(${ids})
-      AND to_tsvector('simple', COALESCE(i."title", '') || ' ' || COALESCE(i."description", '')) @@ ${tsQuery}
-    ORDER BY i."updatedAt" DESC
+      AND (
+        to_tsvector('simple', COALESCE(i."title", '') || ' ' || COALESCE(i."description", '')) @@ ${tsQuery}
+        OR i."title" ILIKE ${likeQuery}
+        OR COALESCE(i."description", '') ILIKE ${likeQuery}
+      )
+    ORDER BY
+      CASE WHEN i."title" ILIKE ${likeQuery} THEN 0 ELSE 1 END,
+      i."updatedAt" DESC
     LIMIT 20
   `);
 
@@ -93,8 +100,15 @@ export async function POST(request: NextRequest) {
       p."priority"
     FROM "Project" p
     WHERE p."id" = ANY(${ids})
-      AND to_tsvector('simple', COALESCE(p."title", '') || ' ' || COALESCE(p."description", '') || ' ' || COALESCE(p."content", '')) @@ ${tsQuery}
-    ORDER BY p."title" ASC
+      AND (
+        to_tsvector('simple', COALESCE(p."title", '') || ' ' || COALESCE(p."description", '') || ' ' || COALESCE(p."content", '')) @@ ${tsQuery}
+        OR p."title" ILIKE ${likeQuery}
+        OR COALESCE(p."description", '') ILIKE ${likeQuery}
+        OR COALESCE(p."content", '') ILIKE ${likeQuery}
+      )
+    ORDER BY
+      CASE WHEN p."title" ILIKE ${likeQuery} THEN 0 ELSE 1 END,
+      p."title" ASC
     LIMIT 20
   `);
 

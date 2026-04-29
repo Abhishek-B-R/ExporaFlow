@@ -19,6 +19,13 @@ type SprintDragPayload = {
   issueId: string;
 };
 
+type SprintPlanning = {
+  effortEstimateByIssue?: Record<string, number>;
+  recommendedScope?: string[];
+  riskFlags?: string[];
+  summary?: string;
+};
+
 export default function SprintsPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params?.projectId;
@@ -31,6 +38,8 @@ export default function SprintsPage() {
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [planning, setPlanning] = useState<SprintPlanning | null>(null);
+  const [isPlanning, setIsPlanning] = useState(false);
 
   const activeTab =
     "flex h-7 items-center gap-x-1 cursor-pointer border border-[#3a3a3a] px-2 rounded bg-[#0A0A0A] hover:bg-[#151515] transition-all duration-300";
@@ -106,6 +115,19 @@ export default function SprintsPage() {
       await refresh();
     } catch {
       customToast.error({ title: "", description: "Failed to move issue." });
+    }
+  };
+
+  const runAiSprintPlan = async () => {
+    if (!projectId) return;
+    try {
+      setIsPlanning(true);
+      const res = await axios.post("/api/ai/sprint-plan", { projectId });
+      setPlanning(res.data?.planning ?? null);
+    } catch {
+      customToast.error({ title: "", description: "AI sprint planning failed." });
+    } finally {
+      setIsPlanning(false);
     }
   };
 
@@ -192,11 +214,76 @@ export default function SprintsPage() {
 
       <div className="grow min-h-screen px-4 md:px-8 py-5 space-y-5">
         <div>
-          <p className="text-xl font-medium">Sprints</p>
-          <p className="text-sm text-(--muted-2)">
-            Create, start, close sprints and move issues between backlog and sprint.
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xl font-medium">Sprints</p>
+              <p className="text-sm text-(--muted-2)">
+                Create, start, close sprints and move issues between backlog and sprint.
+              </p>
+            </div>
+            <button
+              onClick={runAiSprintPlan}
+              disabled={isPlanning || issues.length === 0}
+              className="h-9 px-3 rounded-md border border-(--border-strong) bg-(--surface-3) text-sm disabled:opacity-50"
+            >
+              {isPlanning ? "Planning..." : "AI sprint plan"}
+            </button>
+          </div>
         </div>
+
+        {planning ? (
+          <div className="rounded-xl border border-(--border-strong) bg-(--surface-1) p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">AI sprint planning recommendation</p>
+                <p className="text-xs text-(--muted-2)">
+                  Suggested scope, effort, and risks for the current project backlog.
+                </p>
+              </div>
+              <span className="rounded border border-(--border) bg-(--surface-2) px-2 py-1 text-xs">
+                {(planning.recommendedScope ?? []).length || issues.length} issues scoped
+              </span>
+            </div>
+            {planning.summary ? (
+              <p className="text-sm text-(--muted-2)">{planning.summary}</p>
+            ) : null}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              <div className="rounded-lg border border-(--border) bg-(--surface-2) p-3">
+                <p className="text-xs text-(--muted-2) mb-2">Recommended scope</p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {(planning.recommendedScope ?? issues.slice(0, 8).map((issue) => issue.id)).map((issueId) => {
+                    const issue = issues.find((item) => item.id === issueId);
+                    if (!issue) return null;
+                    return (
+                      <div key={issue.id} className="rounded border border-(--border) bg-(--surface-1) px-2 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm truncate">{issue.title}</p>
+                          <span className="text-xs text-(--muted-2)">
+                            {planning.effortEstimateByIssue?.[issue.id] ?? 3} pts
+                          </span>
+                        </div>
+                        <p className="text-xs text-(--muted-2)">{issue.status ?? "Backlog"}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="rounded-lg border border-(--border) bg-(--surface-2) p-3">
+                <p className="text-xs text-(--muted-2) mb-2">Risk flags</p>
+                <div className="space-y-2">
+                  {(planning.riskFlags ?? []).map((risk) => (
+                    <p key={risk} className="rounded border border-(--border) bg-(--surface-1) px-2 py-2 text-sm">
+                      {risk}
+                    </p>
+                  ))}
+                  {(!planning.riskFlags || planning.riskFlags.length === 0) && (
+                    <p className="text-sm text-(--muted-2)">No major risks identified.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <input
@@ -409,4 +496,3 @@ function SprintIssueCard({ issue }: { issue: IssueBody }) {
     </div>
   );
 }
-

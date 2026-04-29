@@ -366,6 +366,7 @@ const CreateProjectWindow = ({
 
   const createProject = async () => {
     setIsCreating(true);
+    let shouldClose = true;
     try {
       const response = await axios.post("/api/workflow/createproject", {
         projTitle: projTitle,
@@ -381,12 +382,16 @@ const CreateProjectWindow = ({
         description: "Project created succesfully!",
       });
     } catch (error) {
+      const description = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? "Could not create project."
+        : "Could not create project.";
       customToast.error({
         title: "",
-        description: `Error occured: ${error}`,
+        description,
       });
+      shouldClose = !(axios.isAxiosError(error) && error.response?.status === 409);
     } finally {
-      setClose(false);
+      if (shouldClose) setClose(false);
       setIsCreating(false);
     }
   };

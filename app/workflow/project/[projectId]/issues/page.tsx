@@ -23,12 +23,19 @@ type AiDraftPayload = {
   title?: string;
   description?: string;
   labels?: string[];
+  severityHint?: string;
+  acceptanceCriteria?: string[];
+  priority?: string;
+  status?: string;
 } | null;
 
 type AiTriagePayload = {
   priority?: string;
   severity?: string;
   routingTeamHint?: string;
+  effortHint?: string;
+  risk?: string;
+  rationale?: string;
 } | null;
 
 export default function Issue() {
@@ -52,7 +59,13 @@ export default function Issue() {
   const [aiInput, setAiInput] = useState("");
   const [aiDraft, setAiDraft] = useState<AiDraftPayload>(null);
   const [aiTriage, setAiTriage] = useState<AiTriagePayload>(null);
-  const [aiDuplicates, setAiDuplicates] = useState<Array<{ id: string; title: string; score: number }>>([]);
+  const [aiDuplicates, setAiDuplicates] = useState<Array<{
+    id: string;
+    title: string;
+    status?: string | null;
+    priority?: string | null;
+    score: number;
+  }>>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const searchParams = useSearchParams();
   const latestSearchRequest = useRef(0);
@@ -186,6 +199,12 @@ export default function Issue() {
     }
   };
 
+  const hydrateAiInputFromSelection = () => {
+    const selected = filteredIssues[selectedIssueIndex];
+    if (!selected) return;
+    setAiInput(`${selected.title}\n\n${selected.description ?? ""}`.trim());
+  };
+
   const runAiDrafting = async () => {
     if (!project_id || !aiInput.trim()) return;
     try {
@@ -219,8 +238,16 @@ export default function Issue() {
     try {
       await axios.post("/api/issues/createissue", {
         issueTitle: aiDraft.title,
-        issueDescription: aiDraft.description ?? "",
-        issuePriority: aiTriage?.priority ?? "Medium",
+        issueDescription: [
+          aiDraft.description ?? "",
+          Array.isArray(aiDraft.acceptanceCriteria) && aiDraft.acceptanceCriteria.length
+            ? `\n\nAcceptance criteria:\n${aiDraft.acceptanceCriteria
+                .map((criterion) => `- ${criterion}`)
+                .join("\n")}`
+            : "",
+        ].join(""),
+        issueStatus: aiDraft.status ?? "Backlog",
+        issuePriority: aiTriage?.priority ?? aiDraft.priority ?? "Medium",
         projectId: project_id,
         labels: Array.isArray(aiDraft?.labels) ? aiDraft.labels : [],
       });
@@ -231,8 +258,11 @@ export default function Issue() {
       setAiDuplicates([]);
       const response = await axios.post("/api/issues/getissues", { project_id });
       setIssues(response.data);
-    } catch {
-      customToast.error({ title: "", description: "Could not create issue from draft." });
+    } catch (error) {
+      const description = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? "Could not create issue from draft."
+        : "Could not create issue from draft.";
+      customToast.error({ title: "", description });
     }
   };
 
@@ -420,43 +450,106 @@ export default function Issue() {
           />
         </div>
 
-        <div className="px-2 py-2 border-b border-(--border) bg-(--surface-1) space-y-2">
-          <p className="text-xs text-(--muted-2)">AI issue drafting and triage</p>
+        <div className="px-3 py-3 border-b border-(--border) bg-(--surface-1) space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">AI triage cockpit</p>
+              <p className="text-xs text-(--muted-2)">
+                Draft issues, score duplicates, and get routing suggestions before creating work.
+              </p>
+            </div>
+            <button
+              onClick={hydrateAiInputFromSelection}
+              disabled={!filteredIssues[selectedIssueIndex]}
+              className="h-7 px-2 rounded-md border border-(--border) bg-(--surface-2) text-xs disabled:opacity-50"
+            >
+              Use selected
+            </button>
+          </div>
           <div className="flex gap-2">
-            <input
+            <textarea
               value={aiInput}
               onChange={(event) => setAiInput(event.target.value)}
-              placeholder="Describe a rough issue idea..."
-              className="h-8 flex-1 rounded-md border border-(--border) bg-(--surface-2) px-2 text-sm"
+              placeholder="Paste rough notes, a bug report, customer feedback, or a PRD fragment..."
+              rows={2}
+              className="min-h-16 flex-1 resize-none rounded-md border border-(--border) bg-(--surface-2) px-2 py-2 text-sm"
             />
             <button
               onClick={runAiDrafting}
               disabled={aiLoading || !aiInput.trim()}
-              className="h-8 px-2 rounded-md border border-(--border-strong) bg-(--surface-3) text-xs disabled:opacity-50"
+              className="h-16 px-3 rounded-md border border-(--border-strong) bg-(--surface-3) text-xs disabled:opacity-50"
             >
               {aiLoading ? "Thinking..." : "Draft with AI"}
             </button>
           </div>
           {(aiDraft || aiTriage || aiDuplicates.length > 0) && (
-            <div className="rounded-md border border-(--border) bg-(--surface-2) p-2 text-xs space-y-1">
-              {aiDraft?.title ? <p><span className="text-(--muted-2)">Title:</span> {aiDraft.title}</p> : null}
-              {aiTriage?.priority ? (
-                <p>
-                  <span className="text-(--muted-2)">Triage:</span> {aiTriage.priority} · {aiTriage.severity} ·{" "}
-                  {aiTriage.routingTeamHint}
-                </p>
-              ) : null}
-              {aiDuplicates.length > 0 ? (
-                <p className="text-(--muted-2)">
-                  Possible duplicates: {aiDuplicates.map((item) => item.title).join(", ")}
-                </p>
-              ) : null}
-              <button
-                onClick={createIssueFromDraft}
-                className="mt-1 h-7 px-2 rounded-md border border-(--border-strong) bg-(--surface-3)"
-              >
-                Create Issue from Draft
-              </button>
+            <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr_1fr] gap-2 text-xs">
+              <div className="rounded-md border border-(--border) bg-(--surface-2) p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-(--muted-2)">Draft</p>
+                    <p className="text-sm font-medium">{aiDraft?.title ?? "Untitled draft"}</p>
+                  </div>
+                  <span className="rounded border border-(--border) bg-(--surface-1) px-2 py-1">
+                    {aiDraft?.status ?? "Backlog"}
+                  </span>
+                </div>
+                {aiDraft?.description ? (
+                  <p className="line-clamp-3 text-(--muted-2)">{aiDraft.description}</p>
+                ) : null}
+                {Array.isArray(aiDraft?.acceptanceCriteria) && aiDraft.acceptanceCriteria.length ? (
+                  <ul className="space-y-1 text-(--muted-2)">
+                    {aiDraft.acceptanceCriteria.slice(0, 4).map((criterion) => (
+                      <li key={criterion}>- {criterion}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="flex flex-wrap gap-1">
+                  {(aiDraft?.labels ?? []).map((label) => (
+                    <span key={label} className="rounded border border-(--border) px-2 py-0.5">
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-md border border-(--border) bg-(--surface-2) p-3 space-y-2">
+                <p className="text-(--muted-2)">Triage suggestion</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Metric label="Priority" value={aiTriage?.priority ?? aiDraft?.priority ?? "Medium"} />
+                  <Metric label="Severity" value={aiTriage?.severity ?? aiDraft?.severityHint ?? "Medium"} />
+                  <Metric label="Effort" value={aiTriage?.effortHint ?? "M"} />
+                  <Metric label="Route" value={aiTriage?.routingTeamHint ?? "Engineering"} />
+                </div>
+                {aiTriage?.risk ? <p className="text-(--muted-2)">Risk: {aiTriage.risk}</p> : null}
+                {aiTriage?.rationale ? <p className="text-(--muted-2)">{aiTriage.rationale}</p> : null}
+                <button
+                  onClick={createIssueFromDraft}
+                  className="h-8 px-2 rounded-md border border-(--border-strong) bg-(--surface-3)"
+                >
+                  Create issue from draft
+                </button>
+              </div>
+
+              <div className="rounded-md border border-(--border) bg-(--surface-2) p-3 space-y-2">
+                <p className="text-(--muted-2)">Duplicate check</p>
+                {aiDuplicates.length > 0 ? (
+                  aiDuplicates.slice(0, 4).map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/workflow/project/${project_id}/issues/${item.id}`}
+                      className="block rounded border border-(--border) bg-(--surface-1) px-2 py-1 hover:bg-(--surface-3)"
+                    >
+                      <p className="truncate">{item.title}</p>
+                      <p className="text-(--muted-2)">
+                        {Math.round(item.score * 100)}% match · {item.status ?? "No status"}
+                      </p>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-(--muted-2)">No strong duplicates found.</p>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -536,3 +629,12 @@ const IssuesViewButton = ({
     </button>
   );
 };
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-(--border) bg-(--surface-1) px-2 py-1">
+      <p className="text-[11px] text-(--muted-2)">{label}</p>
+      <p className="truncate">{value}</p>
+    </div>
+  );
+}

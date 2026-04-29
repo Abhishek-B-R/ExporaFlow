@@ -101,6 +101,7 @@ export default function IssueLabel({
   }, [showOptionsDropdown]);
 
   const handleStatusOptionClick = async (option: string) => {
+    const previousStatus = selectedStatusOption;
     setSelectedStatusOption(option);
 
     setShowOptionsDropdown(false);
@@ -121,10 +122,14 @@ export default function IssueLabel({
         });
       }
     } catch (error) {
+      setSelectedStatusOption(previousStatus);
       console.error("Error updating project:", error);
+      const description = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? "Failed to update issue."
+        : "Failed to update issue.";
       customToast.error({
         title: "",
-        description: "Failed to update issue.",
+        description,
       });
     }
   };
@@ -196,7 +201,7 @@ export default function IssueLabel({
       </p>
       <div className="col-span-1 relative " ref={statusDropdownRef}>
         <div
-          className="w-fit flex items-center  px-2 h-8 rounded hover:bg-[#212227] transition-all duration-300 cursor-pointer"
+          className="w-fit flex items-center px-2 h-8 rounded hover:bg-[#212227] transition-all duration-150 cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             setShowOptionsDropdown(
@@ -208,14 +213,17 @@ export default function IssueLabel({
         </div>
         {showOptionsDropdown == "status" && (
           <div
-            className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg mt-1 z-10"
+            className="absolute w-36 top-full left-0 bg-[#101216] border border-[#2E323A] rounded-md shadow-xl mt-1 z-50 p-1"
             onClick={(e) => e.stopPropagation()}
           >
             {IssueStatus.map((option, key) => (
               <div
                 key={key}
-                className="px-2 flex gap-x-2 rounded-lg items-center py-2 hover:bg-[#151818] cursor-pointer text-white "
-                onClick={() => handleStatusOptionClick(option.title)}
+                className="px-2 flex gap-x-2 rounded items-center h-8 hover:bg-[#1B1F27] cursor-pointer text-white"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleStatusOptionClick(option.title);
+                }}
               >
                 <SVGIcon className="flex w-4" svgString={option.svg} />
                 <p>{option.title}</p>
@@ -238,14 +246,17 @@ export default function IssueLabel({
         </div>
         {showOptionsDropdown == "priority" && (
           <div
-            className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg mt-1 z-10"
+            className="absolute w-36 top-full left-0 bg-[#101216] border border-[#2E323A] rounded-md shadow-xl mt-1 z-50 p-1"
             onClick={(e) => e.stopPropagation()}
           >
             {priorityOptionsArray.map((option, key) => (
               <div
                 key={key}
-                className="px-2 py-2 hover:bg-[#151818] cursor-pointer text-white flex items-center  gap-x-2"
-                onClick={() => handlePriorityOptionClick(option.name)}
+                className="px-2 h-8 hover:bg-[#1B1F27] cursor-pointer text-white flex items-center gap-x-2 rounded"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handlePriorityOptionClick(option.name);
+                }}
               >
                 <SVGIcon className="flex w-4" svgString={option.svg} />
                 <p className="">{option.name}</p>

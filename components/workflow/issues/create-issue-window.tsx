@@ -49,9 +49,12 @@ export const CreateIssueWindow = ({
         setClose(false);
       }
     } catch (error) {
+      const description = axios.isAxiosError(error)
+        ? error.response?.data?.message ?? "Failed to create issue, try again."
+        : "Failed to create issue, try again.";
       customToast.error({
         title: "Action failed",
-        description: "Failed to create issue, try again.",
+        description,
       });
     }
   };
