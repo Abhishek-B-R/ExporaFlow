@@ -5,18 +5,21 @@ import { IssueBody, SprintBody } from "@/utils/types";
 import { IssueStatus, PriorityOptionsArray } from "@/utils/issues-view-options";
 import axios from "axios";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RenderStatusSvg, renderPrioritySvg } from "@/components/workflow/issues/issue-label";
+import { RAW_ICONS } from "@/lib/icons";
+import SVGIcon from "@/lib/svg-icon";
 
 type WorkspaceMember = {
   id: string;
-  user: { id: string; name?: string; email?: string };
+  user: { id: string; name?: string; email?: string; image?: string };
 };
 
 type IssueComment = {
   id: string;
   body: string;
   createdAt: string;
-  author: { id: string; name?: string; email?: string };
+  author: { id: string; name?: string; email?: string; image?: string };
 };
 
 type IssueActivity = {
@@ -31,7 +34,7 @@ type IssueActivity = {
 
 type FullIssue = IssueBody & {
   createdAt?: string;
-  User?: { id: string; name?: string; email?: string } | null;
+  User?: { id: string; name?: string; email?: string; image?: string } | null;
   parentIssue?: { id: string; title: string } | null;
   subtasks?: Array<{ id: string; title: string; status?: string }>;
   blockersFrom?: Array<{
@@ -68,6 +71,7 @@ export default function Issue({
   const [commentInput, setCommentInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isPostingComment, setIsPostingComment] = useState(false);
+  const [activityTab, setActivityTab] = useState<"comments" | "activity">("comments");
 
   useEffect(() => {
     const loadParams = async () => {
@@ -120,6 +124,20 @@ export default function Issue({
       customToast.error({ title: "", description: "Failed to fetch issue details." });
     });
   }, [issueId, projectId, fetchIssueData]);
+
+  const saveField = async (field: string, value: unknown) => {
+    if (!issueId) return;
+    try {
+      setIsSaving(true);
+      await axios.patch("/api/issues/updateissue", { issueId, [field]: value });
+      await fetchIssueData({ resetForm: true });
+      customToast.success({ title: "", description: "Updated." });
+    } catch {
+      customToast.error({ title: "", description: "Failed to update." });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const saveIssueMeta = async () => {
     if (!issueId || !issue) return;
@@ -185,240 +203,350 @@ export default function Issue({
     [members],
   );
 
-  return (
-    <div className="grow min-h-screen px-4 md:px-8 py-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xl font-medium">Issue Details</p>
-        {projectId && (
-          <Link
-            href={`/workflow/project/${projectId}/issues`}
-            className="text-sm border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) rounded-lg px-3 py-2 transition-colors"
-          >
-            Back to issues
-          </Link>
-        )}
+  const assigneeMember = members.find((m) => m.user.id === assignedUserInput);
+  const assigneeName = assigneeMember?.user.name || assigneeMember?.user.email || null;
+
+  function timeAgo(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
+
+  // Loading skeleton
+  if (!issue) {
+    return (
+      <div className="grow min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-5 w-5 border-2 border-[#6f86ff] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-(--muted-2)">Loading issue…</p>
+        </div>
       </div>
-      {!issue ? (
-        <p className="text-sm text-(--muted-2)">Loading issue...</p>
-      ) : (
-        <>
-          <div className="rounded-xl border border-(--border) bg-(--surface-1) p-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
-                <p className="text-xs text-(--muted-2) mb-1">Title</p>
-                <input
-                  value={titleInput}
-                  onChange={(event) => setTitleInput(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <p className="text-xs text-(--muted-2) mb-1">Description</p>
-                <textarea
-                  value={descriptionInput}
-                  onChange={(event) => setDescriptionInput(event.target.value)}
-                  rows={4}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 py-2"
-                />
+    );
+  }
+
+  return (
+    <div className="grow min-h-screen flex flex-col">
+      {/* Top bar */}
+      <div className="h-11 border-b border-(--border) bg-(--surface-1) flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-2">
+          {projectId && (
+            <Link
+              href={`/workflow/project/${projectId}/issues`}
+              className="text-sm text-(--muted-2) hover:text-white transition-colors flex items-center gap-1"
+            >
+              <SVGIcon className="flex w-4" svgString={RAW_ICONS.ArrowLeft ?? RAW_ICONS.Close} />
+              Back
+            </Link>
+          )}
+          <span className="text-(--muted-2) text-xs">·</span>
+          <p className="text-xs text-(--muted-2) font-mono">{issue.id.slice(0, 8)}</p>
+        </div>
+        <button
+          onClick={saveIssueMeta}
+          disabled={isSaving}
+          className="h-7 px-3 rounded-md bg-[#6f86ff] hover:bg-[#5a70e6] text-white text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {isSaving ? "Saving…" : "Save changes"}
+        </button>
+      </div>
+
+      {/* Main content — two-column layout */}
+      <div className="grow flex overflow-hidden">
+        {/* Left — main content area */}
+        <div className="grow overflow-y-auto px-6 md:px-10 py-6 space-y-6">
+          {/* Title */}
+          <input
+            value={titleInput}
+            onChange={(e) => setTitleInput(e.target.value)}
+            className="w-full bg-transparent text-xl md:text-2xl font-semibold outline-none border-none placeholder:text-(--muted-2)"
+            placeholder="Issue title"
+          />
+
+          {/* Description */}
+          <textarea
+            value={descriptionInput}
+            onChange={(e) => setDescriptionInput(e.target.value)}
+            rows={6}
+            className="w-full bg-transparent text-sm text-[#c0c0c4] outline-none border-none resize-none placeholder:text-(--muted-2) leading-relaxed"
+            placeholder="Add a description… (supports markdown)"
+          />
+
+          {/* Sub-issues */}
+          {(issue.subtasks ?? []).length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-(--muted-2) uppercase tracking-wide">Sub-issues</p>
+              <div className="space-y-1">
+                {issue.subtasks!.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={`/workflow/project/${projectId}/issues/${sub.id}`}
+                    className="flex items-center gap-2 px-3 py-2 rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors text-sm"
+                  >
+                    <RenderStatusSvg status={sub.status ?? "Backlog"} />
+                    <span>{sub.title}</span>
+                  </Link>
+                ))}
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Status</p>
-                <select
-                  value={statusInput}
-                  onChange={(event) => setStatusInput(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                >
-                  {IssueStatus.map((status) => (
-                    <option key={status.title} value={status.title}>
-                      {status.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Priority</p>
-                <select
-                  value={priorityInput}
-                  onChange={(event) => setPriorityInput(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                >
-                  {PriorityOptionsArray.map((priority) => (
-                    <option key={priority.name} value={priority.name}>
-                      {priority.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Due date</p>
-                <input
-                  type="date"
-                  value={dueDateInput}
-                  onChange={(event) => setDueDateInput(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                />
-              </div>
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Assignee</p>
-                <select
-                  value={assignedUserInput}
-                  onChange={(event) => setAssignedUserInput(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                >
-                  <option value="">Unassigned</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.user.id}>
-                      {member.user.name || member.user.email || member.user.id}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Activity section */}
+          <div className="space-y-3 pt-4 border-t border-(--border)">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActivityTab("comments")}
+                className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activityTab === "comments" ? "border-[#6f86ff] text-white" : "border-transparent text-(--muted-2) hover:text-white"}`}
+              >
+                Comments ({(issue.comments ?? []).length})
+              </button>
+              <button
+                onClick={() => setActivityTab("activity")}
+                className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activityTab === "activity" ? "border-[#6f86ff] text-white" : "border-transparent text-(--muted-2) hover:text-white"}`}
+              >
+                Activity ({(issue.activities ?? []).length})
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Labels (comma separated)</p>
-                <input
-                  value={labelsInput}
-                  onChange={(event) => setLabelsInput(event.target.value)}
-                  placeholder="backend, urgent"
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                />
+            {activityTab === "comments" && (
+              <div className="space-y-3">
+                {/* Comment input */}
+                <div className="rounded-lg border border-(--border) bg-(--surface-2) overflow-hidden">
+                  <textarea
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    rows={3}
+                    placeholder="Add a comment… Use @username for mentions"
+                    className="w-full bg-transparent px-3 py-2.5 text-sm outline-none resize-none placeholder:text-(--muted-2)"
+                  />
+                  <div className="flex items-center justify-between px-3 py-2 border-t border-(--border)">
+                    <div className="flex flex-wrap gap-1">
+                      {mentionHints.slice(0, 5).map((hint) => (
+                        <button
+                          key={hint.id}
+                          onClick={() => setCommentInput((prev) => `${prev} @${hint.handle}`.trim())}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-(--surface-3) text-(--muted-2) hover:text-white transition-colors"
+                        >
+                          @{hint.handle}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={addComment}
+                      disabled={isPostingComment || !commentInput.trim()}
+                      className="h-7 px-3 rounded-md bg-[#6f86ff] hover:bg-[#5a70e6] text-white text-xs font-medium transition-colors disabled:opacity-50"
+                    >
+                      {isPostingComment ? "Posting…" : "Comment"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Comment list */}
+                {(issue.comments ?? []).map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="flex gap-3"
+                  >
+                    <div className="shrink-0 mt-0.5">
+                      {comment.author.image ? (
+                        <img src={comment.author.image} alt="" className="h-7 w-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-7 w-7 rounded-full bg-[#6f86ff]/20 flex items-center justify-center text-xs font-medium text-[#6f86ff]">
+                          {(comment.author.name || comment.author.email || "?").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="grow">
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-sm font-medium">{comment.author.name || comment.author.email || "Unknown"}</p>
+                        <p className="text-xs text-(--muted-2)">{timeAgo(comment.createdAt)}</p>
+                      </div>
+                      <p className="text-sm text-[#c0c0c4] mt-1 whitespace-pre-wrap">{comment.body}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {(issue.comments ?? []).length === 0 && (
+                  <p className="text-sm text-(--muted-2) py-4 text-center">No comments yet. Be the first to comment.</p>
+                )}
               </div>
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Sprint</p>
-                <select
-                  value={sprintInput}
-                  onChange={(event) => setSprintInput(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                >
-                  <option value="">Backlog (no sprint)</option>
-                  {sprints.map((sprint) => (
-                    <option key={sprint.id} value={sprint.id}>
-                      {sprint.name} ({sprint.status})
-                    </option>
+            )}
+
+            {activityTab === "activity" && (
+              <div className="space-y-2">
+                {(issue.activities ?? []).map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-3 py-2"
+                  >
+                    <div className="h-5 w-5 rounded-full bg-(--surface-3) flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="h-2 w-2 rounded-full bg-(--muted-2)" />
+                    </div>
+                    <div className="grow">
+                      <p className="text-sm">
+                        <span className="font-medium">{activity.actor.name || activity.actor.email || "Someone"}</span>
+                        {" "}
+                        <span className="text-(--muted-2)">
+                          {activity.field ? `changed ${activity.field}` : activity.action.toLowerCase().replace("_", " ")}
+                        </span>
+                      </p>
+                      {(activity.fromValue || activity.toValue) && (
+                        <div className="flex items-center gap-2 mt-1 text-xs">
+                          <span className="text-red-400/60 line-through">{activity.fromValue || "(empty)"}</span>
+                          <span className="text-(--muted-2)">→</span>
+                          <span className="text-green-400/80">{activity.toValue || "(empty)"}</span>
+                        </div>
+                      )}
+                      <p className="text-xs text-(--muted-2) mt-0.5">{timeAgo(activity.createdAt)}</p>
+                    </div>
+                  </div>
+                ))}
+                {(issue.activities ?? []).length === 0 && (
+                  <p className="text-sm text-(--muted-2) py-4 text-center">No activity yet.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right sidebar — metadata */}
+        <div className="w-72 shrink-0 border-l border-(--border) bg-(--surface-1) overflow-y-auto hidden md:block">
+          <div className="p-4 space-y-5">
+            {/* Status */}
+            <SidebarField label="Status">
+              <select
+                value={statusInput}
+                onChange={(e) => setStatusInput(e.target.value)}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              >
+                {IssueStatus.map((s) => (
+                  <option key={s.title} value={s.title}>{s.title}</option>
+                ))}
+              </select>
+            </SidebarField>
+
+            {/* Priority */}
+            <SidebarField label="Priority">
+              <select
+                value={priorityInput}
+                onChange={(e) => setPriorityInput(e.target.value)}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              >
+                {PriorityOptionsArray.map((p) => (
+                  <option key={p.name} value={p.name}>{p.name}</option>
+                ))}
+              </select>
+            </SidebarField>
+
+            {/* Assignee */}
+            <SidebarField label="Assignee">
+              <select
+                value={assignedUserInput}
+                onChange={(e) => setAssignedUserInput(e.target.value)}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              >
+                <option value="">Unassigned</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.user.id}>
+                    {member.user.name || member.user.email || member.user.id}
+                  </option>
+                ))}
+              </select>
+            </SidebarField>
+
+            {/* Due date */}
+            <SidebarField label="Due date">
+              <input
+                type="date"
+                value={dueDateInput}
+                onChange={(e) => setDueDateInput(e.target.value)}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              />
+            </SidebarField>
+
+            {/* Sprint */}
+            <SidebarField label="Sprint">
+              <select
+                value={sprintInput}
+                onChange={(e) => setSprintInput(e.target.value)}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              >
+                <option value="">Backlog (no sprint)</option>
+                {sprints.map((sprint) => (
+                  <option key={sprint.id} value={sprint.id}>
+                    {sprint.name} ({sprint.status})
+                  </option>
+                ))}
+              </select>
+            </SidebarField>
+
+            {/* Labels */}
+            <SidebarField label="Labels">
+              <input
+                value={labelsInput}
+                onChange={(e) => setLabelsInput(e.target.value)}
+                placeholder="backend, urgent"
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              />
+              {labelsInput && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {labelsInput.split(",").map((l) => l.trim()).filter(Boolean).map((label) => (
+                    <span key={label} className="text-[10px] px-2 py-0.5 rounded-full bg-[#6f86ff]/15 text-[#6f86ff] border border-[#6f86ff]/20">
+                      {label}
+                    </span>
                   ))}
-                </select>
-              </div>
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Parent issue</p>
-                <select
-                  value={parentIssueInput}
-                  onChange={(event) => setParentIssueInput(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-9"
-                >
-                  <option value="">No parent</option>
-                  {issuesInProject
-                    .filter((projectIssue) => projectIssue.id !== issue.id)
-                    .map((projectIssue) => (
-                      <option key={projectIssue.id} value={projectIssue.id}>
-                        {projectIssue.title}
-                      </option>
-                    ))}
-                </select>
-              </div>
+                </div>
+              )}
+            </SidebarField>
+
+            {/* Parent issue */}
+            <SidebarField label="Parent issue">
+              <select
+                value={parentIssueInput}
+                onChange={(e) => setParentIssueInput(e.target.value)}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              >
+                <option value="">No parent</option>
+                {issuesInProject
+                  .filter((i) => i.id !== issue.id)
+                  .map((i) => (
+                    <option key={i.id} value={i.id}>{i.title}</option>
+                  ))}
+              </select>
+            </SidebarField>
+
+            {/* Metadata */}
+            <div className="pt-4 border-t border-(--border) space-y-2 text-xs text-(--muted-2)">
+              <p>Created {issue.createdAt ? timeAgo(issue.createdAt) : "–"}</p>
+              <p>Updated {issue.updatedAt ? timeAgo(issue.updatedAt) : "–"}</p>
+              <p className="font-mono text-[10px] opacity-60">{issue.id}</p>
             </div>
 
-            <div className="rounded-lg border border-(--border) bg-(--surface-2) p-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Metadata</p>
-                <p>Issue ID: {issue.id}</p>
-                <p>Created: {issue.createdAt ? new Date(issue.createdAt).toLocaleString() : "-"}</p>
-                <p>Updated: {issue.updatedAt ? new Date(issue.updatedAt).toLocaleString() : "-"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-(--muted-2) mb-1">Relationships</p>
+            {/* Relations summary */}
+            <div className="pt-4 border-t border-(--border) space-y-2">
+              <p className="text-xs font-medium text-(--muted-2) uppercase tracking-wide">Relations</p>
+              <div className="space-y-1 text-sm text-(--muted-2)">
                 <p>Subtasks: {issue.subtasks?.length ?? 0}</p>
                 <p>Blocks: {issue.blockersFrom?.length ?? 0}</p>
                 <p>Blocked by: {issue.blockedBy?.length ?? 0}</p>
               </div>
             </div>
-
-            <button
-              onClick={saveIssueMeta}
-              disabled={isSaving}
-              className="h-9 px-3 rounded-md bg-(--surface-3) border border-(--border-strong) hover:opacity-90 transition-opacity"
-            >
-              {isSaving ? "Saving..." : "Save changes"}
-            </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          <div className="rounded-xl border border-(--border) bg-(--surface-1) p-4 space-y-3">
-            <p className="text-sm font-medium">Comments & mentions</p>
-            <textarea
-              value={commentInput}
-              onChange={(event) => setCommentInput(event.target.value)}
-              rows={3}
-              placeholder="Add a comment... Use @username for mentions"
-              className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 py-2"
-            />
-            <div className="flex flex-wrap gap-2">
-              {mentionHints.slice(0, 8).map((hint) => (
-                <button
-                  key={hint.id}
-                  onClick={() => setCommentInput((prev) => `${prev} @${hint.handle}`.trim())}
-                  className="text-xs px-2 py-1 rounded border border-(--border) bg-(--surface-2)"
-                >
-                  @{hint.handle}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={addComment}
-              disabled={isPostingComment || !commentInput.trim()}
-              className="h-9 px-3 rounded-md bg-(--surface-3) border border-(--border-strong) hover:opacity-90 disabled:opacity-50"
-            >
-              {isPostingComment ? "Posting..." : "Add comment"}
-            </button>
-            <div className="space-y-2">
-              {(issue.comments ?? []).map((comment) => (
-                <div
-                  key={comment.id}
-                  className="rounded-md border border-(--border) bg-(--surface-2) px-3 py-2"
-                >
-                  <p className="text-sm whitespace-pre-wrap">{comment.body}</p>
-                  <p className="text-xs text-(--muted-2) mt-1">
-                    {(comment.author.name || comment.author.email || "Unknown")} ·{" "}
-                    {new Date(comment.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              ))}
-              {(issue.comments ?? []).length === 0 && (
-                <p className="text-sm text-(--muted-2)">No comments yet.</p>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-(--border) bg-(--surface-1) p-4 space-y-2">
-            <p className="text-sm font-medium">Activity log</p>
-            {(issue.activities ?? []).map((activity) => (
-              <div
-                key={activity.id}
-                className="rounded-md border border-(--border) bg-(--surface-2) px-3 py-2 text-sm"
-              >
-                <p>
-                  {activity.actor.name || activity.actor.email || "Someone"} · {activity.action}
-                  {activity.field ? ` (${activity.field})` : ""}
-                </p>
-                {(activity.fromValue || activity.toValue) && (
-                  <p className="text-xs text-(--muted-2)">
-                    {activity.fromValue || "(empty)"} → {activity.toValue || "(empty)"}
-                  </p>
-                )}
-                <p className="text-xs text-(--muted-2)">
-                  {new Date(activity.createdAt).toLocaleString()}
-                </p>
-              </div>
-            ))}
-            {(issue.activities ?? []).length === 0 && (
-              <p className="text-sm text-(--muted-2)">No activity yet.</p>
-            )}
-          </div>
-        </>
-      )}
+function SidebarField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs text-(--muted-2) mb-1.5 font-medium">{label}</p>
+      {children}
     </div>
   );
 }
