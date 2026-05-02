@@ -156,7 +156,7 @@ export default function Navbar() {
           <Link href="/">
             <Image
               className="w-8"
-              src="appIconTwo.svg"
+              src="/logo.png"
               alt=""
               width={200}
               height={200}

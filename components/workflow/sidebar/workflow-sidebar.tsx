@@ -2,7 +2,7 @@
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import Image from "next/image";
-import applogotwo from "@/public/appIconTwo.svg";
+import applogotwo from "@/public/logo.png";
 import OptionLabel from "./option-label";
 import { BottomOptionsTile } from "./bottom-options-tile";
 import { WorkflowTab } from "./workflow-tab";
@@ -122,7 +122,10 @@ export default function WorkflowSidebar() {
           }`}
         >
           {/* Team's Workspace content */}
-          <div className="flex px-3 cursor-pointer" onClick={() => toggleSection("workspace")}>
+          <div
+            className="flex px-3 cursor-pointer"
+            onClick={() => toggleSection("workspace")}
+          >
             <Image
               className="h-5 w-5 mr-2"
               src={applogotwo}
@@ -155,7 +158,9 @@ export default function WorkflowSidebar() {
                 href="/workflow/my-issues"
               />
               <OptionLabel
-                className={pathname.includes("/workflow/project") ? TabActive : ""}
+                className={
+                  pathname.includes("/workflow/project") ? TabActive : ""
+                }
                 svg={RAW_ICONS.RubiksCube}
                 optName="Projects"
                 href="/workflow/project"

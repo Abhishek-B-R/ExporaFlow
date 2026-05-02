@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
-import applogotwo from "@/public/appIconTwo.svg";
+import applogotwo from "@/public/logo.png";
 import Link from "next/link";
 
 export const WorkflowTab = () => {

@@ -17,7 +17,6 @@ export default function SignupPage() {
   const [lastLoginPreference, setLastLoginPreference] =
     useLocalStorage<Provider | null>("lastUsedLoginPreference", null);
 
-
   useEffect(() => {
     if (session?.user?.email) {
       router.push("/");
@@ -26,7 +25,7 @@ export default function SignupPage() {
 
   const signUp = async (provider: Provider) => {
     try {
-      setLastLoginPreference(provider); 
+      setLastLoginPreference(provider);
       await signIn(provider);
     } catch (err) {
       console.error(`Sign in failed for ${provider}`, err);
@@ -40,7 +39,7 @@ export default function SignupPage() {
         <div className="w-80 rounded flex flex-col items-center justify-center">
           <Image
             className="border border-white p-1 h-20 w-20 rounded-3xl mb-10"
-            src="appIconTwo.svg"
+            src="/logo.png"
             alt="Logo"
             width={100}
             height={100}

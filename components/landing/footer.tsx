@@ -1,5 +1,5 @@
 import Image from "next/image";
-import metallicLogo from "@/public/metallogo.webp";
+import metallicLogo from "@/public/logo.png";
 import Link from "next/link";
 import { features, product, resources } from "@/utils/footer-list-options";
 import SVGIcon from "@/lib/svg-icon";
@@ -87,28 +87,55 @@ export default function Footer() {
           </p>
 
           <ul className="flex flex-col mt-8 gap-y-4 text-[#c9c9cc]">
-            <a
-              href="https://x.com/abhitwt"
-              target="_blank"
-              className="text-lg flex items-center"
-            >
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.X} />
-            </a>
-            <a
-              href="https://github.com/Abhishek-B-R"
-              target="_blank"
-              className=" flex items-center"
-            >
-              <SVGIcon className="flex w-5" svgString={RAW_ICONS.GitHub} />
-            </a>
-            <a
-              href="https://www.linkedin.com/in/abhi-br"
-              target="_blank"
-              className=" flex items-center"
-            >
-              <p className="mr-[2px]">Linked</p>
-              <SVGIcon className="flex w-5" svgString={RAW_ICONS.LinkedIn} />
-            </a>
+            <div className="flex gap-14">
+              {" "}
+              <a
+                href="https://x.com/abhitwt"
+                target="_blank"
+                className="text-lg flex items-center"
+              >
+                <SVGIcon className="flex w-4" svgString={RAW_ICONS.X} />1
+              </a>
+              <a
+                href="https://x.com/kickbuttowsk1_"
+                target="_blank"
+                className="text-lg flex items-center"
+              >
+                <SVGIcon className="flex w-4" svgString={RAW_ICONS.X} />2
+              </a>
+            </div>
+            <div className="flex gap-14">
+              <a
+                href="https://github.com/Abhishek-B-R"
+                target="_blank"
+                className=" flex items-center"
+              >
+                <SVGIcon className="flex w-5" svgString={RAW_ICONS.GitHub} />1
+              </a>
+              <a
+                href="https://github.com/Vibhurevadi18"
+                target="_blank"
+                className=" flex items-center"
+              >
+                <SVGIcon className="flex w-5" svgString={RAW_ICONS.GitHub} />2
+              </a>
+            </div>
+            <div className="flex gap-14">
+              <a
+                href="https://www.linkedin.com/in/abhi-br"
+                target="_blank"
+                className=" flex items-center"
+              >
+                <SVGIcon className="flex w-5" svgString={RAW_ICONS.LinkedIn} />1
+              </a>
+              <a
+                href="https://www.linkedin.com/in/vibhu-revadi-b57731373/"
+                target="_blank"
+                className=" flex items-center"
+              >
+                <SVGIcon className="flex w-5" svgString={RAW_ICONS.LinkedIn} />2
+              </a>
+            </div>
           </ul>
         </div>
       </div>
