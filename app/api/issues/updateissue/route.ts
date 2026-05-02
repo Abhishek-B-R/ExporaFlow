@@ -19,6 +19,7 @@ export async function PATCH(request: NextRequest) {
     sprintId,
     dueDate,
     labels,
+    estimate,
   } = await request.json();
 
   const session = await getServerSession(authOptions);
@@ -44,6 +45,7 @@ export async function PATCH(request: NextRequest) {
         sprintId: true,
         dueDate: true,
         labels: true,
+        estimate: true,
       },
     });
 
@@ -123,6 +125,7 @@ export async function PATCH(request: NextRequest) {
               ? null
               : undefined,
         labels: Array.isArray(labels) ? labels : undefined,
+        estimate: typeof estimate === "number" ? estimate : estimate === null ? null : undefined,
       },
     });
 

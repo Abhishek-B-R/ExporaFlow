@@ -49,6 +49,8 @@ export default function Issue() {
 
   const [createIssueWindowOpen, setCreateIssueWindowOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [matchingIssueIds, setMatchingIssueIds] = useState<string[] | null>(null);
   const [isSavingView, setIsSavingView] = useState(false);
@@ -73,10 +75,16 @@ export default function Issue() {
         const statusMatch = statusFilter
           ? issue.status?.toLowerCase() === statusFilter.toLowerCase()
           : true;
+        const priorityMatch = priorityFilter
+          ? issue.priority?.toLowerCase() === priorityFilter.toLowerCase()
+          : true;
+        const assigneeMatch = assigneeFilter
+          ? (assigneeFilter === "unassigned" ? !issue.assignedUser : issue.assignedUser === assigneeFilter)
+          : true;
         const searchMatch = matchingIssueIds ? matchingIssueIds.includes(issue.id) : true;
-        return statusMatch && searchMatch;
+        return statusMatch && priorityMatch && assigneeMatch && searchMatch;
       }),
-    [issues, statusFilter, matchingIssueIds],
+    [issues, statusFilter, priorityFilter, assigneeFilter, matchingIssueIds],
   );
 
   const selectionScopeKey = `${statusFilter}|${searchQuery}|${
@@ -375,6 +383,51 @@ export default function Issue() {
               setFilter={setStatusFilter}
             />
           ))}
+
+          {/* Priority filter */}
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="h-7 rounded-md border border-(--border) bg-(--surface-2) px-2 text-xs outline-none cursor-pointer"
+          >
+            <option value="">All priorities</option>
+            <option value="Urgent">Urgent</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+            <option value="No Priority">No Priority</option>
+          </select>
+
+          {/* Assignee filter */}
+          <select
+            value={assigneeFilter}
+            onChange={(e) => setAssigneeFilter(e.target.value)}
+            className="h-7 rounded-md border border-(--border) bg-(--surface-2) px-2 text-xs outline-none cursor-pointer"
+          >
+            <option value="">All assignees</option>
+            <option value="unassigned">Unassigned</option>
+            {(() => {
+              const uniqueAssignees = new Map<string, string>();
+              (issues ?? []).forEach((issue) => {
+                if (issue.assignedUser && issue.User) {
+                  uniqueAssignees.set(issue.assignedUser, issue.User.name || issue.User.email || issue.assignedUser);
+                }
+              });
+              return Array.from(uniqueAssignees.entries()).map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ));
+            })()}
+          </select>
+
+          {/* Active filters badge */}
+          {(statusFilter || priorityFilter || assigneeFilter) && (
+            <button
+              onClick={() => { setStatusFilter(""); setPriorityFilter(""); setAssigneeFilter(""); }}
+              className="h-7 px-2 rounded-md border border-red-400/30 bg-red-400/10 text-red-400 text-xs hover:bg-red-400/20 transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
 
         <div className="px-2 py-2 border-b border-(--border) bg-(--surface-1)">

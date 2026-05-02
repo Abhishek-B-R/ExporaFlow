@@ -68,6 +68,7 @@ export default function Issue({
   const [labelsInput, setLabelsInput] = useState("");
   const [dueDateInput, setDueDateInput] = useState("");
   const [sprintInput, setSprintInput] = useState("");
+  const [estimateInput, setEstimateInput] = useState<number | null>(null);
   const [commentInput, setCommentInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isPostingComment, setIsPostingComment] = useState(false);
@@ -94,6 +95,7 @@ export default function Issue({
       issueData.dueDate ? new Date(issueData.dueDate).toISOString().slice(0, 10) : "",
     );
     setSprintInput(issueData.sprintId ?? "");
+    setEstimateInput((issueData as any).estimate ?? null);
   }, []);
 
   const fetchIssueData = useCallback(
@@ -159,6 +161,7 @@ export default function Issue({
         sprintId: sprintInput || null,
         dueDate: dueDateInput || null,
         labels,
+        estimate: estimateInput,
       });
 
       customToast.success({ title: "", description: "Issue details updated." });
@@ -501,6 +504,20 @@ export default function Issue({
                   ))}
                 </div>
               )}
+            </SidebarField>
+
+            {/* Estimate */}
+            <SidebarField label="Estimate">
+              <select
+                value={estimateInput ?? ""}
+                onChange={(e) => setEstimateInput(e.target.value ? parseInt(e.target.value, 10) : null)}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              >
+                <option value="">No estimate</option>
+                {[1, 2, 3, 5, 8, 13, 21].map((v) => (
+                  <option key={v} value={v}>{v} {v === 1 ? "point" : "points"}</option>
+                ))}
+              </select>
             </SidebarField>
 
             {/* Parent issue */}
