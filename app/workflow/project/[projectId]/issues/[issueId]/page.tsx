@@ -7,6 +7,7 @@ import axios from "axios";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RenderStatusSvg, renderPrioritySvg } from "@/components/workflow/issues/issue-label";
+import { useRouter } from "next/navigation";
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 
@@ -58,6 +59,7 @@ export default function Issue({
   const [sprints, setSprints] = useState<SprintBody[]>([]);
   const [issuesInProject, setIssuesInProject] = useState<IssueBody[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const router = useRouter();
 
   const [titleInput, setTitleInput] = useState("");
   const [descriptionInput, setDescriptionInput] = useState("");
@@ -71,6 +73,7 @@ export default function Issue({
   const [estimateInput, setEstimateInput] = useState<number | null>(null);
   const [commentInput, setCommentInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isPostingComment, setIsPostingComment] = useState(false);
   const [activityTab, setActivityTab] = useState<"comments" | "activity">("comments");
 
@@ -173,6 +176,22 @@ export default function Issue({
     }
   };
 
+  const deleteIssue = async () => {
+    if (!issueId || !projectId) return;
+    const confirmDelete = window.confirm("Are you sure you want to delete this issue? This action cannot be undone.");
+    if (!confirmDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await axios.delete("/api/issues/deleteissue", { data: { issueId } });
+      customToast.success({ title: "", description: "Issue deleted successfully." });
+      router.push(`/workflow/project/${projectId}/issues`);
+    } catch {
+      customToast.error({ title: "", description: "Failed to delete issue." });
+      setIsDeleting(false);
+    }
+  };
+
   const addComment = async () => {
     if (!issueId || !commentInput.trim()) return;
     try {
@@ -249,13 +268,22 @@ export default function Issue({
           <span className="text-(--muted-2) text-xs">·</span>
           <p className="text-xs text-(--muted-2) font-mono">{issue.id.slice(0, 8)}</p>
         </div>
-        <button
-          onClick={saveIssueMeta}
-          disabled={isSaving}
-          className="h-7 px-3 rounded-md bg-[#6f86ff] hover:bg-[#5a70e6] text-white text-xs font-medium transition-colors disabled:opacity-50"
-        >
-          {isSaving ? "Saving…" : "Save changes"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={deleteIssue}
+            disabled={isDeleting || isSaving}
+            className="h-7 px-3 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            {isDeleting ? "Deleting…" : "Delete issue"}
+          </button>
+          <button
+            onClick={saveIssueMeta}
+            disabled={isSaving || isDeleting}
+            className="h-7 px-3 rounded-md bg-[#6f86ff] hover:bg-[#5a70e6] text-white text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            {isSaving ? "Saving…" : "Save changes"}
+          </button>
+        </div>
       </div>
 
       {/* Main content — two-column layout */}
