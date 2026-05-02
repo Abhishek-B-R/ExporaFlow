@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     where: { id: issueId },
     include: {
       User: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, image: true },
       },
       parentIssue: {
         select: { id: true, title: true },
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       comments: {
         include: {
           author: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true, email: true, image: true },
           },
           mentions: {
             include: {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       activities: {
         include: {
           actor: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true, email: true, image: true },
           },
         },
         orderBy: { createdAt: "desc" },

@@ -55,15 +55,4 @@ export async function POST(request: NextRequest) {
       "Content-Type": "application/json",
     },
   });
-  return new Response(
-    JSON.stringify({
-      message: "Failed to fetch issues with the project id.",
-    }),
-    {
-      status: 404,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
 }
