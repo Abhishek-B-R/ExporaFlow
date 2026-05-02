@@ -99,6 +99,12 @@ export default function WorkflowSidebar() {
               optName="Teams"
               href="/workflow/teams"
             />
+            <OptionLabel
+              className={pathname === "/workflow/labels" ? TabActive : ""}
+              svg={RAW_ICONS.Label}
+              optName="Labels"
+              href="/workflow/labels"
+            />
           </div>
         </div>
       </div>

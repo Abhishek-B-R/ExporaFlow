@@ -131,6 +131,7 @@ model Issue {
 
   sprint   Sprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
   sprintId String?
+  estimate Int?
   comments IssueComment[]
   activities IssueActivity[]
   notifications Notification[]
@@ -146,6 +147,20 @@ model Workspace {
   teams       Team[]
   projects    Project[]
   invitations Invitation[]
+  labels      Label[]
+}
+
+model Label {
+  id          String   @id @default(uuid())
+  name        String
+  color       String   @default("#6f86ff")
+  description String?
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+
+  @@unique([workspaceId, name])
 }
 
 model WorkspaceMember {
