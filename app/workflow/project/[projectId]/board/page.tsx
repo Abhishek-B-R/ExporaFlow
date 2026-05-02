@@ -149,7 +149,7 @@ export default function ProjectBoardPage() {
           <div>
             <p className="text-lg font-medium">Board</p>
             <p className="text-sm text-(--muted-2)">
-              Drag issues between columns or use quick move in a card.
+              Drag and drop issues between columns to change their status.
             </p>
           </div>
         </div>
@@ -172,14 +172,13 @@ export default function ProjectBoardPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-start">
             {ISSUE_STATUSES.map((status) => (
               <BoardColumn
                 key={status}
                 status={status}
                 issues={grouped[status]}
                 onDropToStatus={onDropToStatus}
-                onQuickMove={onDropToStatus}
               />
             ))}
           </div>
@@ -193,9 +192,8 @@ function BoardColumn(props: {
   status: IssueStatus;
   issues: IssueBody[];
   onDropToStatus: (toStatus: IssueStatus, payload: DragPayload) => Promise<void>;
-  onQuickMove: (toStatus: IssueStatus, payload: DragPayload) => Promise<void>;
 }) {
-  const { status, issues, onDropToStatus, onQuickMove } = props;
+  const { status, issues, onDropToStatus } = props;
 
   return (
     <div
@@ -214,14 +212,14 @@ function BoardColumn(props: {
         }
       }}
     >
-      <div className="px-3 py-2 border-b border-(--border) bg-(--surface-2) flex items-center justify-between">
+      <div className="px-3 py-2 border-b border-(--border) bg-(--surface-2) flex items-center justify-between sticky top-0 z-10">
         <p className="text-sm font-medium">{status}</p>
         <p className="text-xs text-(--muted-2)">{issues.length}</p>
       </div>
 
       <div className="p-2 flex flex-col gap-y-2 min-h-24">
         {issues.map((issue) => (
-          <BoardCard key={issue.id} issue={issue} onQuickMove={onQuickMove} />
+          <BoardCard key={issue.id} issue={issue} />
         ))}
         {issues.length === 0 && (
           <div className="text-xs text-(--muted-2) px-1 py-2">Drop issues here.</div>
@@ -233,9 +231,8 @@ function BoardColumn(props: {
 
 function BoardCard(props: {
   issue: IssueBody;
-  onQuickMove: (toStatus: IssueStatus, payload: DragPayload) => Promise<void>;
 }) {
-  const { issue, onQuickMove } = props;
+  const { issue } = props;
 
   return (
     <div
@@ -248,21 +245,6 @@ function BoardCard(props: {
       className="rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors px-3 py-2 cursor-grab active:cursor-grabbing"
     >
       <p className="text-sm font-medium leading-snug">{issue.title}</p>
-      <div className="mt-2">
-        <select
-          value={(issue.status as IssueStatus) ?? "Backlog"}
-          onChange={(e) =>
-            void onQuickMove(e.target.value as IssueStatus, { issueId: issue.id })
-          }
-          className="h-7 w-full text-xs rounded-md border border-(--border) bg-(--surface-1) px-2 cursor-pointer"
-        >
-          {ISSUE_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              Move to {status}
-            </option>
-          ))}
-        </select>
-      </div>
       {issue.priority && (
         <p className="text-xs text-(--muted-2) mt-1">{issue.priority}</p>
       )}
