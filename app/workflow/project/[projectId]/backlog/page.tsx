@@ -2,28 +2,23 @@
 
 import { IssueBody } from "@/utils/types";
 import axios from "axios";
-import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { customToast } from "@/lib/custom-toast";
 import { WorkflowLayout } from "@/components/workflow/workflow-layout";
 import { RAW_ICONS } from "@/lib/icons";
-import SVGIcon from "@/lib/svg-icon";
 import { ProjectBody } from "@/utils/types";
+import { ProjectNavbar } from "@/components/workflow/project-navbar";
 
 export default function ProjectBacklogPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params?.projectId;
-  const path = usePathname();
 
   const [issues, setIssues] = useState<IssueBody[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [project, setProject] = useState<ProjectBody | null>(null);
 
-  const activeTab =
-    "flex h-7 items-center gap-x-1 cursor-pointer border border-[#3a3a3a] px-2 rounded bg-[#0A0A0A] hover:bg-[#151515] transition-all duration-300";
-  const inactiveTab =
-    "flex h-7 items-center gap-x-1 cursor-pointer border border-[#2b2b2b] px-2 rounded bg-[#0A0A0A] hover:bg-[#131313] transition-all duration-300";
+
 
   const backlog = useMemo(
     () => issues.filter((i) => (i.status ?? "Backlog").toLowerCase() === "backlog"),
@@ -61,57 +56,7 @@ export default function ProjectBacklogPage() {
 
   return (
     <WorkflowLayout windowSvg={RAW_ICONS.Issue} windowTitle="Issues">
-      <div className="border h-10 rounded border-[#2d3036] flex items-center justify-between px-4">
-        <div className=" flex gap-x-2 items-center ">
-          <Link
-            href={"/workflow/project"}
-            className="flex items-center rounded text-[12px] sm:text-[13px] md:text-[15px] border border-transparent hover:border-[#2E3035] px-2 h-7 hover:bg-[#1C1D21] transition-all duration-300"
-          >
-            Projects
-          </Link>
-          <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-[#2E3035] px-2 rounded hover:bg-[#1C1D21] transition-all duration-300">
-            <SVGIcon className="flex w-4" svgString={RAW_ICONS.Cube} />
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-              {project ? project.title : "Loading…"}
-            </p>
-          </div>
-          <Link
-            href={`/workflow/project/${projectId}`}
-            className={path.includes("/issues") ? inactiveTab : activeTab}
-          >
-            <SVGIcon className="flex w-4" svgString={RAW_ICONS.Docs} />
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">Overview</p>
-          </Link>
-          <Link
-            href={`/workflow/project/${projectId}/issues`}
-            className={path.includes("/issues") ? activeTab : inactiveTab}
-          >
-            <SVGIcon className="flex w-4" svgString={RAW_ICONS.Issue} />
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">Issues</p>
-          </Link>
-          <Link
-            href={`/workflow/project/${projectId}/sprints`}
-            className={path.includes("/sprints") ? activeTab : inactiveTab}
-          >
-            <SVGIcon className="flex w-4" svgString={RAW_ICONS.PlannedIssue} />
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">Sprints</p>
-          </Link>
-          <Link
-            href={`/workflow/project/${projectId}/backlog`}
-            className={path.includes("/backlog") ? activeTab : inactiveTab}
-          >
-            <SVGIcon className="flex w-4" svgString={RAW_ICONS.DashedCircle} />
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">Backlog</p>
-          </Link>
-          <Link
-            href={`/workflow/project/${projectId}/board`}
-            className={path.includes("/board") ? activeTab : inactiveTab}
-          >
-            <SVGIcon className="flex w-4" svgString={RAW_ICONS.Stack} />
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">Board</p>
-          </Link>
-        </div>
-      </div>
+      <ProjectNavbar projectId={projectId} projectTitle={project?.title} />
 
       <div className="grow min-h-screen px-3 md:px-6 py-4">
         <div className="flex items-center justify-between mb-4">

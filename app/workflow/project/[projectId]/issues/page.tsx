@@ -6,18 +6,16 @@ import { IssueBody, ProjectBody } from "@/utils/types";
 import axios from "axios";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import IssueLabel from "@/components/workflow/issues/issue-label";
 import { IssueViewOptArray } from "@/utils/issues-view-options";
 import { CreateIssueWindow } from "@/components/workflow/issues/create-issue-window";
 import IssuesTopTile from "@/components/workflow/issues/issues-top-tile";
 import { WorkflowLayout } from "@/components/workflow/workflow-layout";
 import { customToast } from "@/lib/custom-toast";
+import { ProjectNavbar } from "@/components/workflow/project-navbar";
 
-const activeTab =
-  "flex h-7 items-center gap-x-1 cursor-pointer border border-[color:var(--border-strong)] px-2 rounded bg-[color:var(--surface-2)] hover:bg-[color:var(--surface-3)] transition-all duration-300";
-const inactiveTab =
-  "flex h-7 items-center gap-x-1 cursor-pointer border border-[color:var(--border)] px-2 rounded bg-[color:var(--surface-1)] hover:bg-[color:var(--surface-2)] transition-all duration-300";
+
 
 type AiDraftPayload = {
   title?: string;
@@ -41,7 +39,6 @@ type AiTriagePayload = {
 export default function Issue() {
   const routeParams = useParams<{ projectId: string }>();
   const router = useRouter();
-  const path = usePathname();
   const [project_id, setProjectId] = useState<string | null>("");
   const [project, setProject] = useState<ProjectBody | null>(null);
   const [issueTitle, setIssueTitle] = useState("");
@@ -338,66 +335,8 @@ export default function Issue() {
   return (
     <>
       <WorkflowLayout windowSvg={RAW_ICONS.Issue} windowTitle="Issues">
-        <div className="border-b border-(--border) h-10 flex items-center justify-between px-4 bg-(--surface-2)">
-          <div className=" flex gap-x-2 items-center ">
-            <Link
-              href={"/workflow/project"}
-              className="flex items-center rounded text-[12px] sm:text-[13px] md:text-[15px] border border-transparent  hover:border-[#2E3035] px-2 h-7  hover:bg-[#1C1D21] transition-all duration-300"
-            >
-              Projects
-            </Link>
-            <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded-md hover:bg-(--surface-3) transition-all duration-300">
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.Cube} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                {project ? project.title : "Loading…"}
-              </p>
-            </div>
-            <Link
-              href={`/workflow/project/${project_id}`}
-              className={path.includes("/issues") ? inactiveTab : activeTab}
-            >
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.Docs} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                Overview
-              </p>
-            </Link>
-            <Link
-              href={`/workflow/project/${project_id}/issues`}
-              className={path.includes("/issues") ? activeTab : inactiveTab}
-            >
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.Issue} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                Issues
-              </p>
-            </Link>
-            <Link
-              href={`/workflow/project/${project_id}/sprints`}
-              className={path.includes("/sprints") ? activeTab : inactiveTab}
-            >
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.PlannedIssue} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                Sprints
-              </p>
-            </Link>
-            <Link
-              href={`/workflow/project/${project_id}/backlog`}
-              className={path.includes("/backlog") ? activeTab : inactiveTab}
-            >
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.DashedCircle} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                Backlog
-              </p>
-            </Link>
-            <Link
-              href={`/workflow/project/${project_id}/board`}
-              className={path.includes("/board") ? activeTab : inactiveTab}
-            >
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.Stack} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                Board
-              </p>
-            </Link>
-          </div>
+        <ProjectNavbar projectId={project_id} projectTitle={project?.title} />
+        <div className="border-b border-(--border) h-10 flex items-center justify-end px-4 bg-(--surface-2)">
           <div className="flex gap-1">
             <button
               onClick={saveCurrentView}
