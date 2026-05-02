@@ -48,7 +48,7 @@ export default function Issue() {
   const [issueDescription, setIssueDescription] = useState("");
 
   const [issues, setIssues] = useState<IssueBody[]>();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [createIssueWindowOpen, setCreateIssueWindowOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
@@ -122,7 +122,6 @@ export default function Issue() {
       if (!project_id) return;
 
       try {
-        setIsLoading(true);
         const response = await axios.post("/api/workflow/project", {
           project_id: project_id,
         });
@@ -130,8 +129,6 @@ export default function Issue() {
         setProject(response.data);
       } catch (error) {
         console.log(error);
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchUniqueProject();
@@ -557,8 +554,14 @@ export default function Issue() {
         <IssuesTopTile />
 
         {isLoading ? (
-          <div className="h-10 flex items-center justify-center">
-            <SVGIcon svgString={RAW_ICONS.Loader} />
+          <div className="grow overflow-y-auto h-96 scrollbar-hide pt-1 space-y-0">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-10 border-b border-(--border) flex items-center px-4 gap-4 animate-pulse">
+                <div className="w-4 h-4 rounded bg-(--surface-3) shrink-0" />
+                <div className="h-3 bg-(--surface-3) rounded w-1/3" />
+                <div className="h-3 bg-(--surface-3) rounded w-16 ml-auto" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="grow overflow-y-auto h-96 scrollbar-hide pt-1 ">

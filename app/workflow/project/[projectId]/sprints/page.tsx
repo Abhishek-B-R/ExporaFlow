@@ -49,7 +49,7 @@ export default function SprintsPage() {
   const [issues, setIssues] = useState<IssueBody[]>([]);
   const [sprints, setSprints] = useState<SprintBody[]>([]);
   const [project, setProject] = useState<ProjectBody | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -602,7 +602,28 @@ export default function SprintsPage() {
           </div>
         )}
 
-        {isLoading && <p className="text-sm text-(--muted-2)">Refreshing…</p>}
+        {isLoading && sprints.length === 0 && (
+          <div className="space-y-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="rounded-xl border border-(--border) bg-(--surface-1) overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 animate-pulse">
+                  <div className="w-4 h-4 rounded bg-(--surface-3)" />
+                  <div className="h-3.5 bg-(--surface-3) rounded w-40" />
+                  <div className="h-3.5 bg-(--surface-3) rounded w-16" />
+                </div>
+                <div className="border-t border-(--border) divide-y divide-(--border)">
+                  {[...Array(3)].map((_, j) => (
+                    <div key={j} className="flex items-center gap-3 px-4 py-2.5 animate-pulse">
+                      <div className="h-3 bg-(--surface-3) rounded w-16" />
+                      <div className="h-3 bg-(--surface-3) rounded flex-1" />
+                      <div className="h-3 bg-(--surface-3) rounded w-14" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </WorkflowLayout>
   );
