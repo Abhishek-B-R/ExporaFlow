@@ -516,6 +516,7 @@ export default function Issue() {
                     priority={elem.priority}
                     status={elem.status}
                     updatedAt={elem.updatedAt}
+                    assigneeInfo={elem.User}
                     selected={selectedIssueIndex === key}
                   />
                 );

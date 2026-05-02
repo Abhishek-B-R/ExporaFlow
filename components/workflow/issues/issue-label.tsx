@@ -17,6 +17,7 @@ export default function IssueLabel({
   status,
   update,
   assigedUser,
+  assigneeInfo,
   projectID,
   issueID,
   updatedAt,
@@ -30,6 +31,7 @@ export default function IssueLabel({
   status?: string;
   update?: string;
   assigedUser?: string;
+  assigneeInfo?: { id: string; name?: string | null; email?: string | null; image?: string | null } | null;
   projectID: string | null;
   issueID: string;
   updatedAt?: string;
@@ -162,6 +164,9 @@ export default function IssueLabel({
     }
   };
 
+  const assigneeName = assigneeInfo?.name || assigneeInfo?.email || null;
+  const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : null;
+
   return (
     <div
       className={`h-12 rounded-md border transition-colors duration-150 px-3 grid grid-cols-12 items-center text-xs md:text-sm xl:text-[15px] cursor-pointer ${
@@ -184,13 +189,13 @@ export default function IssueLabel({
         {projectID ? (
           <Link
             href={`/workflow/project/${projectID}/issues/${issueID}`}
-            className="text-sm xl:text-[16px] hover:underline"
+            className="text-sm xl:text-[16px] hover:underline truncate"
             onClick={(e) => e.stopPropagation()}
           >
             {title}
           </Link>
         ) : (
-          <p className="text-sm xl:text-[16px]">{title}</p>
+          <p className="text-sm xl:text-[16px] truncate">{title}</p>
         )}
       </div>
       <p
@@ -269,10 +274,27 @@ export default function IssueLabel({
       <div title={fullDate} className="col-span-1 cursor-pointer ">
         {shortDate}
       </div>
-      <div className="col-span-1 border border-[#2C2E33] h-7 w-7 rounded-full flex items-center justify-center hover:bg-[#4141414f] transition-all duration-200">
-        <SVGIcon className="flex w-6" svgString={RAW_ICONS.AssignedUser} />
+      <div
+        className="col-span-1"
+        title={assigneeName ?? "Unassigned"}
+      >
+        {assigneeInfo?.image ? (
+          <img
+            src={assigneeInfo.image}
+            alt={assigneeName ?? ""}
+            className="h-7 w-7 rounded-full object-cover border border-[#2C2E33]"
+          />
+        ) : assigneeInitial ? (
+          <div className="h-7 w-7 rounded-full bg-[#6f86ff]/20 border border-[#6f86ff]/30 flex items-center justify-center text-xs font-medium text-[#6f86ff]">
+            {assigneeInitial}
+          </div>
+        ) : (
+          <div className="border border-[#2C2E33] h-7 w-7 rounded-full flex items-center justify-center hover:bg-[#4141414f] transition-all duration-200">
+            <SVGIcon className="flex w-6" svgString={RAW_ICONS.AssignedUser} />
+          </div>
+        )}
       </div>
-      <p className="col-span-3">update</p>
+      <p className="col-span-3 truncate text-xs text-(--muted-2)">{assigneeName ? `Assigned to ${assigneeName.split(" ")[0]}` : ""}</p>
     </div>
   );
 }

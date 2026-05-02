@@ -177,6 +177,9 @@ function BoardCard(props: {
   issue: IssueBody;
 }) {
   const { issue } = props;
+  const assignee = issue.User;
+  const assigneeName = assignee?.name || assignee?.email || null;
+  const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : null;
 
   return (
     <div
@@ -189,9 +192,26 @@ function BoardCard(props: {
       className="rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors px-3 py-2 cursor-grab active:cursor-grabbing"
     >
       <p className="text-sm font-medium leading-snug">{issue.title}</p>
-      {issue.priority && (
-        <p className="text-xs text-(--muted-2) mt-1">{issue.priority}</p>
-      )}
+      <div className="flex items-center justify-between mt-1.5">
+        {issue.priority && (
+          <p className="text-xs text-(--muted-2)">{issue.priority}</p>
+        )}
+        {assignee?.image ? (
+          <img
+            src={assignee.image}
+            alt={assigneeName ?? ""}
+            title={assigneeName ?? "Unassigned"}
+            className="h-5 w-5 rounded-full object-cover border border-[#2C2E33] ml-auto"
+          />
+        ) : assigneeInitial ? (
+          <div
+            title={assigneeName ?? ""}
+            className="h-5 w-5 rounded-full bg-[#6f86ff]/20 border border-[#6f86ff]/30 flex items-center justify-center text-[10px] font-medium text-[#6f86ff] ml-auto"
+          >
+            {assigneeInitial}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -20,6 +20,7 @@ export type IssueBody = {
   dueDate?: string | null;
   labels?: string[];
   assignedUser?: string | null;
+  User?: { id: string; name?: string | null; email?: string | null; image?: string | null } | null;
   sprintId?: string | null;
   parentIssueId?: string | null;
   projectId: string;

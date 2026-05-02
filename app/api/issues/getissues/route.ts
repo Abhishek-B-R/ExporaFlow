@@ -42,6 +42,11 @@ export async function POST(request: NextRequest) {
     where: {
       projectId: project_id,
     },
+    include: {
+      User: {
+        select: { id: true, name: true, email: true, image: true },
+      },
+    },
     orderBy: { updatedAt: "desc" },
   });
   return new Response(JSON.stringify(issues), {
