@@ -98,9 +98,9 @@ export default function ProjectBoardPage() {
           </div>
         </div>
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+          <div className="flex overflow-x-auto snap-x md:grid md:grid-cols-2 xl:grid-cols-5 gap-3 items-start pb-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="rounded-lg border border-(--border) bg-(--surface-1) overflow-hidden">
+              <div key={i} className="min-w-[85vw] md:min-w-0 snap-center rounded-lg border border-(--border) bg-(--surface-1) overflow-hidden shrink-0">
                 <div className="px-3 py-2 border-b border-(--border) bg-(--surface-2)">
                   <div className="h-3.5 bg-(--surface-3) rounded w-1/2 animate-pulse" />
                 </div>
@@ -116,7 +116,7 @@ export default function ProjectBoardPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-start">
+          <div className="flex overflow-x-auto snap-x md:grid md:grid-cols-2 xl:grid-cols-5 gap-3 items-start pb-4">
             {ISSUE_STATUSES.map((status) => (
               <BoardColumn
                 key={status}
@@ -141,7 +141,7 @@ function BoardColumn(props: {
 
   return (
     <div
-      className="rounded-lg border border-(--border) bg-(--surface-1) overflow-hidden"
+      className="min-w-[85vw] md:min-w-0 snap-center rounded-lg border border-(--border) bg-(--surface-1) overflow-hidden shrink-0"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();

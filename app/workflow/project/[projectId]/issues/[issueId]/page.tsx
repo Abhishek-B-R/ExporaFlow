@@ -287,9 +287,9 @@ export default function Issue({
       </div>
 
       {/* Main content — two-column layout */}
-      <div className="grow flex overflow-hidden">
+      <div className="grow flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
         {/* Left — main content area */}
-        <div className="grow overflow-y-auto px-6 md:px-10 py-6 space-y-6">
+        <div className="grow md:overflow-y-auto px-4 sm:px-6 md:px-10 py-6 space-y-6 shrink-0">
           {/* Title */}
           <input
             value={titleInput}
@@ -445,7 +445,7 @@ export default function Issue({
         </div>
 
         {/* Right sidebar — metadata */}
-        <div className="w-72 shrink-0 border-l border-(--border) bg-(--surface-1) overflow-y-auto hidden md:block">
+        <div className="w-full md:w-72 shrink-0 border-t md:border-t-0 md:border-l border-(--border) bg-(--surface-1) md:overflow-y-auto block">
           <div className="p-4 space-y-5">
             {/* Status */}
             <SidebarField label="Status">

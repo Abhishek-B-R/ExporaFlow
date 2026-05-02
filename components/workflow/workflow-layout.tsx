@@ -23,7 +23,7 @@ export const WorkflowLayout: React.FC<WrapperProps> = ({
           Press <span className="px-1 py-0.5 rounded bg-(--surface-3)">⌘K</span> for commands
         </p>
       </div>
-      <div className="flex-grow m-2 md:ml-0 linear-panel overflow-hidden">
+      <div className="flex-grow m-2 md:ml-0 linear-panel overflow-hidden pb-16 md:pb-0">
         {children}
       </div>
     </div>
