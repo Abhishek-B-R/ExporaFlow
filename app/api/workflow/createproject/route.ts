@@ -3,6 +3,7 @@ import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma, Role } from "@prisma/client";
+import { isProjectServiceLineValue } from "@/utils/project-service-line";
 
 function normalizeName(value: string) {
   return value
@@ -13,7 +14,7 @@ function normalizeName(value: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const { projTitle, projDescription, projContent, priority, status } =
+  const { projTitle, projDescription, projContent, priority, status, serviceLine } =
     await request.json();
 
   const session = await getServerSession(authOptions);
@@ -24,6 +25,13 @@ export async function POST(request: NextRequest) {
 
   if (!projTitle || typeof projTitle !== "string" || !projTitle.trim()) {
     return Response.json({ message: "Project title is required." }, { status: 400 });
+  }
+
+  if (!isProjectServiceLineValue(serviceLine)) {
+    return Response.json(
+      { message: "Select a service line for this project." },
+      { status: 400 },
+    );
   }
 
   if (session?.user.id) {
@@ -68,6 +76,7 @@ export async function POST(request: NextRequest) {
           content: projContent,
           priority: priority,
           status: status,
+          serviceLine,
           workspaceId: workspaceMember?.workspaceId ?? null,
           projectMembers: {
             create: {

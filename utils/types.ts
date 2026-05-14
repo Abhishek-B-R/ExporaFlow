@@ -7,6 +7,8 @@ export type ProjectBody = {
   id: string;
   lead: string;
   priority: string;
+  /** Company service line; optional on legacy projects. */
+  serviceLine?: string | null;
   status: string;
   targetDate: any;
 };

@@ -16,6 +16,7 @@ import {
   priorityOptionsArray,
 } from "@/utils/project-view-options";
 import { customToast } from "@/lib/custom-toast";
+import { projectServiceLineLabel } from "@/utils/project-service-line";
 
 
 
@@ -158,9 +159,16 @@ export default function Project({
           {project && (
             <div className="grow overflow-y-auto h-96 scrollbar-hide px-4 sm:px-6 lg:px-10 xl:px-20">
               <div className="my-4 sm:my-5 lg:my-10">
-                <p className="text-xl lg:text-2xl xl:text-3xl font-medium">
-                  {project.title}
-                </p>
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <p className="text-xl lg:text-2xl xl:text-3xl font-medium">
+                    {project.title}
+                  </p>
+                  {project.serviceLine ? (
+                    <span className="text-[11px] md:text-xs text-[#9b9c9e] border border-[#3a3b40] rounded px-2 py-0.5">
+                      {projectServiceLineLabel(project.serviceLine)}
+                    </span>
+                  ) : null}
+                </div>
                 <p className="my-3 text-[#858687]">{project.description}</p>
               </div>
 

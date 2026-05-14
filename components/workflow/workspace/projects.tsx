@@ -12,7 +12,6 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import ProjectListSkeleton from "./project-skeleton-loader";
 import { WorkflowLayout } from "../workflow-layout";
 import { renderPrioritySvg } from "../issues/issue-label";
@@ -21,6 +20,11 @@ import {
   priorityOptionsArray,
 } from "@/utils/project-view-options";
 import { customToast } from "@/lib/custom-toast";
+import {
+  PROJECT_SERVICE_LINES,
+  type ProjectServiceLineValue,
+  projectServiceLineLabel,
+} from "@/utils/project-service-line";
 
 export default function Projects() {
   const [deleteProjectId, setDeleteProjectId] = useState("");
@@ -112,6 +116,7 @@ export default function Projects() {
                   title={elem.title}
                   health={elem.status}
                   priority={elem.priority}
+                  serviceLine={elem.serviceLine}
                   projectID={elem.id}
                   openDeleteWindow={setDeleteWindowOpen}
                   setProjectIdToDelete={setDeleteProjectId}
@@ -137,9 +142,10 @@ export default function Projects() {
 const ProjectTopTile = () => {
   return (
     <div className="border-b h-10 border-[#2E3035] grid grid-cols-12 px-4 items-center text-[#97989A] text-[11px] sm:text-[13px] md:text-[15px]">
-      <p className="col-span-4">Title</p>
+      <p className="col-span-3">Title</p>
+      <p className="col-span-2">Service</p>
       <p className="col-span-2">Health</p>
-      <p className="col-span-2">Priority</p>
+      <p className="col-span-1">Priority</p>
       <p className="col-span-1">Lead</p>
       <p className="col-span-1">Target Date</p>
       <p className="col-span-2">Status</p>
@@ -151,6 +157,7 @@ const ProjectLabel = ({
   title,
   health,
   priority,
+  serviceLine,
   lead,
   targetDate,
   status,
@@ -161,6 +168,7 @@ const ProjectLabel = ({
   title: string;
   health?: string;
   priority: string;
+  serviceLine?: string | null;
   lead?: string;
   targetDate?: string;
   status?: string;
@@ -265,10 +273,16 @@ const ProjectLabel = ({
     <div className="rounded-lg grid grid-cols-12 px-4 items-center text-[#97989A] h-16 hover:bg-[#151818] transition-all duration-300 text-[11px] sm:text-[13px] md:text-[15px]">
       <Link
         href={`/workflow/project/${projectID}`}
-        className="col-span-4 text-sm lg:text-lg"
+        className="col-span-3 text-sm lg:text-lg min-w-0 truncate"
       >
         {title}
       </Link>
+      <p
+        className="col-span-2 text-[11px] sm:text-xs text-[#b4b5b8] min-w-0 truncate pr-1"
+        title={projectServiceLineLabel(serviceLine)}
+      >
+        {projectServiceLineLabel(serviceLine)}
+      </p>
       <div className="col-span-2 relative" ref={healthDropdownRef}>
         <div
           className="w-fit flex items-center px-2 h-8 rounded hover:bg-[#212227] transition-all duration-300 cursor-pointer"
@@ -291,7 +305,7 @@ const ProjectLabel = ({
           </div>
         )}
       </div>
-      <div className="col-span-2 relative" ref={priorityDropdownRef}>
+      <div className="col-span-1 relative" ref={priorityDropdownRef}>
         <div
           className="flex items-center justify-center h-8 w-8 rounded hover:bg-[#212227] transition-all duration-300 cursor-pointer"
           onClick={() => setShowOptionsDropdown("priority")}
@@ -344,6 +358,9 @@ const CreateProjectWindow = ({
   const [projContent, setProjContent] = useState("");
   const [status, setStatus] = useState<ProjectStatusType>("Backlog");
   const [priority, setPriority] = useState<ProjectPriorityType>("No Priority");
+  const [serviceLine, setServiceLine] = useState<ProjectServiceLineValue | null>(
+    null,
+  );
 
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
     "health" | "priority" | boolean
@@ -375,6 +392,7 @@ const CreateProjectWindow = ({
         createdBy: session?.user.id,
         priority: priority,
         status: status,
+        serviceLine,
       });
 
       customToast.info({
@@ -433,6 +451,31 @@ const CreateProjectWindow = ({
               setProjDescription(e.target.value);
             }}
           />
+        </div>
+
+        <div className="mt-4">
+          <p className="text-[11px] md:text-xs text-[#858687] mb-2">
+            Service line
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {PROJECT_SERVICE_LINES.map((line) => {
+              const selected = serviceLine === line.value;
+              return (
+                <button
+                  key={line.value}
+                  type="button"
+                  onClick={() => setServiceLine(line.value)}
+                  className={`rounded-md border px-2.5 py-1.5 text-[11px] md:text-[13px] transition-all duration-300 ${
+                    selected
+                      ? "border-[#6D78E7] bg-[#2a2f4a] text-white"
+                      : "border-[#525353] bg-[#1D1D21] text-[#c5c6c8] hover:bg-[#29292e]"
+                  }`}
+                >
+                  {line.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="my-2 h-10 gap-x-2 flex items-center  text-[10px]  md:text-[14px] lg:text-[15px] xl:text-[16px] ">
@@ -521,8 +564,10 @@ const CreateProjectWindow = ({
           </button>
           <button
             onClick={createProject}
-            disabled={isCreating}
-            className="px-2 border border-[#6D78E7] bg-[#5E6AD2] min-w-16 flex items-center justify-center rounded-md h-9 hover:bg-[#6D78E7] transition-all duration-300"
+            disabled={
+              isCreating || !projTitle.trim() || serviceLine === null
+            }
+            className="px-2 border border-[#6D78E7] bg-[#5E6AD2] min-w-16 flex items-center justify-center rounded-md h-9 hover:bg-[#6D78E7] transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
           >
             {isCreating ? (
               <SVGIcon svgString={RAW_ICONS.WhiteLoader} />

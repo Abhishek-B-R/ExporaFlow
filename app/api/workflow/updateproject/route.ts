@@ -3,7 +3,8 @@ import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { assertProjectRole } from "@/lib/authz";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
+import { isProjectServiceLineValue } from "@/utils/project-service-line";
 
 function normalizeName(value: string) {
   return value
@@ -21,6 +22,7 @@ export async function PATCH(request: NextRequest) {
     projContent,
     priority,
     status,
+    serviceLine,
   } = await request.json();
 
   const session = await getServerSession(authOptions);
@@ -82,15 +84,29 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    const updateData: Prisma.ProjectUpdateInput = {
+      title: projTitle,
+      description: projDescription,
+      content: projContent,
+      priority: priority,
+      status: status,
+    };
+    if (serviceLine !== undefined) {
+      if (serviceLine === null) {
+        updateData.serviceLine = null;
+      } else if (isProjectServiceLineValue(serviceLine)) {
+        updateData.serviceLine = serviceLine;
+      } else {
+        return new Response(
+          JSON.stringify({ message: "Invalid service line." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
-      data: {
-        title: projTitle,
-        description: projDescription,
-        content: projContent,
-        priority: priority,
-        status: status,
-      },
+      data: updateData,
     });
 
     if (updatedProject) {

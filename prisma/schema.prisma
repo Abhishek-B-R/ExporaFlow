@@ -15,6 +15,13 @@ enum Role {
   VIEWER
 }
 
+enum ProjectServiceLine {
+  SAP_CONSULTING
+  ORACLE_CONSULTING
+  MANAGED_SERVICES
+  SOFTWARE_DEVELOPMENT
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -89,6 +96,8 @@ model Project {
   content     String?
   health      String?
   priority    String?
+  /// Primary company service for this engagement (set at project creation).
+  serviceLine ProjectServiceLine?
   lead        String?
   targetDate  DateTime?
   status      String?
