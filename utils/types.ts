@@ -9,8 +9,15 @@ export type ProjectBody = {
   priority: string;
   /** Company service line; optional on legacy projects. */
   serviceLine?: string | null;
+  customerId?: string | null;
   status: string;
   targetDate: any;
+  creator?: { name: string | null; email: string | null } | null;
+  stats?: {
+    incidentTickets: number;
+    changeTickets: number;
+    slaAtRisk: number;
+  };
 };
 
 export type IssueBody = {
@@ -27,6 +34,12 @@ export type IssueBody = {
   parentIssueId?: string | null;
   projectId: string;
   updatedAt: string | undefined;
+  estimate?: number | null;
+  ticketType?: "INCIDENT" | "CHANGE";
+  startDate?: string | null;
+  endDate?: string | null;
+  durationMinutes?: number | null;
+  slaDueAt?: string | null;
 };
 
 export type SprintBody = {

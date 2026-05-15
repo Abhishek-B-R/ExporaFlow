@@ -23,6 +23,7 @@ export async function PATCH(request: NextRequest) {
     priority,
     status,
     serviceLine,
+    customerId,
   } = await request.json();
 
   const session = await getServerSession(authOptions);
@@ -101,6 +102,24 @@ export async function PATCH(request: NextRequest) {
           JSON.stringify({ message: "Invalid service line." }),
           { status: 400, headers: { "Content-Type": "application/json" } },
         );
+      }
+    }
+
+    if (customerId !== undefined) {
+      if (customerId === null || customerId === "") {
+        updateData.customer = { disconnect: true };
+      } else if (typeof customerId === "string") {
+        const c = await prisma.customer.findUnique({
+          where: { id: customerId },
+          select: { id: true },
+        });
+        if (!c) {
+          return new Response(JSON.stringify({ message: "Customer not found." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        updateData.customer = { connect: { id: customerId } };
       }
     }
 

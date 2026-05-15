@@ -117,7 +117,7 @@ export default function CommandPalette() {
       if (event.key === "Escape") setOpen(false);
       if (isCommand && event.key.toLowerCase() === "i" && projectId && !formFieldHasFocus()) {
         event.preventDefault();
-        router.push(`/workflow/project/${projectId}/issues`);
+        router.push(`/workflow/project/${projectId}/incident-tickets`);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -136,7 +136,7 @@ export default function CommandPalette() {
         label: "Open Current Project Issues",
         section: "Current project",
         hint: "Cmd/Ctrl + I",
-        run: () => currentProject && router.push(`/workflow/project/${currentProject}/issues`),
+        run: () => currentProject && router.push(`/workflow/project/${currentProject}/incident-tickets`),
       },
       {
         id: "project-board",
@@ -166,7 +166,7 @@ export default function CommandPalette() {
       label: issue.title,
       section: "Issues",
       hint: `${issue.projectTitle ?? "Project"}${issue.status ? ` · ${issue.status}` : ""}`,
-      run: () => router.push(`/workflow/project/${issue.projectId}/issues/${issue.id}`),
+      run: () => router.push(`/workflow/project/${issue.projectId}/incident-tickets/${issue.id}`),
     }));
 
     const projectCommands = searchResults.projects.map((project) => ({
@@ -174,7 +174,7 @@ export default function CommandPalette() {
       label: project.title,
       section: "Projects",
       hint: project.status ?? "Open project",
-      run: () => router.push(`/workflow/project/${project.id}/issues`),
+      run: () => router.push(`/workflow/project/${project.id}/incident-tickets`),
     }));
 
     return [...filteredBase, ...issueCommands, ...projectCommands].slice(0, 12);

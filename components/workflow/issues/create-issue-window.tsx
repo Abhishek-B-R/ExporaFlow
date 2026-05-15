@@ -2,9 +2,12 @@
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import axios from "axios";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { TicketType } from "@prisma/client";
+import { statusesForTicketType } from "@/lib/issue-status-machine";
+import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 import { renderPrioritySvg, RenderStatusSvg } from "./issue-label";
-import { IssueStatus, PriorityOptionsArray } from "@/utils/issues-view-options";
+import { PriorityOptionsArray } from "@/utils/issues-view-options";
 import { customToast } from "@/lib/custom-toast";
 
 type DuplicateCandidate = {
@@ -48,6 +51,18 @@ export const CreateIssueWindow = ({
   } | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<DuplicateCandidate | null>(null);
 
+  const [ticketType, setTicketType] = useState<TicketType>(TicketType.INCIDENT);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
+
+  useEffect(() => {
+    const allowed = statusesForTicketType(ticketType);
+    setSelectedStatusOption((prev) =>
+      allowed.includes(prev) ? prev : (allowed[0] ?? "Backlog"),
+    );
+  }, [ticketType]);
+
   const createIssue = async () => {
     try {
       const response = await axios.post("/api/issues/createissue", {
@@ -56,12 +71,18 @@ export const CreateIssueWindow = ({
         issueStatus: selectedStatusOption,
         issuePriority: selectedPriorityOption,
         projectId: project_id,
+        ticketType,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        durationMinutes: durationMinutes
+          ? Number.parseInt(durationMinutes, 10)
+          : undefined,
       });
 
       if (response.data) {
         customToast.success({
           title: "Success",
-          description: "Issue created successfully",
+          description: "Ticket created successfully",
         });
         await onCreated?.();
         setClose(false);
@@ -166,7 +187,7 @@ export const CreateIssueWindow = ({
               {project_title?.toUpperCase().slice(0, 3)}
             </div>
             <SVGIcon svgString={RAW_ICONS.ArrowRight} />
-            <p className="font-medium text-lg">New Issue</p>
+            <p className="font-medium text-lg">New ticket</p>
           </div>
           <div
             onClick={() => {
@@ -183,7 +204,7 @@ export const CreateIssueWindow = ({
             setIssueTitle(e.target.value);
             setDuplicateWarning(null);
           }}
-          placeholder="Issue title"
+          placeholder="Ticket title"
           value={issueTitle}
         />
         <textarea
@@ -191,10 +212,62 @@ export const CreateIssueWindow = ({
           onChange={(e) => {
             setIssueDescription(e.target.value);
           }}
-          placeholder="Issue description"
+          placeholder="Ticket description"
           name="description"
           value={issueDescription}
         ></textarea>
+
+        <div className="mt-4 space-y-3">
+          <p className="text-xs text-[#a4a6aa] uppercase tracking-wide">Ticket type</p>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { t: TicketType.INCIDENT, label: "Incident management" },
+                { t: TicketType.CHANGE, label: "Change management" },
+              ] as const
+            ).map(({ t, label }) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTicketType(t)}
+                className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                  ticketType === t
+                    ? "border-[#4f6bed] bg-[#4f6bed]/15 text-white"
+                    : "border-[#6A6C75] bg-[#1f2025] text-[#caccd4] hover:bg-[#212227]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {ticketType === TicketType.CHANGE ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <EnterpriseDatePicker
+                label="Start date *"
+                value={startDate}
+                onChange={setStartDate}
+              />
+              <EnterpriseDatePicker
+                label="End date"
+                value={endDate}
+                onChange={setEndDate}
+              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-[#a4a6aa]">
+                  Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  className="h-10 rounded-md border border-[#6A6C75] bg-[#1f2025] px-3 text-sm"
+                  placeholder="If no end date"
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
 
         {/* Duplicate warning */}
         {duplicateWarning && (
@@ -304,14 +377,14 @@ export const CreateIssueWindow = ({
               </div>
               {showOptionsDropdown == "status" && (
                 <div className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg mt-1 z-10">
-                  {IssueStatus.map((option, key) => (
+                  {statusesForTicketType(ticketType).map((optionTitle) => (
                     <div
-                      key={key}
+                      key={optionTitle}
                       className="px-2 flex gap-x-2 rounded-lg items-center py-2 hover:bg-[#151818] cursor-pointer text-white text-sm"
-                      onClick={() => handleStatusOptionClick(option.title)}
+                      onClick={() => handleStatusOptionClick(optionTitle)}
                     >
-                      <SVGIcon className="flex w-4" svgString={option.svg} />
-                      <p>{option.title}</p>
+                      <RenderStatusSvg status={optionTitle} />
+                      <p>{optionTitle}</p>
                     </div>
                   ))}
                 </div>
@@ -344,7 +417,7 @@ export const CreateIssueWindow = ({
             onClick={createIssue}
             className="bg-gradient-to-b from-[#6A6C75] to-[#35373E] text-white  px-2 rounded-md h-8"
           >
-            Create issue
+            Create ticket
           </button>
         </div>
       </div>

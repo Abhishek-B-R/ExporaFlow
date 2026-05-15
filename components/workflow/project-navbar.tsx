@@ -1,17 +1,65 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import SVGIcon from "@/lib/svg-icon";
 import { RAW_ICONS } from "@/lib/icons";
+import { Calendar } from "lucide-react";
 
-const TABS = [
-  { label: "Overview", icon: RAW_ICONS.Docs, segment: "" },
-  { label: "Issues", icon: RAW_ICONS.Issue, segment: "issues" },
-  { label: "Sprints", icon: RAW_ICONS.PlannedIssue, segment: "sprints" },
-  { label: "Backlog", icon: RAW_ICONS.DashedCircle, segment: "backlog" },
-  { label: "Board", icon: RAW_ICONS.Stack, segment: "board" },
-] as const;
+type TabDef = {
+  label: string;
+  segment: string;
+  /** Query string including leading ? */
+  query?: string;
+  icon: "svg" | "calendar";
+  svg?: string;
+};
+
+const TABS: TabDef[] = [
+  { label: "Overview", segment: "", icon: "svg", svg: RAW_ICONS.Docs },
+  {
+    label: "Incident management",
+    segment: "incident-tickets",
+    query: "?ticketType=INCIDENT",
+    icon: "svg",
+    svg: RAW_ICONS.Issue,
+  },
+  {
+    label: "Change management",
+    segment: "incident-tickets",
+    query: "?ticketType=CHANGE",
+    icon: "svg",
+    svg: RAW_ICONS.PlannedIssue,
+  },
+  { label: "Team", segment: "team", icon: "svg", svg: RAW_ICONS.Members },
+  { label: "Timeline", segment: "timeline", icon: "calendar" },
+  { label: "SLA", segment: "sla", icon: "svg", svg: RAW_ICONS.DashedCircle },
+  { label: "Activity", segment: "activity", icon: "svg", svg: RAW_ICONS.Docs },
+  { label: "Sprints", segment: "sprints", icon: "svg", svg: RAW_ICONS.PlannedIssue },
+  { label: "Backlog", segment: "backlog", icon: "svg", svg: RAW_ICONS.DashedCircle },
+  { label: "Board", segment: "board", icon: "svg", svg: RAW_ICONS.Stack },
+];
+
+function tabHref(projectId: string, tab: TabDef) {
+  const base = `/workflow/project/${projectId}`;
+  if (!tab.segment) return base;
+  return `${base}/${tab.segment}${tab.query ?? ""}`;
+}
+
+function isTabActive(path: string, search: URLSearchParams, projectId: string, tab: TabDef) {
+  const base = `/workflow/project/${projectId}`;
+  if (!tab.segment) {
+    return path === base || path === `${base}/`;
+  }
+  if (!path.startsWith(`${base}/${tab.segment}`)) return false;
+  if (tab.segment === "incident-tickets") {
+    const isChangeTab = tab.query?.includes("ticketType=CHANGE");
+    const tt = search.get("ticketType");
+    if (isChangeTab) return tt === "CHANGE";
+    return tt !== "CHANGE";
+  }
+  return true;
+}
 
 export function ProjectNavbar({
   projectId,
@@ -21,42 +69,64 @@ export function ProjectNavbar({
   projectTitle?: string;
 }) {
   const path = usePathname();
+  const search = useSearchParams();
 
-  // Determine the active segment from the URL
-  const basePath = `/workflow/project/${projectId}`;
-  const suffix = path.replace(basePath, "").replace(/^\//, "").split("/")[0] ?? "";
-  const activeSegment = TABS.some((t) => t.segment === suffix) ? suffix : "";
+  if (!projectId) {
+    return (
+      <div className="shrink-0 h-10 border-b border-(--border) bg-(--surface-2) px-3 flex items-center text-xs text-(--muted-2)">
+        Loading navigation…
+      </div>
+    );
+  }
 
-  const tabClass = (segment: string) =>
-    segment === activeSegment
-      ? "flex h-7 items-center gap-x-1 cursor-pointer border border-[#4a4f5a] px-2 rounded-md bg-[#1e2028] text-white transition-all duration-300"
-      : "flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded-md bg-transparent text-[#8a8d93] hover:bg-(--surface-2) hover:text-[#c5c7cb] transition-all duration-300";
+  const tabClass = (active: boolean) =>
+    [
+      "shrink-0 inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors duration-150",
+      active
+        ? "border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] text-(--foreground) shadow-sm"
+        : "border-transparent text-(--muted) hover:text-(--foreground) hover:bg-(--surface-3)/70 hover:border-(--border)",
+    ].join(" ");
 
   return (
-    <div className="border-b border-(--border) h-10 flex items-center justify-between px-4 bg-(--surface-2)">
-      <div className="flex gap-x-2 items-center overflow-x-auto whitespace-nowrap scrollbar-hide w-full pb-1 -mb-1">
-        <Link
-          href="/workflow/project"
-          className="shrink-0 flex items-center rounded text-[12px] sm:text-[13px] md:text-[15px] border border-transparent hover:border-[#2E3035] px-2 h-7 hover:bg-[#1C1D21] transition-all duration-300"
-        >
-          Projects
-        </Link>
-        <div className="shrink-0 flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded-md hover:bg-(--surface-3) transition-all duration-300">
-          <SVGIcon className="flex w-4" svgString={RAW_ICONS.Cube} />
-          <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-            {projectTitle ?? "Loading…"}
-          </p>
-        </div>
-        {TABS.map((tab) => (
+    <div className="shrink-0 border-b border-(--border) bg-(--surface-2)">
+      <div className="ef-workspace-inner flex h-11 items-stretch gap-2 pr-1">
+        <div className="flex items-center gap-2 shrink-0 border-r border-(--border) pr-2 mr-1">
           <Link
-            key={tab.segment}
-            href={tab.segment ? `${basePath}/${tab.segment}` : basePath}
-            className={`shrink-0 ${tabClass(tab.segment)}`}
+            href="/workflow/project"
+            className="text-[11px] font-semibold uppercase tracking-wide text-(--muted-2) hover:text-(--muted) transition-colors whitespace-nowrap"
           >
-            <SVGIcon className="flex w-4" svgString={tab.icon} />
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">{tab.label}</p>
+            Projects
           </Link>
-        ))}
+          <span className="text-(--muted-2) text-xs">/</span>
+          <div className="flex h-8 max-w-[200px] lg:max-w-[280px] items-center gap-1.5 rounded-md border border-(--border) bg-(--surface-1) px-2">
+            <SVGIcon className="flex w-3.5 h-3.5 shrink-0 text-(--muted-2)" svgString={RAW_ICONS.Cube} />
+            <span className="text-[12px] font-medium text-(--foreground) truncate">
+              {projectTitle ?? "…"}
+            </span>
+          </div>
+        </div>
+        <nav
+          className="flex flex-1 min-w-0 items-center gap-0.5 overflow-x-auto scrollbar-hide py-1"
+          aria-label="Project areas"
+        >
+          {TABS.map((tab) => {
+            const active = isTabActive(path, search, projectId, tab);
+            return (
+              <Link
+                key={`${tab.segment}-${tab.query ?? tab.label}`}
+                href={tabHref(projectId, tab)}
+                className={tabClass(active)}
+              >
+                {tab.icon === "calendar" ? (
+                  <Calendar className="size-3.5 shrink-0 opacity-80" strokeWidth={2} />
+                ) : (
+                  <SVGIcon className="flex w-3.5 h-3.5 shrink-0 opacity-80" svgString={tab.svg!} />
+                )}
+                <span className="whitespace-nowrap">{tab.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );

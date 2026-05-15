@@ -52,6 +52,9 @@ export default function Issue() {
   const [priorityFilter, setPriorityFilter] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [ticketTypeFilter, setTicketTypeFilter] = useState<"" | "INCIDENT" | "CHANGE">(
+    "",
+  );
   const [matchingIssueIds, setMatchingIssueIds] = useState<string[] | null>(null);
   const [isSavingView, setIsSavingView] = useState(false);
   const [selectedIssueIndex, setSelectedIssueIndex] = useState(0);
@@ -87,7 +90,7 @@ export default function Issue() {
     [issues, statusFilter, priorityFilter, assigneeFilter, matchingIssueIds],
   );
 
-  const selectionScopeKey = `${statusFilter}|${searchQuery}|${
+  const selectionScopeKey = `${ticketTypeFilter}|${statusFilter}|${searchQuery}|${
     matchingIssueIds === null ? "null" : matchingIssueIds.join(",")
   }`;
   const prevSelectionScopeKey = useRef(selectionScopeKey);
@@ -110,6 +113,7 @@ export default function Issue() {
         setIsLoading(true);
         const response = await axios.post("/api/issues/getissues", {
           project_id: project_id,
+          ...(ticketTypeFilter ? { ticketType: ticketTypeFilter } : {}),
         });
 
         setIssues(response.data);
@@ -120,7 +124,7 @@ export default function Issue() {
       }
     };
     fetchIssues();
-  }, [project_id]);
+  }, [project_id, ticketTypeFilter]);
 
   useEffect(() => {
     const fetchUniqueProject = async () => {
@@ -146,6 +150,12 @@ export default function Issue() {
   useEffect(() => {
     setStatusFilter(searchParams.get("status") ?? "");
     setSearchQuery(searchParams.get("q") ?? "");
+    const tt = searchParams.get("ticketType");
+    if (tt === "CHANGE" || tt === "INCIDENT") {
+      setTicketTypeFilter(tt);
+    } else {
+      setTicketTypeFilter("");
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -332,7 +342,7 @@ export default function Issue() {
         const issue = filteredIssues[selectedIssueIndex];
         if (issue?.id && project_id) {
           event.preventDefault();
-          router.push(`/workflow/project/${project_id}/issues/${issue.id}`);
+          router.push(`/workflow/project/${project_id}/incident-tickets/${issue.id}`);
         }
       }
     };
@@ -342,7 +352,8 @@ export default function Issue() {
 
   return (
     <>
-      <WorkflowLayout windowSvg={RAW_ICONS.Issue} windowTitle="Issues">
+      <WorkflowLayout windowSvg={RAW_ICONS.Issue} windowTitle="Tickets">
+        <div className="flex flex-col flex-1 min-h-0">
         <ProjectNavbar projectId={project_id} projectTitle={project?.title} />
         <div className="border-b border-(--border) h-10 flex items-center justify-end px-4 bg-(--surface-2)">
           <div className="flex gap-1">
@@ -420,9 +431,14 @@ export default function Issue() {
           </select>
 
           {/* Active filters badge */}
-          {(statusFilter || priorityFilter || assigneeFilter) && (
+          {(statusFilter || priorityFilter || assigneeFilter || ticketTypeFilter) && (
             <button
-              onClick={() => { setStatusFilter(""); setPriorityFilter(""); setAssigneeFilter(""); }}
+              onClick={() => {
+                setStatusFilter("");
+                setPriorityFilter("");
+                setAssigneeFilter("");
+                setTicketTypeFilter("");
+              }}
               className="h-7 px-2 rounded-md border border-red-400/30 bg-red-400/10 text-red-400 text-xs hover:bg-red-400/20 transition-colors"
             >
               Clear filters
@@ -430,11 +446,35 @@ export default function Issue() {
           )}
         </div>
 
+        <div className="px-2 py-2 border-b border-(--border) bg-(--surface-2) flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-(--muted-2) mr-1">Type:</span>
+          {(
+            [
+              { id: "" as const, label: "All types" },
+              { id: "INCIDENT" as const, label: "Incident" },
+              { id: "CHANGE" as const, label: "Change" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.id || "all"}
+              type="button"
+              onClick={() => setTicketTypeFilter(opt.id)}
+              className={`h-7 px-2 rounded-md border text-xs transition-colors ${
+                ticketTypeFilter === opt.id
+                  ? "border-[color:var(--accent)] bg-[color:var(--accent)]/15 text-(--foreground)"
+                  : "border-(--border) bg-(--surface-1) text-(--muted) hover:bg-(--surface-3)"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         <div className="px-2 py-2 border-b border-(--border) bg-(--surface-1)">
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search issues in this project  •  Use J/K + Enter"
+            placeholder="Search incident & change tickets in this project  •  Use J/K + Enter"
             className="w-full h-8 rounded-md border border-(--border) bg-(--surface-2) px-2 text-sm"
           />
         </div>
@@ -526,7 +566,7 @@ export default function Issue() {
                   aiDuplicates.slice(0, 4).map((item) => (
                     <Link
                       key={item.id}
-                      href={`/workflow/project/${project_id}/issues/${item.id}`}
+                      href={`/workflow/project/${project_id}/incident-tickets/${item.id}`}
                       className="block rounded border border-(--border) bg-(--surface-1) px-2 py-1 hover:bg-(--surface-3)"
                     >
                       <p className="truncate">{item.title}</p>
@@ -546,7 +586,7 @@ export default function Issue() {
         <IssuesTopTile />
 
         {isLoading ? (
-          <div className="grow overflow-y-auto h-96 scrollbar-hide pt-1 space-y-0">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pt-1 space-y-0">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-10 border-b border-(--border) flex items-center px-4 gap-4 animate-pulse">
                 <div className="w-4 h-4 rounded bg-(--surface-3) shrink-0" />
@@ -556,7 +596,7 @@ export default function Issue() {
             ))}
           </div>
         ) : (
-          <div className="grow overflow-y-auto h-96 scrollbar-hide pt-1 ">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pt-1 ">
             {filteredIssues.length > 0 ? (
               filteredIssues.map((elem, key) => {
                 return (
@@ -568,6 +608,7 @@ export default function Issue() {
                     issueID={elem.id}
                     priority={elem.priority}
                     status={elem.status}
+                    ticketType={elem.ticketType}
                     updatedAt={elem.updatedAt}
                     assigneeInfo={elem.User}
                     selected={selectedIssueIndex === key}
@@ -576,11 +617,12 @@ export default function Issue() {
               })
             ) : (
               <div className="h-10 flex items-center w-full justify-center">
-                <p className="text-[#939494]">No Issues Found</p>
+                <p className="text-[#939494]">No tickets found</p>
               </div>
             )}
           </div>
         )}
+        </div>
       </WorkflowLayout>
 
       {createIssueWindowOpen && (

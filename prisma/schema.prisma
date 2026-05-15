@@ -22,6 +22,11 @@ enum ProjectServiceLine {
   SOFTWARE_DEVELOPMENT
 }
 
+enum TicketType {
+  INCIDENT
+  CHANGE
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -74,6 +79,9 @@ model User {
   issueActivities  IssueActivity[]
   savedViews       SavedView[]
   invitationsSent  Invitation[]     @relation("InvitationSender")
+  serviceLineGrants UserServiceLineGrant[]
+  employee          Employee?
+  managedTeams      Team[]              @relation("TeamManager")
 }
 
 model VerificationToken {
@@ -87,6 +95,45 @@ model VerificationToken {
 model WaitListEmails {
   id    String @id @default(uuid())
   email String @unique
+}
+
+model Customer {
+  id                 String    @id @default(uuid())
+  name               String
+  organizationName String
+  address            String?
+  email              String?
+  phoneNumber        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  projects           Project[]
+}
+
+model Employee {
+  id                  String   @id @default(cuid())
+  userId              String?  @unique
+  user                User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName            String
+  email               String   @unique
+  phoneNumber         String?
+  designation         String?
+  role                Role     @default(ENGINEER)
+  /// Workspace IDs this employee record is associated with (directory / access hints).
+  organizationAccess  Json?
+  teamId              String?
+  team                  Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model UserServiceLineGrant {
+  id          String             @id @default(cuid())
+  userId      String
+  serviceLine ProjectServiceLine
+  createdAt   DateTime           @default(now())
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceLine])
 }
 
 model Project {
@@ -109,10 +156,16 @@ model Project {
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   workspaceId String?
 
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId String?
+
   projectMembers ProjectMember[]
   sprints        Sprint[]
   notifications  Notification[]
   savedViews     SavedView[]
+
+  team   Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  teamId String?
 }
 
 model Issue {
@@ -122,10 +175,21 @@ model Issue {
   status       String?
   priority     String?
   update       String?
+  ticketType   TicketType @default(INCIDENT)
   User         User?    @relation(fields: [assignedUser], references: [id])
   assignedUser String?
   labels       String[] @default([])
   dueDate      DateTime?
+  startDate    DateTime?
+  endDate      DateTime?
+  /// Planned duration in minutes (optional; used when end date not fixed).
+  durationMinutes Int?
+  /// When status entered Hold (CHANGE tickets); SLA clock pauses while set.
+  holdStartedAt DateTime?
+  /// Total seconds spent on Hold (accumulated across visits).
+  accumulatedHoldSeconds Int @default(0)
+  /// Absolute SLA deadline in UTC; extended when leaving Hold.
+  slaDueAt     DateTime?
   Project      Project  @relation(fields: [projectId], references: [id])
   projectId    String
   createdAt    DateTime @default(now())
@@ -190,13 +254,20 @@ model WorkspaceMember {
 model Team {
   id          String   @id @default(uuid())
   name        String
+  description String?
+  managerId   String?
+  manager     User?    @relation("TeamManager", fields: [managerId], references: [id], onDelete: SetNull)
+  /// Primary practice area for this team (e.g. SAP consulting).
+  serviceLine ProjectServiceLine?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   workspaceId String
 
-  members TeamMember[]
+  members   TeamMember[]
+  projects  Project[]
+  employees Employee[]
 
   @@unique([workspaceId, name])
 }

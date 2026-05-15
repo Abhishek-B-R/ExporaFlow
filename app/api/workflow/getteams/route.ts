@@ -20,12 +20,24 @@ export async function GET() {
   const teams = await prisma.team.findMany({
     where: { workspaceId: { in: workspaceIds } },
     include: {
+      workspace: { select: { id: true, name: true } },
+      manager: {
+        select: { id: true, name: true, email: true, image: true },
+      },
       members: {
         include: {
           user: {
             select: { id: true, name: true, email: true },
           },
         },
+      },
+      projects: {
+        select: { id: true, title: true, serviceLine: true },
+        orderBy: { title: "asc" },
+        take: 12,
+      },
+      _count: {
+        select: { members: true, employees: true, projects: true },
       },
     },
     orderBy: { createdAt: "asc" },

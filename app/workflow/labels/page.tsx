@@ -52,8 +52,10 @@ export default function LabelsPage() {
       setDescription("");
       setColor("#6f86ff");
       await fetchLabels();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to create label.";
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.message ?? "Failed to create label."
+        : "Failed to create label.";
       customToast.error({ title: "", description: msg });
     } finally {
       setIsSubmitting(false);

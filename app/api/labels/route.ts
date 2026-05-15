@@ -2,6 +2,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 
 /** GET /api/labels — list all labels the user can see (from their workspaces) */
 export async function GET() {
@@ -57,8 +58,8 @@ export async function POST(request: NextRequest) {
       },
     });
     return Response.json(label, { status: 201 });
-  } catch (error: any) {
-    if (error?.code === "P2002") {
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return Response.json({ message: "A label with that name already exists." }, { status: 409 });
     }
     return Response.json({ message: "Failed to create label." }, { status: 500 });

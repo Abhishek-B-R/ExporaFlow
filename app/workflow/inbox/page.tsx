@@ -63,7 +63,7 @@ export default function InboxPage() {
               key={item.id}
               href={
                 item.issue?.id && item.project?.id
-                  ? `/workflow/project/${item.project.id}/issues/${item.issue.id}`
+                  ? `/workflow/project/${item.project.id}/incident-tickets/${item.issue.id}`
                   : "/workflow/project"
               }
               className={`block rounded-md border px-3 py-2 transition-colors ${

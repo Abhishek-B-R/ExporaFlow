@@ -2,7 +2,7 @@
 
 import { customToast } from "@/lib/custom-toast";
 import { IssueBody, SprintBody } from "@/utils/types";
-import { IssueStatus, PriorityOptionsArray } from "@/utils/issues-view-options";
+import { PriorityOptionsArray } from "@/utils/issues-view-options";
 import axios from "axios";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -10,6 +10,9 @@ import { RenderStatusSvg, renderPrioritySvg } from "@/components/workflow/issues
 import { useRouter } from "next/navigation";
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
+import { TicketType } from "@prisma/client";
+import { statusesForTicketType } from "@/lib/issue-status-machine";
+import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 
 type WorkspaceMember = {
   id: string;
@@ -34,6 +37,7 @@ type IssueActivity = {
 };
 
 type FullIssue = IssueBody & {
+  ticketType?: TicketType;
   createdAt?: string;
   User?: { id: string; name?: string; email?: string; image?: string } | null;
   parentIssue?: { id: string; title: string } | null;
@@ -51,7 +55,7 @@ type FullIssue = IssueBody & {
 export default function Issue({
   params,
 }: {
-  params: Promise<{ issueId: string; projectId: string }>;
+  params: Promise<{ ticketId: string; projectId: string }>;
 }) {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [issueId, setIssueId] = useState<string | null>(null);
@@ -80,7 +84,7 @@ export default function Issue({
   useEffect(() => {
     const loadParams = async () => {
       const resolvedParams = await params;
-      setIssueId(resolvedParams.issueId);
+      setIssueId(resolvedParams.ticketId);
       setProjectId(resolvedParams.projectId);
     };
     loadParams();
@@ -98,7 +102,7 @@ export default function Issue({
       issueData.dueDate ? new Date(issueData.dueDate).toISOString().slice(0, 10) : "",
     );
     setSprintInput(issueData.sprintId ?? "");
-    setEstimateInput((issueData as any).estimate ?? null);
+    setEstimateInput(issueData.estimate ?? null);
   }, []);
 
   const fetchIssueData = useCallback(
@@ -185,7 +189,7 @@ export default function Issue({
       setIsDeleting(true);
       await axios.delete("/api/issues/deleteissue", { data: { issueId } });
       customToast.success({ title: "", description: "Issue deleted successfully." });
-      router.push(`/workflow/project/${projectId}/issues`);
+      router.push(`/workflow/project/${projectId}/incident-tickets`);
     } catch {
       customToast.error({ title: "", description: "Failed to delete issue." });
       setIsDeleting(false);
@@ -245,7 +249,7 @@ export default function Issue({
       <div className="grow min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-5 w-5 border-2 border-[#6f86ff] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-(--muted-2)">Loading issue…</p>
+          <p className="text-sm text-(--muted-2)">Loading ticket…</p>
         </div>
       </div>
     );
@@ -258,7 +262,7 @@ export default function Issue({
         <div className="flex items-center gap-2">
           {projectId && (
             <Link
-              href={`/workflow/project/${projectId}/issues`}
+              href={`/workflow/project/${projectId}/incident-tickets`}
               className="text-sm text-(--muted-2) hover:text-white transition-colors flex items-center gap-1"
             >
               <SVGIcon className="flex w-4" svgString={RAW_ICONS.ArrowLeft ?? RAW_ICONS.Close} />
@@ -274,7 +278,7 @@ export default function Issue({
             disabled={isDeleting || isSaving}
             className="h-7 px-3 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium transition-colors disabled:opacity-50"
           >
-            {isDeleting ? "Deleting…" : "Delete issue"}
+            {isDeleting ? "Deleting…" : "Delete ticket"}
           </button>
           <button
             onClick={saveIssueMeta}
@@ -295,8 +299,25 @@ export default function Issue({
             value={titleInput}
             onChange={(e) => setTitleInput(e.target.value)}
             className="w-full bg-transparent text-xl md:text-2xl font-semibold outline-none border-none placeholder:text-(--muted-2)"
-            placeholder="Issue title"
+            placeholder="Ticket title"
           />
+
+          <div className="flex flex-wrap gap-2 items-center">
+            <span
+              className={`text-[10px] uppercase tracking-wide rounded px-2 py-0.5 border ${
+                issue.ticketType === TicketType.CHANGE
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                  : "border-sky-500/40 bg-sky-500/10 text-sky-100"
+              }`}
+            >
+              {issue.ticketType === TicketType.CHANGE ? "Change management" : "Incident management"}
+            </span>
+            {issue.status === "Hold" && issue.ticketType === TicketType.CHANGE ? (
+              <span className="text-[10px] uppercase tracking-wide rounded px-2 py-0.5 border border-orange-400/50 bg-orange-500/15 text-orange-100">
+                On hold · SLA paused
+              </span>
+            ) : null}
+          </div>
 
           {/* Description */}
           <textarea
@@ -310,12 +331,12 @@ export default function Issue({
           {/* Sub-issues */}
           {(issue.subtasks ?? []).length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-(--muted-2) uppercase tracking-wide">Sub-issues</p>
+              <p className="text-xs font-medium text-(--muted-2) uppercase tracking-wide">Sub-tickets</p>
               <div className="space-y-1">
                 {issue.subtasks!.map((sub) => (
                   <Link
                     key={sub.id}
-                    href={`/workflow/project/${projectId}/issues/${sub.id}`}
+                    href={`/workflow/project/${projectId}/incident-tickets/${sub.id}`}
                     className="flex items-center gap-2 px-3 py-2 rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors text-sm"
                   >
                     <RenderStatusSvg status={sub.status ?? "Backlog"} />
@@ -454,8 +475,8 @@ export default function Issue({
                 onChange={(e) => setStatusInput(e.target.value)}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
               >
-                {IssueStatus.map((s) => (
-                  <option key={s.title} value={s.title}>{s.title}</option>
+                {statusesForTicketType(issue.ticketType ?? TicketType.INCIDENT).map((s) => (
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </SidebarField>
@@ -491,11 +512,10 @@ export default function Issue({
 
             {/* Due date */}
             <SidebarField label="Due date">
-              <input
-                type="date"
+              <EnterpriseDatePicker
+                label=""
                 value={dueDateInput}
-                onChange={(e) => setDueDateInput(e.target.value)}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+                onChange={setDueDateInput}
               />
             </SidebarField>
 

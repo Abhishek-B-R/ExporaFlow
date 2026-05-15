@@ -3,10 +3,10 @@ import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { prisma } from "@/db";
 import { assertProjectRole } from "@/lib/authz";
-import { Role } from "@prisma/client";
+import { Role, TicketType } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
-  const { project_id } = await request.json();
+  const { project_id, ticketType } = await request.json();
 
   const session = await getServerSession(authOptions);
 
@@ -38,9 +38,15 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const ticketFilter =
+    ticketType === "INCIDENT" || ticketType === "CHANGE"
+      ? { ticketType: ticketType as TicketType }
+      : {};
+
   const issues = await prisma.issue.findMany({
     where: {
       projectId: project_id,
+      ...ticketFilter,
     },
     include: {
       User: {

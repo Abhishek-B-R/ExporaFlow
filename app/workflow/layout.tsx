@@ -16,9 +16,11 @@ export default function RootLayout({
 }>) {
   return (
     <>
-      <div className="flex">
+      <div className="flex h-[100dvh] min-h-0 w-full overflow-hidden bg-(--background)">
         <WorkflowSidebar />
-        {children}
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+          {children}
+        </div>
       </div>
       <CommandPalette />
       <BottomDock />

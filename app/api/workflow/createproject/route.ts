@@ -14,7 +14,7 @@ function normalizeName(value: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const { projTitle, projDescription, projContent, priority, status, serviceLine } =
+  const { projTitle, projDescription, projContent, priority, status, serviceLine, customerId } =
     await request.json();
 
   const session = await getServerSession(authOptions);
@@ -32,6 +32,21 @@ export async function POST(request: NextRequest) {
       { message: "Select a service line for this project." },
       { status: 400 },
     );
+  }
+
+  let resolvedCustomerId: string | null = null;
+  if (customerId != null && customerId !== "") {
+    if (typeof customerId !== "string") {
+      return Response.json({ message: "Invalid customer." }, { status: 400 });
+    }
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { id: true },
+    });
+    if (!customer) {
+      return Response.json({ message: "Customer not found." }, { status: 400 });
+    }
+    resolvedCustomerId = customer.id;
   }
 
   if (session?.user.id) {
@@ -77,6 +92,7 @@ export async function POST(request: NextRequest) {
           priority: priority,
           status: status,
           serviceLine,
+          customerId: resolvedCustomerId,
           workspaceId: workspaceMember?.workspaceId ?? null,
           projectMembers: {
             create: {

@@ -26,14 +26,47 @@ import {
   projectServiceLineLabel,
 } from "@/utils/project-service-line";
 
+function formatProjectDate(value: unknown): string {
+  if (value == null || value === "") return "—";
+  try {
+    const d = new Date(value as string | number | Date);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function leadLabel(project: ProjectBody): string {
+  const l = project.lead?.trim();
+  if (l) return l;
+  const n = project.creator?.name?.trim();
+  if (n) return n;
+  const e = project.creator?.email?.trim();
+  if (e) return e;
+  return "—";
+}
+
+function stateBadgeClass(name: string) {
+  const n = name.toLowerCase();
+  if (n.includes("work")) return "bg-emerald-500/12 text-emerald-200 border-emerald-500/25";
+  if (n.includes("plan")) return "bg-sky-500/12 text-sky-200 border-sky-500/25";
+  if (n.includes("backlog")) return "bg-slate-500/15 text-slate-200 border-slate-500/25";
+  if (n.includes("complete")) return "bg-zinc-500/12 text-zinc-200 border-zinc-500/25";
+  if (n.includes("cancel")) return "bg-orange-500/12 text-orange-200 border-orange-500/25";
+  return "bg-(--surface-3) text-(--muted) border-(--border)";
+}
+
 export default function Projects() {
   const [deleteProjectId, setDeleteProjectId] = useState("");
   const [deleteWindowOpen, setDeleteWindowOpen] = useState(false);
 
   const router = useRouter();
-  const { data: session } = useSession();
-
-  const { status } = useSession({
+  const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push("/");
@@ -69,60 +102,84 @@ export default function Projects() {
 
   return (
     <>
-      <WorkflowLayout windowSvg={RAW_ICONS.RubiksCube} windowTitle="Projects">
-        <div className="border h-10 rounded border-[#2d3036] flex items-center justify-between px-4">
-          <div className=" flex gap-x-2 md:gap-x-4 items-center ">
-            <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-              Projects
-            </p>
-            <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-[#2E3035] px-2 rounded bg-[#1C1D21] hover:bg-[#1C1D21] transition-all duration-300">
-              <SVGIcon className="flex w-3" svgString={RAW_ICONS.Cube} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                All projects
+      <WorkflowLayout
+        windowSvg={RAW_ICONS.RubiksCube}
+        windowTitle="Projects"
+        breadcrumb={
+          <span className="text-(--muted-2) text-xs font-medium tracking-tight">
+            Workspace / <span className="text-(--muted)">Delivery</span>
+          </span>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => setCreateWindowOpen(true)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-(--border) bg-(--surface-2) px-2.5 text-xs font-medium text-(--foreground) hover:bg-(--surface-3) transition-colors"
+          >
+            <SVGIcon className="flex w-3.5 h-3.5" svgString={RAW_ICONS.Add} />
+            New project
+          </button>
+        }
+      >
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="shrink-0 border-b border-(--border) bg-(--surface-2) px-3 md:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-(--muted-2)">
+                Portfolio
               </p>
+              <p className="text-sm font-semibold text-(--foreground)">All projects</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-(--muted-2)">
+              <span className="hidden sm:inline">Operational view</span>
             </div>
           </div>
-          <div className="flex gap-x-2 md:gap-x-4 ">
-            <div
-              onClick={() => setCreateWindowOpen(true)}
-              className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent  px-2 rounded hover:bg-[#1C1D21] hover:border-[#2E3035] transition-all duration-300"
-            >
-              <SVGIcon className="flex w-3" svgString={RAW_ICONS.Add} />
-              <p className="text-[12px] sm:text-[13px] md:text-[15px]">
-                Create project
-              </p>
+
+          <div className="flex-1 min-h-0 overflow-auto scrollbar-hide">
+            <div className="ef-workspace-inner py-3">
+              {isLoading ? (
+                <div className="h-32 flex items-center justify-center text-(--muted-2)">
+                  <SVGIcon className="flex w-8 h-8 animate-pulse" svgString={RAW_ICONS.Loader} />
+                </div>
+              ) : null}
+
+              {!isLoading && projects && projects.length > 0 ? (
+                <div className="rounded-md border border-(--border) bg-(--surface-1) overflow-hidden shadow-sm">
+                  <table className="w-full text-[13px] border-collapse table-fixed">
+                    <thead>
+                      <tr className="border-b border-(--border) bg-(--surface-2) text-left text-[11px] font-semibold uppercase tracking-wide text-(--muted-2)">
+                        <th className="px-3 py-2 w-[22%] font-medium">Project</th>
+                        <th className="px-3 py-2 w-[14%] font-medium hidden lg:table-cell">Service</th>
+                        <th className="px-3 py-2 w-[12%] font-medium hidden lg:table-cell">Health</th>
+                        <th className="px-3 py-2 w-[12%] font-medium">Status</th>
+                        <th className="px-3 py-2 w-[8%] font-medium">Priority</th>
+                        <th className="px-3 py-2 w-[12%] font-medium hidden md:table-cell">Lead</th>
+                        <th className="px-3 py-2 w-[11%] font-medium hidden xl:table-cell">Target</th>
+                        <th className="px-3 py-2 w-[11%] font-medium hidden lg:table-cell">Tickets</th>
+                        <th className="px-3 py-2 w-[10%] font-medium hidden xl:table-cell">SLA</th>
+                        <th className="px-3 py-2 w-[10%] font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {projects.map((elem) => (
+                        <ProjectLabel
+                          key={elem.id}
+                          project={elem}
+                          openDeleteWindow={setDeleteWindowOpen}
+                          setProjectIdToDelete={setDeleteProjectId}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+
+              {!isLoading && (!projects || projects.length === 0) ? (
+                <div className="rounded-md border border-dashed border-(--border) bg-(--surface-2)/40 px-4 py-12 text-center text-sm text-(--muted-2)">
+                  No projects yet. Create one to get started.
+                </div>
+              ) : null}
             </div>
           </div>
-        </div>
-
-        <ProjectTopTile />
-
-        {isLoading && (
-          <div className="h-20 flex items-center justify-center">
-            <SVGIcon
-              className="flex w-10 md:w-20"
-              svgString={RAW_ICONS.Loader}
-            />
-          </div>
-        )}
-
-        <div className="">
-          {projects &&
-            projects?.length > 0 &&
-            projects?.map((elem, key) => {
-              return (
-                <ProjectLabel
-                  key={key}
-                  title={elem.title}
-                  health={elem.status}
-                  priority={elem.priority}
-                  serviceLine={elem.serviceLine}
-                  projectID={elem.id}
-                  openDeleteWindow={setDeleteWindowOpen}
-                  setProjectIdToDelete={setDeleteProjectId}
-                />
-              );
-            })}
         </div>
       </WorkflowLayout>
 
@@ -139,44 +196,17 @@ export default function Projects() {
   );
 }
 
-const ProjectTopTile = () => {
-  return (
-    <div className="border-b h-10 border-[#2E3035] grid grid-cols-12 px-4 items-center text-[#97989A] text-[11px] sm:text-[13px] md:text-[15px]">
-      <p className="col-span-3">Title</p>
-      <p className="col-span-2">Service</p>
-      <p className="col-span-2">Health</p>
-      <p className="col-span-1">Priority</p>
-      <p className="col-span-1">Lead</p>
-      <p className="col-span-1">Target Date</p>
-      <p className="col-span-2">Status</p>
-    </div>
-  );
-};
-
 const ProjectLabel = ({
-  title,
-  health,
-  priority,
-  serviceLine,
-  lead,
-  targetDate,
-  status,
-  projectID,
+  project,
   openDeleteWindow,
   setProjectIdToDelete,
 }: {
-  title: string;
-  health?: string;
-  priority: string;
-  serviceLine?: string | null;
-  lead?: string;
-  targetDate?: string;
-  status?: string;
-  projectID: string;
+  project: ProjectBody;
   openDeleteWindow: React.Dispatch<React.SetStateAction<boolean>>;
   setProjectIdToDelete: React.Dispatch<React.SetStateAction<string>>;
 }) => {
-  const [selectedHealthOption, setSelectedHealthOption] = useState(health);
+  const projectID = project.id;
+  const [selectedHealthOption, setSelectedHealthOption] = useState(project.status);
 
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
     "health" | "priority" | boolean
@@ -185,8 +215,15 @@ const ProjectLabel = ({
   const healthDropdownRef = useRef<HTMLDivElement>(null);
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [selectedPriorityOption, setSelectedPriorityOption] =
-    useState(priority);
+  const [selectedPriorityOption, setSelectedPriorityOption] = useState(project.priority);
+
+  useEffect(() => {
+    setSelectedHealthOption(project.status);
+  }, [project.status]);
+
+  useEffect(() => {
+    setSelectedPriorityOption(project.priority);
+  }, [project.priority]);
 
   const handleHealthOptionClick = async (option: string) => {
     setSelectedHealthOption(option);
@@ -269,82 +306,154 @@ const ProjectLabel = ({
     };
   }, [showOptionsDropdown]);
 
-  return (
-    <div className="rounded-lg grid grid-cols-12 px-4 items-center text-[#97989A] h-16 hover:bg-[#151818] transition-all duration-300 text-[11px] sm:text-[13px] md:text-[15px]">
-      <Link
-        href={`/workflow/project/${projectID}`}
-        className="col-span-3 text-sm lg:text-lg min-w-0 truncate"
-      >
-        {title}
-      </Link>
-      <p
-        className="col-span-2 text-[11px] sm:text-xs text-[#b4b5b8] min-w-0 truncate pr-1"
-        title={projectServiceLineLabel(serviceLine)}
-      >
-        {projectServiceLineLabel(serviceLine)}
-      </p>
-      <div className="col-span-2 relative" ref={healthDropdownRef}>
-        <div
-          className="w-fit flex items-center px-2 h-8 rounded hover:bg-[#212227] transition-all duration-300 cursor-pointer"
-          onClick={() => setShowOptionsDropdown("health")}
-        >
-          {selectedHealthOption}
-        </div>
-        {showOptionsDropdown == "health" && (
-          <div className="z-10 absolute top-10 -left-3 w-32 h-fit bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-xl shadow-lg p-1 transition-all duration-300">
-            {healthOptions.map((option, key) => (
-              <div
-                key={key}
-                className="px-2 py-2 hover:bg-[#151818] cursor-pointer text-white flex items-center rounded-md gap-x-2"
-                onClick={() => handleHealthOptionClick(option.name)}
-              >
-                <SVGIcon className="flex w-4" svgString={option.svg} />
-                <p className="text-sm">{option.name}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="col-span-1 relative" ref={priorityDropdownRef}>
-        <div
-          className="flex items-center justify-center h-8 w-8 rounded hover:bg-[#212227] transition-all duration-300 cursor-pointer"
-          onClick={() => setShowOptionsDropdown("priority")}
-        >
-          {renderPrioritySvg(selectedPriorityOption)}
-        </div>
-        {showOptionsDropdown == "priority" && (
-          <div className="z-10 absolute top-10 -left-3 w-32 h-fit bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-xl shadow-lg p-1 transition-all duration-300">
-            {priorityOptionsArray.map((option, key) => (
-              <div
-                key={key}
-                className="px-2 py-2 hover:bg-[#151818] cursor-pointer text-white flex items-center rounded-md gap-x-2"
-                onClick={() => handlePriorityOptionClick(option.name)}
-              >
-                <SVGIcon className="flex w-4" svgString={option.svg} />
-                <p className="text-sm">{option.name}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="col-span-1 h-8 w-8 flex items-center justify-center rounded hover:bg-[#212227] transition-all duration-300">
-        <SVGIcon className="flex w-4 " svgString={RAW_ICONS.Account} />
-      </div>
-      <p className="col-span-1">{targetDate ? targetDate : "NA"}</p>
+  const stats = project.stats;
+  const ticketTotal =
+    stats != null ? stats.incidentTickets + stats.changeTickets : 0;
+  const menuPanel =
+    "z-20 absolute top-full left-0 mt-1 min-w-[10rem] rounded-md border border-(--border) bg-(--surface-1) py-0.5 shadow-lg";
 
-      <div className="col-span-2 flex items-center h-full  justify-between">
-        <p>{status ? status : "NA"}</p>
+  return (
+    <tr className="border-b border-(--border)/60 last:border-b-0 hover:bg-(--surface-2)/35 transition-colors">
+      <td className="px-3 py-2 align-top">
+        <Link
+          href={`/workflow/project/${projectID}`}
+          className="font-semibold text-[13px] text-(--foreground) hover:text-(--accent) leading-snug line-clamp-2"
+        >
+          {project.title}
+        </Link>
+        {project.description ? (
+          <p className="text-[11px] text-(--muted-2) line-clamp-1 mt-0.5">{project.description}</p>
+        ) : null}
+      </td>
+      <td className="px-3 py-2 align-middle hidden lg:table-cell">
+        <span
+          className="inline-flex max-w-full truncate rounded border border-(--border) bg-(--surface-2) px-1.5 py-0.5 text-[11px] font-medium text-(--muted)"
+          title={projectServiceLineLabel(project.serviceLine)}
+        >
+          {projectServiceLineLabel(project.serviceLine)}
+        </span>
+      </td>
+      <td className="px-3 py-2 align-middle hidden lg:table-cell">
+        <span
+          className="inline-flex max-w-full truncate rounded border border-(--border) bg-(--surface-2)/80 px-1.5 py-0.5 text-[11px] font-medium text-(--muted-2)"
+          title={project.health ?? ""}
+        >
+          {(project.health ?? "").trim() || "—"}
+        </span>
+      </td>
+      <td className="px-3 py-2 align-middle">
+        <div className="relative inline-block" ref={healthDropdownRef}>
+          <button
+            type="button"
+            className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${stateBadgeClass(selectedHealthOption)}`}
+            onClick={() => setShowOptionsDropdown((v) => (v === "health" ? false : "health"))}
+          >
+            {selectedHealthOption}
+          </button>
+          {showOptionsDropdown === "health" ? (
+            <div className={menuPanel}>
+              {healthOptions.map((option, key) => (
+                <button
+                  type="button"
+                  key={key}
+                  className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                  onClick={() => handleHealthOptionClick(option.name)}
+                >
+                  <SVGIcon className="flex w-4 shrink-0" svgString={option.svg} />
+                  {option.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </td>
+      <td className="px-3 py-2 align-middle">
+        <div className="relative inline-flex" ref={priorityDropdownRef}>
+          <button
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors"
+            onClick={() => setShowOptionsDropdown((v) => (v === "priority" ? false : "priority"))}
+            aria-label="Change priority"
+          >
+            {renderPrioritySvg(selectedPriorityOption)}
+          </button>
+          {showOptionsDropdown === "priority" ? (
+            <div className={menuPanel}>
+              {priorityOptionsArray.map((option, key) => (
+                <button
+                  type="button"
+                  key={key}
+                  className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                  onClick={() => handlePriorityOptionClick(option.name)}
+                >
+                  <SVGIcon className="flex w-4 shrink-0" svgString={option.svg} />
+                  {option.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </td>
+      <td className="px-3 py-2 align-middle text-(--muted) text-[12px] hidden md:table-cell max-w-[140px]">
+        <span className="line-clamp-2" title={leadLabel(project)}>
+          {leadLabel(project)}
+        </span>
+      </td>
+      <td className="px-3 py-2 align-middle text-(--muted) text-[12px] tabular-nums hidden xl:table-cell">
+        {formatProjectDate(project.targetDate)}
+      </td>
+      <td className="px-3 py-2 align-middle hidden lg:table-cell">
+        {stats ? (
+          <div className="flex flex-col gap-0.5 text-[11px]">
+            <span className="text-(--muted) tabular-nums">
+              <span className="font-medium text-(--foreground)">{stats.incidentTickets}</span>{" "}
+              inc
+            </span>
+            <span className="text-(--muted) tabular-nums">
+              <span className="font-medium text-(--foreground)">{stats.changeTickets}</span> chg
+            </span>
+            {ticketTotal > 0 ? (
+              <div className="mt-1 h-1 w-full max-w-[72px] rounded-full bg-(--surface-3) overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-(--accent)/50"
+                  style={{
+                    width: `${Math.min(100, Math.round((stats.changeTickets / ticketTotal) * 100))}%`,
+                  }}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <span className="text-(--muted-2)">—</span>
+        )}
+      </td>
+      <td className="px-3 py-2 align-middle hidden xl:table-cell">
+        {stats && stats.slaAtRisk > 0 ? (
+          <span className="inline-flex items-center rounded border border-rose-500/25 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-200 tabular-nums">
+            {stats.slaAtRisk} at risk
+          </span>
+        ) : stats ? (
+          <span className="inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-200">
+            Clear
+          </span>
+        ) : (
+          <span className="text-(--muted-2)">—</span>
+        )}
+      </td>
+      <td className="px-3 py-2 align-middle text-right">
         <button
+          type="button"
           onClick={() => {
             setProjectIdToDelete(projectID);
             openDeleteWindow(true);
           }}
-          className="flex items-center justify-center h-8 w-8 rounded hover:bg-[#212227] transition-all duration-300 cursor-pointer"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-(--muted-2) hover:text-(--danger) hover:bg-(--surface-2) hover:border-(--border) transition-colors"
+          aria-label="Delete project"
         >
-          <SVGIcon className="flex w-4 xl:w-5" svgString={RAW_ICONS.Delete} />
+          <SVGIcon className="flex w-4" svgString={RAW_ICONS.Delete} />
         </button>
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 };
 
@@ -361,6 +470,10 @@ const CreateProjectWindow = ({
   const [serviceLine, setServiceLine] = useState<ProjectServiceLineValue | null>(
     null,
   );
+  type CustomerRow = { id: string; name: string; organizationName: string };
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
     "health" | "priority" | boolean
@@ -381,6 +494,27 @@ const CreateProjectWindow = ({
   const { data: session } = useSession();
   const [isCreating, setIsCreating] = useState(false);
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get<CustomerRow[]>("/api/customers");
+        setCustomers(res.data ?? []);
+      } catch {
+        setCustomers([]);
+      }
+    };
+    void load();
+  }, []);
+
+  const filteredCustomers = customers.filter((c) => {
+    const q = customerSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.organizationName.toLowerCase().includes(q)
+    );
+  });
+
   const createProject = async () => {
     setIsCreating(true);
     let shouldClose = true;
@@ -393,6 +527,7 @@ const CreateProjectWindow = ({
         priority: priority,
         status: status,
         serviceLine,
+        customerId: customerId ?? undefined,
       });
 
       customToast.info({
@@ -475,6 +610,40 @@ const CreateProjectWindow = ({
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <p className="text-[11px] md:text-xs text-[#858687] mb-2">Customer</p>
+          <input
+            className="w-full rounded-md border border-[#525353] bg-[#1D1D21] px-2 py-1.5 text-sm outline-none"
+            placeholder="Search customers…"
+            value={customerSearch}
+            onChange={(e) => setCustomerSearch(e.target.value)}
+          />
+          <div className="mt-2 max-h-28 overflow-y-auto rounded-md border border-[#525353] bg-[#151518]">
+            <button
+              type="button"
+              className={`w-full text-left px-2 py-1.5 text-xs hover:bg-[#29292e] ${
+                customerId === null ? "bg-[#2a2f4a]" : ""
+              }`}
+              onClick={() => setCustomerId(null)}
+            >
+              No customer
+            </button>
+            {filteredCustomers.slice(0, 40).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`w-full text-left px-2 py-1.5 text-xs hover:bg-[#29292e] ${
+                  customerId === c.id ? "bg-[#2a2f4a]" : ""
+                }`}
+                onClick={() => setCustomerId(c.id)}
+              >
+                <span className="font-medium">{c.organizationName}</span>
+                <span className="text-[#858687]"> · {c.name}</span>
+              </button>
+            ))}
           </div>
         </div>
 

@@ -2,11 +2,20 @@ import { customToast } from "@/lib/custom-toast";
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import { IssueStatus } from "@/utils/issues-view-options";
+import { HOLD_STATUS, statusesForTicketType } from "@/lib/issue-status-machine";
+import { TicketType } from "@prisma/client";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+function statusMenuEntry(title: string): { title: string; svg: string } {
+  const known = IssueStatus.find((i) => i.title === title);
+  if (known) return known;
+  if (title === HOLD_STATUS) return { title: HOLD_STATUS, svg: RAW_ICONS.Label };
+  return { title, svg: RAW_ICONS.Todo };
+}
 
 export default function IssueLabel({
   title,
@@ -22,6 +31,7 @@ export default function IssueLabel({
   issueID,
   updatedAt,
   selected,
+  ticketType,
 }: {
   title: string;
   description?: string;
@@ -36,6 +46,7 @@ export default function IssueLabel({
   issueID: string;
   updatedAt?: string;
   selected?: boolean;
+  ticketType?: TicketType | string | null;
 }) {
   const date = new Date(updatedAt ? updatedAt : "");
   const router = useRouter();
@@ -57,6 +68,21 @@ export default function IssueLabel({
   });
 
   const [selectedStatusOption, setSelectedStatusOption] = useState(status);
+
+  useEffect(() => {
+    setSelectedStatusOption(status);
+  }, [status]);
+
+  const ticketTypeEnum =
+    ticketType === TicketType.CHANGE || ticketType === "CHANGE"
+      ? TicketType.CHANGE
+      : TicketType.INCIDENT;
+
+  const statusMenu = statusesForTicketType(ticketTypeEnum).map(statusMenuEntry);
+
+  const onHoldChange =
+    (selectedStatusOption ?? "").toLowerCase() === "hold" &&
+    ticketTypeEnum === TicketType.CHANGE;
 
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
     "status" | "priority" | boolean
@@ -176,27 +202,34 @@ export default function IssueLabel({
       }`}
       onClick={() => {
         if (projectID) {
-          router.push(`/workflow/project/${projectID}/issues/${issueID}`);
+          router.push(`/workflow/project/${projectID}/incident-tickets/${issueID}`);
         }
       }}
     >
-      <div className=" col-span-5 sm:col-span-4 flex items-center  gap-x-5 ">
+      <div className=" col-span-5 sm:col-span-4 flex items-center gap-x-3 min-w-0 ">
         {status ? (
           <RenderStatusSvg status={status} />
         ) : (
-          <div className="border rounded-full h-5 w-5"></div>
+          <div className="border rounded-full h-5 w-5 shrink-0 border-(--border)" />
         )}
-        {projectID ? (
-          <Link
-            href={`/workflow/project/${projectID}/issues/${issueID}`}
-            className="text-sm xl:text-[16px] hover:underline truncate"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {title}
-          </Link>
-        ) : (
-          <p className="text-sm xl:text-[16px] truncate">{title}</p>
-        )}
+        <div className="min-w-0 flex items-center gap-2 flex-1">
+          {onHoldChange ? (
+            <span className="shrink-0 rounded border border-amber-500/35 bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-100">
+              Hold
+            </span>
+          ) : null}
+          {projectID ? (
+            <Link
+              href={`/workflow/project/${projectID}/incident-tickets/${issueID}`}
+              className="text-sm xl:text-[15px] hover:underline truncate text-(--foreground)"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {title}
+            </Link>
+          ) : (
+            <p className="text-sm xl:text-[15px] truncate text-(--foreground)">{title}</p>
+          )}
+        </div>
       </div>
       <p
         className="hidden sm:block col-span-1 cursor-pointer"
@@ -206,7 +239,7 @@ export default function IssueLabel({
       </p>
       <div className="col-span-1 relative " ref={statusDropdownRef}>
         <div
-          className="w-fit flex items-center px-2 h-8 rounded hover:bg-[#212227] transition-all duration-150 cursor-pointer"
+          className="w-fit flex items-center px-2 h-8 rounded border border-transparent hover:bg-(--surface-3) transition-colors duration-150 cursor-pointer text-(--foreground)"
           onClick={(e) => {
             e.stopPropagation();
             setShowOptionsDropdown(
@@ -218,13 +251,13 @@ export default function IssueLabel({
         </div>
         {showOptionsDropdown == "status" && (
           <div
-            className="absolute w-36 top-full left-0 bg-[#101216] border border-[#2E323A] rounded-md shadow-xl mt-1 z-50 p-1"
+            className="absolute w-40 top-full left-0 rounded-md border border-(--border) bg-(--surface-1) shadow-lg mt-1 z-50 py-0.5"
             onClick={(e) => e.stopPropagation()}
           >
-            {IssueStatus.map((option, key) => (
+            {statusMenu.map((option, key) => (
               <div
                 key={key}
-                className="px-2 flex gap-x-2 rounded items-center h-8 hover:bg-[#1B1F27] cursor-pointer text-white"
+                className="px-2 flex gap-x-2 rounded items-center h-8 hover:bg-(--surface-2) cursor-pointer text-(--foreground) text-[13px]"
                 onClick={(event) => {
                   event.stopPropagation();
                   handleStatusOptionClick(option.title);
@@ -239,7 +272,7 @@ export default function IssueLabel({
       </div>
       <div className="col-span-1 relative " ref={priorityDropdownRef}>
         <div
-          className="flex items-center justify-center h-8 w-8 rounded hover:bg-[#212227] transition-all duration-300 cursor-pointer"
+          className="flex items-center justify-center h-8 w-8 rounded-md border border-transparent hover:bg-(--surface-3) transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             setShowOptionsDropdown(
@@ -251,20 +284,20 @@ export default function IssueLabel({
         </div>
         {showOptionsDropdown == "priority" && (
           <div
-            className="absolute w-36 top-full left-0 bg-[#101216] border border-[#2E323A] rounded-md shadow-xl mt-1 z-50 p-1"
+            className="absolute w-40 top-full left-0 rounded-md border border-(--border) bg-(--surface-1) shadow-lg mt-1 z-50 py-0.5"
             onClick={(e) => e.stopPropagation()}
           >
             {priorityOptionsArray.map((option, key) => (
               <div
                 key={key}
-                className="px-2 h-8 hover:bg-[#1B1F27] cursor-pointer text-white flex items-center gap-x-2 rounded"
+                className="px-2 h-8 hover:bg-(--surface-2) cursor-pointer text-(--foreground) flex items-center gap-x-2 rounded text-[13px]"
                 onClick={(event) => {
                   event.stopPropagation();
                   handlePriorityOptionClick(option.name);
                 }}
               >
                 <SVGIcon className="flex w-4" svgString={option.svg} />
-                <p className="">{option.name}</p>
+                <p>{option.name}</p>
               </div>
             ))}
           </div>
@@ -335,6 +368,10 @@ export const RenderStatusSvg = ({ status }: { status: string }) => {
     case "cancelled":
       return (
         <SVGIcon className="flex w-5" svgString={RAW_ICONS.CancelledIssue} />
+      );
+    case "hold":
+      return (
+        <SVGIcon className="flex w-5" svgString={RAW_ICONS.Label} />
       );
     case "planned":
       return (

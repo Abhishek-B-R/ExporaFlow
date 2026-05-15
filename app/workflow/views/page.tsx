@@ -169,7 +169,7 @@ export default function ViewsPage() {
                 <div className="mt-2 flex gap-2">
                   {view.project?.id ? (
                     <Link
-                      href={`/workflow/project/${view.project.id}/issues?status=${encodeURIComponent(
+                      href={`/workflow/project/${view.project.id}/incident-tickets?status=${encodeURIComponent(
                         view.filters?.statusFilter || "",
                       )}&q=${encodeURIComponent(view.filters?.searchText || "")}`}
                       className="text-xs rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 hover:bg-(--surface-3)"

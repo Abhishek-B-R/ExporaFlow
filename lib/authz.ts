@@ -1,5 +1,6 @@
 import { prisma } from "@/db";
 import { Role } from "@prisma/client";
+import { userPassesServiceLineForProject } from "@/lib/project-access";
 
 const ROLE_ORDER: Record<Role, number> = {
   ADMIN: 4,
@@ -21,7 +22,7 @@ export async function getUserProjectRole(params: {
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { createdBy: true, workspaceId: true },
+    select: { createdBy: true, workspaceId: true, serviceLine: true },
   });
 
   if (!project) return null;
@@ -36,14 +37,27 @@ export async function getUserProjectRole(params: {
   });
   if (projectMembership) return projectMembership.role;
 
-  // 3. Workspace member → use workspace role (workspace members can access
-  //    all projects in the workspace)
+  // 3. Workspace member → workspace role, with service-line scoping for non-elevated roles
   if (project.workspaceId) {
     const workspaceMembership = await prisma.workspaceMember.findFirst({
       where: { workspaceId: project.workspaceId, userId },
       select: { role: true },
     });
-    if (workspaceMembership) return workspaceMembership.role;
+    if (workspaceMembership) {
+      const elevated =
+        workspaceMembership.role === Role.ADMIN ||
+        workspaceMembership.role === Role.MANAGER;
+      if (
+        !elevated &&
+        !(await userPassesServiceLineForProject({
+          userId,
+          serviceLine: project.serviceLine,
+        }))
+      ) {
+        return null;
+      }
+      return workspaceMembership.role;
+    }
   }
 
   return null;

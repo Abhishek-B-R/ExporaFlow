@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { ProjectBody } from "@/utils/types";
 import SVGIcon from "@/lib/svg-icon";
 import ProjectLoadingScreen from "@/components/workflow/workspace/project-loading";
@@ -153,103 +154,117 @@ export default function Project({
       {isLoading ? (
         <ProjectLoadingScreen />
       ) : (
-        <WorkflowLayout windowSvg={RAW_ICONS.RubiksCube} windowTitle="Projects">
-          <ProjectNavbar projectId={project_id} projectTitle={project?.title} />
+        <WorkflowLayout
+          windowSvg={RAW_ICONS.RubiksCube}
+          windowTitle="Projects"
+          breadcrumb={
+            <>
+              <Link
+                href="/workflow/project"
+                className="hover:text-(--foreground) transition-colors shrink-0"
+              >
+                Projects
+              </Link>
+              <span className="text-(--muted-2) shrink-0">/</span>
+              <span className="truncate text-(--muted)">{project?.title ?? "…"}</span>
+            </>
+          }
+        >
+          <div className="flex flex-col flex-1 min-h-0">
+            <ProjectNavbar projectId={project_id} projectTitle={project?.title} />
 
-          {project && (
-            <div className="grow overflow-y-auto h-96 scrollbar-hide px-4 sm:px-6 lg:px-10 xl:px-20">
-              <div className="my-4 sm:my-5 lg:my-10">
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <p className="text-xl lg:text-2xl xl:text-3xl font-medium">
-                    {project.title}
-                  </p>
-                  {project.serviceLine ? (
-                    <span className="text-[11px] md:text-xs text-[#9b9c9e] border border-[#3a3b40] rounded px-2 py-0.5">
-                      {projectServiceLineLabel(project.serviceLine)}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="my-3 text-[#858687]">{project.description}</p>
-              </div>
-
-              <div className="flex gap-x-2 my-5 text-xs md:text-sm ">
-                <div
-                  ref={statusDropdownRef}
-                  className="h-7  relative rounded-md lg:min-w-20 flex items-center justify-center border border-[#5C5D5E] cursor-pointer hover:bg-[#1C1D21] transition-all duration-300"
-                >
-                  <div
-                    className="w-full h-full px-2 flex items-center rounded-md hover:bg-[#212227] transition-all duration-300 cursor-pointer text-white"
-                    onClick={() => setShowOptionsDropdown("status")}
-                  >
-                    {project.status ? project.status : "status"}
+            {project && (
+              <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
+                <div className="ef-workspace-inner py-6">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h1 className="text-xl lg:text-2xl font-semibold tracking-tight text-(--foreground)">
+                      {project.title}
+                    </h1>
+                    {project.serviceLine ? (
+                      <span className="text-[11px] font-medium text-(--muted) border border-(--border) rounded-md px-2 py-0.5 bg-(--surface-2)">
+                        {projectServiceLineLabel(project.serviceLine)}
+                      </span>
+                    ) : null}
                   </div>
-                  {showOptionsDropdown == "status" && (
-                    <div className="z-10 absolute top-8 -left-3 w-32 h-fit bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-xl shadow-lg p-1 transition-all duration-300">
-                      {healthOptions.map((option, key) => (
-                        <div
-                          key={key}
-                          className="px-2 py-1 hover:bg-[#151818] cursor-pointer text-white flex items-center rounded-md gap-x-2"
-                          onClick={() => handleHealthOptionClick(option.name)}
-                        >
-                          <SVGIcon
-                            className="flex w-4"
-                            svgString={option.svg}
-                          />
-                          <p className="text-sm">{option.name}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                  <p className="mt-2 text-sm text-(--muted-2) max-w-3xl">{project.description}</p>
 
-                <div
-                  ref={priorityDropdownRef}
-                  className="h-7 w-7 relative rounded-md  flex items-center justify-center border border-[#5C5D5E] cursor-pointer hover:bg-[#1C1D21] transition-all duration-300"
-                >
-                  <div
-                    className="flex items-center justify-center w-full h-full  rounded-md hover:bg-[#212227] transition-all duration-300 cursor-pointer"
-                    onClick={() => setShowOptionsDropdown("priority")}
-                  >
-                    {renderPrioritySvg(project.priority)}
+                  <div className="flex flex-wrap gap-2 my-6 text-xs">
+                    <div
+                      ref={statusDropdownRef}
+                      className="h-8 relative rounded-md flex items-center border border-(--border) bg-(--surface-2) cursor-pointer hover:bg-(--surface-3) transition-colors"
+                    >
+                      <div
+                        className="h-full px-3 flex items-center rounded-md text-(--foreground) font-medium"
+                        onClick={() => setShowOptionsDropdown("status")}
+                      >
+                        {project.status ? project.status : "Status"}
+                      </div>
+                      {showOptionsDropdown == "status" && (
+                        <div className="z-10 absolute top-full left-0 mt-1 min-w-[10rem] rounded-md border border-(--border) bg-(--surface-1) py-0.5 shadow-lg">
+                          {healthOptions.map((option, key) => (
+                            <button
+                              type="button"
+                              key={key}
+                              className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                              onClick={() => handleHealthOptionClick(option.name)}
+                            >
+                              <SVGIcon className="flex w-4" svgString={option.svg} />
+                              {option.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      ref={priorityDropdownRef}
+                      className="h-8 w-8 relative rounded-md flex items-center justify-center border border-(--border) bg-(--surface-2) cursor-pointer hover:bg-(--surface-3) transition-colors"
+                    >
+                      <div
+                        className="flex items-center justify-center w-full h-full rounded-md"
+                        onClick={() => setShowOptionsDropdown("priority")}
+                      >
+                        {renderPrioritySvg(project.priority)}
+                      </div>
+                      {showOptionsDropdown == "priority" && (
+                        <div className="z-10 absolute top-full left-0 mt-1 min-w-[10rem] rounded-md border border-(--border) bg-(--surface-1) py-0.5 shadow-lg">
+                          {priorityOptionsArray.map((option, key) => (
+                            <button
+                              type="button"
+                              key={key}
+                              className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                              onClick={() => handlePriorityOptionClick(option.name)}
+                            >
+                              <SVGIcon className="flex w-3" svgString={option.svg} />
+                              {option.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="h-8 px-3 rounded-md flex items-center border border-(--border) bg-(--surface-2) text-(--muted) text-[12px]">
+                      Lead: {project.lead?.trim() || "—"}
+                    </div>
+                    <div className="h-8 px-3 rounded-md flex items-center border border-(--border) bg-(--surface-2) text-(--muted) text-[12px]">
+                      Target:{" "}
+                      {project.targetDate
+                        ? new Date(project.targetDate).toLocaleDateString()
+                        : "—"}
+                    </div>
                   </div>
-                  {showOptionsDropdown == "priority" && (
-                    <div className="z-10 absolute top-8 -left-3 w-32 h-fit bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-xl shadow-lg p-1 transition-all duration-300">
-                      {priorityOptionsArray.map((option, key) => (
-                        <div
-                          key={key}
-                          className="px-2 py-1 hover:bg-[#151818] cursor-pointer text-white flex items-center gap-x-2"
-                          onClick={() => handlePriorityOptionClick(option.name)}
-                        >
-                          <SVGIcon
-                            className="flex w-3"
-                            svgString={option.svg}
-                          />
-                          <p className="text-sm">{option.name}</p>
-                        </div>
-                      ))}
+
+                  <div className="border-t border-(--border) pt-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-(--muted-2) mb-2">
+                      Brief
+                    </p>
+                    <div className="text-sm text-(--muted) leading-relaxed whitespace-pre-wrap">
+                      {project.content}
                     </div>
-                  )}
-                </div>
-                <div className="h-7 px-4 relative rounded lg:min-w-20 flex items-center justify-center border border-[#5C5D5E] cursor-pointer hover:bg-[#1C1D21] transition-all duration-300">
-                  Jadu
-                </div>
-                <div className="h-7 px-4 relative rounded lg:min-w-20 flex items-center justify-center border border-[#5C5D5E] cursor-pointer hover:bg-[#1C1D21] transition-all duration-300">
-                  Lead
-                </div>
-                <div className="h-7 px-4 relative rounded lg:min-w-20 flex items-center justify-center border border-[#5C5D5E] cursor-pointer hover:bg-[#1C1D21] transition-all duration-300">
-                  Target Date
+                  </div>
                 </div>
               </div>
-
-              <div className="my-5">
-                <p>Resources</p>
-              </div>
-
-              <div className="">
-                <p>{project.content}</p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </WorkflowLayout>
       )}
     </>

@@ -10,6 +10,7 @@ import { WorkflowLayout } from "@/components/workflow/workflow-layout";
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import { ProjectNavbar } from "@/components/workflow/project-navbar";
+import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 
 function daysBetween(start: Date, end: Date) {
   const oneDay = 24 * 60 * 60 * 1000;
@@ -265,25 +266,25 @@ export default function SprintsPage() {
                 placeholder="Sprint name"
                 className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-3 text-sm"
               />
-              <input
-                type="date"
+              <EnterpriseDatePicker
+                label="Start date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-3 text-sm"
+                onChange={setStartDate}
               />
-              <input
-                type="date"
+              <EnterpriseDatePicker
+                label="End date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-9 rounded-md border border-(--border) bg-(--surface-2) px-3 text-sm"
+                onChange={setEndDate}
               />
+              <div className="flex items-end">
               <button
                 onClick={createSprint}
                 disabled={!name.trim()}
-                className="h-9 rounded-md border border-(--border-strong) bg-(--surface-3) text-sm disabled:opacity-50 hover:bg-(--surface-4) transition-colors"
+                className="h-9 w-full rounded-md border border-(--border-strong) bg-(--surface-3) text-sm disabled:opacity-50 hover:bg-(--surface-4) transition-colors"
               >
                 Create
               </button>
+              </div>
             </div>
           </div>
         )}
@@ -424,7 +425,7 @@ export default function SprintsPage() {
                             {issue.status ?? "Backlog"}
                           </span>
                           <Link
-                            href={`/workflow/project/${projectId}/issues/${issue.id}`}
+                            href={`/workflow/project/${projectId}/incident-tickets/${issue.id}`}
                             className="text-sm truncate flex-1 hover:text-[#6f86ff] transition-colors"
                           >
                             {issue.title}
@@ -500,7 +501,7 @@ export default function SprintsPage() {
                         {issue.status ?? "Backlog"}
                       </span>
                       <Link
-                        href={`/workflow/project/${projectId}/issues/${issue.id}`}
+                        href={`/workflow/project/${projectId}/incident-tickets/${issue.id}`}
                         className="text-sm truncate flex-1 hover:text-[#6f86ff] transition-colors"
                       >
                         {issue.title}

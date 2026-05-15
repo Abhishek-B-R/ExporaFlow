@@ -26,7 +26,7 @@ export default function MyIssuesPage() {
         const res = await axios.get("/api/issues/myissues");
         setIssues(res.data ?? []);
       } catch {
-        customToast.error({ title: "", description: "Failed to load my issues." });
+        customToast.error({ title: "", description: "Failed to load my tickets." });
       } finally {
         setIsLoading(false);
       }
@@ -35,14 +35,14 @@ export default function MyIssuesPage() {
   }, []);
 
   return (
-    <WorkflowLayout windowSvg={RAW_ICONS.Target} windowTitle="My Issues">
+    <WorkflowLayout windowSvg={RAW_ICONS.Target} windowTitle="My incident tickets">
       <div className="p-4">
-        <p className="text-lg font-medium mb-3">Assigned and owned issues</p>
+        <p className="text-lg font-medium mb-3">Assigned and owned tickets</p>
         <div className="space-y-2">
           {issues.map((issue) => (
             <Link
               key={issue.id}
-              href={`/workflow/project/${issue.Project?.id}/issues/${issue.id}`}
+              href={`/workflow/project/${issue.Project?.id}/incident-tickets/${issue.id}`}
               className="block rounded-lg border border-(--border) bg-(--surface-1) hover:bg-(--surface-2) px-3 py-2 transition-colors"
             >
               <p className="text-sm">{issue.title}</p>
@@ -62,7 +62,7 @@ export default function MyIssuesPage() {
               ))}
             </div>
           ) : issues.length === 0 ? (
-            <p className="text-sm text-(--muted-2)">No issues assigned yet.</p>
+            <p className="text-sm text-(--muted-2)">No tickets assigned yet.</p>
           ) : null}
         </div>
       </div>

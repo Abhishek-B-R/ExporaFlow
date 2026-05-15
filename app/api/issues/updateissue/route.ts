@@ -3,11 +3,29 @@ import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { assertProjectRole } from "@/lib/authz";
-import { Role } from "@prisma/client";
+import { Role, TicketType } from "@prisma/client";
 import { canTransitionIssueStatus } from "@/lib/issue-status-machine";
 import { logIssueActivity, notifyUsers } from "@/lib/collaboration";
+import { updateIssueBodySchema } from "@/lib/ticket-schemas";
+import {
+  buildHoldAndSlaPatch,
+  computeInitialSlaDueAt,
+  parseStoredDate,
+} from "@/lib/ticket-sla";
 
 export async function PATCH(request: NextRequest) {
+  const raw = await request.json();
+  const parsed = updateIssueBodySchema.safeParse(raw);
+
+  if (!parsed.success) {
+    return new Response(
+      JSON.stringify({
+        message: parsed.error.errors[0]?.message ?? "Invalid request.",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   const {
     issueId,
     issueTitle,
@@ -20,7 +38,11 @@ export async function PATCH(request: NextRequest) {
     dueDate,
     labels,
     estimate,
-  } = await request.json();
+    startDate,
+    endDate,
+    durationMinutes,
+    ticketType,
+  } = parsed.data;
 
   const session = await getServerSession(authOptions);
 
@@ -46,11 +68,18 @@ export async function PATCH(request: NextRequest) {
         dueDate: true,
         labels: true,
         estimate: true,
+        ticketType: true,
+        startDate: true,
+        endDate: true,
+        durationMinutes: true,
+        holdStartedAt: true,
+        accumulatedHoldSeconds: true,
+        slaDueAt: true,
       },
     });
 
     if (!existing) {
-      return new Response(JSON.stringify({ message: "Issue not found." }), {
+      return new Response(JSON.stringify({ message: "Ticket not found." }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
@@ -68,14 +97,50 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    const effectiveType = ticketType ?? existing.ticketType;
+
     if (
       typeof issueStatus !== "undefined" &&
-      !canTransitionIssueStatus({ from: existing.status, to: issueStatus })
+      !canTransitionIssueStatus({
+        from: existing.status,
+        to: issueStatus,
+        ticketType: effectiveType,
+      })
     ) {
       return new Response(JSON.stringify({ message: "Invalid status transition." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    const nextStart =
+      startDate !== undefined
+        ? parseStoredDate(typeof startDate === "string" ? startDate : undefined)
+        : existing.startDate;
+    const nextEnd =
+      endDate !== undefined
+        ? parseStoredDate(typeof endDate === "string" ? endDate : undefined)
+        : existing.endDate;
+    const nextDuration =
+      durationMinutes !== undefined ? durationMinutes : existing.durationMinutes;
+
+    if (effectiveType === TicketType.CHANGE) {
+      if (!nextStart) {
+        return new Response(
+          JSON.stringify({
+            message: "Start date is required for change management tickets.",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (!nextEnd && !nextDuration) {
+        return new Response(
+          JSON.stringify({
+            message: "End date or duration is required for change management tickets.",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
     }
 
     if (typeof sprintId !== "undefined" && sprintId !== null) {
@@ -91,6 +156,29 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    const holdSlaPatch = buildHoldAndSlaPatch({
+      existing: {
+        ticketType: existing.ticketType,
+        status: existing.status,
+        holdStartedAt: existing.holdStartedAt,
+        accumulatedHoldSeconds: existing.accumulatedHoldSeconds,
+        slaDueAt: existing.slaDueAt,
+      },
+      nextStatus: issueStatus,
+    });
+
+    let nextSlaDueAt: Date | null | undefined = undefined;
+    if (
+      effectiveType === TicketType.CHANGE &&
+      (startDate !== undefined || endDate !== undefined || durationMinutes !== undefined)
+    ) {
+      nextSlaDueAt = computeInitialSlaDueAt({
+        startDate: nextStart,
+        endDate: nextEnd,
+        durationMinutes: nextDuration,
+      });
+    }
+
     const updatedIssue = await prisma.issue.update({
       where: { id: issueId },
       data: {
@@ -98,6 +186,13 @@ export async function PATCH(request: NextRequest) {
         description: issueDescription,
         priority: issuePriority,
         status: issueStatus,
+        ticketType,
+        startDate: startDate !== undefined ? nextStart : undefined,
+        endDate: endDate !== undefined ? nextEnd : undefined,
+        durationMinutes:
+          durationMinutes !== undefined ? nextDuration : undefined,
+        ...(nextSlaDueAt !== undefined ? { slaDueAt: nextSlaDueAt } : {}),
+        ...holdSlaPatch,
         assignedUser:
           typeof assignedUser === "string"
             ? assignedUser || null
@@ -119,13 +214,18 @@ export async function PATCH(request: NextRequest) {
         dueDate:
           typeof dueDate === "string"
             ? dueDate
-              ? new Date(dueDate)
+              ? parseStoredDate(dueDate)
               : null
             : dueDate === null
               ? null
               : undefined,
         labels: Array.isArray(labels) ? labels : undefined,
-        estimate: typeof estimate === "number" ? estimate : estimate === null ? null : undefined,
+        estimate:
+          typeof estimate === "number"
+            ? estimate
+            : estimate === null
+              ? null
+              : undefined,
       },
     });
 
@@ -234,7 +334,7 @@ export async function PATCH(request: NextRequest) {
             userIds: [assignedUser],
             actorId: session.user.id,
             type: "ISSUE_ASSIGNED",
-            title: "You were assigned an issue",
+            title: "You were assigned a ticket",
             body: updatedIssue.title,
             issueId: updatedIssue.id,
             projectId: updatedIssue.projectId,
@@ -244,10 +344,10 @@ export async function PATCH(request: NextRequest) {
         console.error("Non-fatal issue update side-effect failure:", sideEffectError);
       }
 
-      return new Response(JSON.stringify({ message: "Issue updated!" }));
+      return new Response(JSON.stringify({ message: "Ticket updated!" }));
     }
   } catch (error) {
     console.error(error);
-    return new Response(JSON.stringify({ message: "Error updating issue!" }));
+    return new Response(JSON.stringify({ message: "Error updating ticket!" }));
   }
 }
