@@ -14,6 +14,12 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import ProjectListSkeleton from "./project-skeleton-loader";
 import { WorkflowLayout } from "../workflow-layout";
+import {
+  WorkflowModal,
+  WorkflowModalBody,
+  WorkflowModalFooter,
+  WorkflowModalHeader,
+} from "../workflow-modal";
 import { renderPrioritySvg } from "../issues/issue-label";
 import {
   healthOptions,
@@ -21,10 +27,12 @@ import {
 } from "@/utils/project-view-options";
 import { customToast } from "@/lib/custom-toast";
 import {
-  PROJECT_SERVICE_LINES,
   type ProjectServiceLineValue,
   projectServiceLineLabel,
 } from "@/utils/project-service-line";
+import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
+import { ServiceLineSelect } from "@/components/workflow/service-line-select";
+import { CustomerPicker } from "@/components/workflow/customer-picker";
 
 function formatProjectDate(value: unknown): string {
   if (value == null || value === "") return "—";
@@ -41,6 +49,17 @@ function formatProjectDate(value: unknown): string {
   }
 }
 
+function formatProjectDateRange(
+  start: unknown,
+  target: unknown,
+): string {
+  const s = formatProjectDate(start);
+  const t = formatProjectDate(target);
+  if (s === "—" && t === "—") return "—";
+  if (s !== "—" && t !== "—") return `${s} → ${t}`;
+  return s !== "—" ? `From ${s}` : `Until ${t}`;
+}
+
 function leadLabel(project: ProjectBody): string {
   const l = project.lead?.trim();
   if (l) return l;
@@ -53,11 +72,11 @@ function leadLabel(project: ProjectBody): string {
 
 function stateBadgeClass(name: string) {
   const n = name.toLowerCase();
-  if (n.includes("work")) return "bg-emerald-500/12 text-emerald-200 border-emerald-500/25";
-  if (n.includes("plan")) return "bg-sky-500/12 text-sky-200 border-sky-500/25";
-  if (n.includes("backlog")) return "bg-slate-500/15 text-slate-200 border-slate-500/25";
-  if (n.includes("complete")) return "bg-zinc-500/12 text-zinc-200 border-zinc-500/25";
-  if (n.includes("cancel")) return "bg-orange-500/12 text-orange-200 border-orange-500/25";
+  if (n.includes("work")) return "bg-emerald-50 text-emerald-800 border-emerald-300";
+  if (n.includes("plan")) return "bg-sky-50 text-sky-800 border-sky-300";
+  if (n.includes("backlog")) return "bg-slate-100 text-slate-700 border-slate-300";
+  if (n.includes("complete")) return "bg-zinc-100 text-zinc-700 border-zinc-300";
+  if (n.includes("cancel")) return "bg-orange-50 text-orange-800 border-orange-300";
   return "bg-(--surface-3) text-(--muted) border-(--border)";
 }
 
@@ -153,7 +172,7 @@ export default function Projects() {
                         <th className="px-3 py-2 w-[12%] font-medium">Status</th>
                         <th className="px-3 py-2 w-[8%] font-medium">Priority</th>
                         <th className="px-3 py-2 w-[12%] font-medium hidden md:table-cell">Lead</th>
-                        <th className="px-3 py-2 w-[11%] font-medium hidden xl:table-cell">Target</th>
+                        <th className="px-3 py-2 w-[13%] font-medium hidden xl:table-cell">Timeline</th>
                         <th className="px-3 py-2 w-[11%] font-medium hidden lg:table-cell">Tickets</th>
                         <th className="px-3 py-2 w-[10%] font-medium hidden xl:table-cell">SLA</th>
                         <th className="px-3 py-2 w-[10%] font-medium text-right">Actions</th>
@@ -400,7 +419,7 @@ const ProjectLabel = ({
         </span>
       </td>
       <td className="px-3 py-2 align-middle text-(--muted) text-[12px] tabular-nums hidden xl:table-cell">
-        {formatProjectDate(project.targetDate)}
+        {formatProjectDateRange(project.startDate, project.targetDate)}
       </td>
       <td className="px-3 py-2 align-middle hidden lg:table-cell">
         {stats ? (
@@ -429,11 +448,11 @@ const ProjectLabel = ({
       </td>
       <td className="px-3 py-2 align-middle hidden xl:table-cell">
         {stats && stats.slaAtRisk > 0 ? (
-          <span className="inline-flex items-center rounded border border-rose-500/25 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-200 tabular-nums">
+          <span className="inline-flex items-center rounded border border-rose-300 bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 tabular-nums">
             {stats.slaAtRisk} at risk
           </span>
         ) : stats ? (
-          <span className="inline-flex items-center rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-200">
+          <span className="inline-flex items-center rounded border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700">
             Clear
           </span>
         ) : (
@@ -472,8 +491,9 @@ const CreateProjectWindow = ({
   );
   type CustomerRow = { id: string; name: string; organizationName: string };
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
-  const [customerSearch, setCustomerSearch] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState("");
+  const [targetDate, setTargetDate] = useState("");
 
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
     "health" | "priority" | boolean
@@ -494,32 +514,32 @@ const CreateProjectWindow = ({
   const { data: session } = useSession();
   const [isCreating, setIsCreating] = useState(false);
 
+  const loadCustomers = async () => {
+    try {
+      const res = await axios.get<CustomerRow[]>("/api/customers");
+      setCustomers(res.data ?? []);
+    } catch {
+      setCustomers([]);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await axios.get<CustomerRow[]>("/api/customers");
-        setCustomers(res.data ?? []);
-      } catch {
-        setCustomers([]);
-      }
-    };
-    void load();
+    void loadCustomers();
   }, []);
 
-  const filteredCustomers = customers.filter((c) => {
-    const q = customerSearch.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      c.name.toLowerCase().includes(q) ||
-      c.organizationName.toLowerCase().includes(q)
-    );
-  });
-
   const createProject = async () => {
+    if (startDate && targetDate && targetDate < startDate) {
+      customToast.error({
+        title: "",
+        description: "End date must be on or after the start date.",
+      });
+      return;
+    }
+
     setIsCreating(true);
     let shouldClose = true;
     try {
-      const response = await axios.post("/api/workflow/createproject", {
+      await axios.post("/api/workflow/createproject", {
         projTitle: projTitle,
         projDescription: projDescription,
         projContent: projContent,
@@ -528,6 +548,8 @@ const CreateProjectWindow = ({
         status: status,
         serviceLine,
         customerId: customerId ?? undefined,
+        startDate: startDate || undefined,
+        targetDate: targetDate || undefined,
       });
 
       customToast.info({
@@ -550,202 +572,168 @@ const CreateProjectWindow = ({
   };
 
   return (
-    <div className="absolute bg-sky-950/20 backdrop-blur-sm w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44">
-      <div className="flex flex-col border border-(--border) w-full h-[550px] lg:h-[600px] xl:h-[700px] rounded-xl bg-(--surface-1) shadow-lg px-2 md:px-4 xl:px-5 pt-2 md:pt-4 xl:pt-5 text-(--foreground)">
-        <div className=" h-10 flex justify-between items-center gap-x-2">
-          <div className="flex items-center">
-            <div className="border border-(--border) bg-(--surface-2) rounded h-7 md:h-9 w-16 md:w-20 flex justify-center items-center">
-              <p className="text-[12px] md:text-[14px] xl:text-[16px]">Team</p>
-            </div>
-            <SVGIcon className="flex w-t" svgString={RAW_ICONS.ArrowRight} />
-            <p className="text-[12px] md:text-[14px] xl:text-[16px]">
-              New Project
-            </p>
-          </div>
-          <div onClick={() => setClose(false)} className="w-fit cursor-pointer">
-            <SVGIcon className="flex w-3 md:w-5" svgString={RAW_ICONS.Close} />
-          </div>
+    <WorkflowModal maxWidth="max-w-3xl" onClose={() => setClose(false)}>
+      <WorkflowModalHeader onClose={() => setClose(false)}>
+        <div className="flex items-center gap-2 min-w-0 text-sm">
+          <span className="shrink-0 rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 text-xs font-semibold text-(--muted)">
+            Team
+          </span>
+          <SVGIcon className="flex shrink-0 w-3" svgString={RAW_ICONS.ArrowRight} />
+          <span className="font-semibold text-(--foreground) truncate">New project</span>
         </div>
+      </WorkflowModalHeader>
 
-        <div id="title" className="mt-5">
+      <WorkflowModalBody>
+        <div className="space-y-3 min-w-0">
           <input
-            className=" text-xl sm:text-2xl md:text-3xl w-full outline-none"
+            className="ef-field text-xl sm:text-2xl font-semibold px-3 py-2 outline-none min-w-0"
             placeholder="Project name"
             value={projTitle}
-            onChange={(e) => {
-              setProjTitle(e.target.value);
-            }}
+            onChange={(e) => setProjTitle(e.target.value)}
           />
           <input
-            id="description"
-            className="text-sm md:text-lg w-full outline-none mt-3"
-            placeholder="Add some description…"
+            className="ef-field text-sm px-3 py-2 outline-none min-w-0"
+            placeholder="Short description"
             value={projDescription}
-            onChange={(e) => {
-              setProjDescription(e.target.value);
-            }}
+            onChange={(e) => setProjDescription(e.target.value)}
           />
         </div>
 
-        <div className="mt-4">
-          <p className="text-[11px] md:text-xs text-(--muted-2) mb-2">
-            Service line
+        <div className="min-w-0">
+          <label
+            htmlFor="new-project-service-line"
+            className="block text-xs font-semibold uppercase tracking-wide text-(--muted) mb-2"
+          >
+            Service line <span className="text-red-600">*</span>
+          </label>
+          <ServiceLineSelect
+            id="new-project-service-line"
+            value={serviceLine}
+            onChange={setServiceLine}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--muted) mb-2">
+            Customer <span className="font-normal normal-case text-(--muted-2)">(optional)</span>
           </p>
-          <div className="flex flex-wrap gap-2">
-            {PROJECT_SERVICE_LINES.map((line) => {
-              const selected = serviceLine === line.value;
-              return (
-                <button
-                  key={line.value}
-                  type="button"
-                  onClick={() => setServiceLine(line.value)}
-                  className={`rounded-md border px-2.5 py-1.5 text-[11px] md:text-[13px] transition-all duration-300 ${
-                    selected
-                      ? "border-sky-400 bg-sky-100 text-sky-900"
-                      : "border-(--border) bg-(--surface-2) text-(--muted) hover:bg-(--surface-3)"
-                  }`}
-                >
-                  {line.label}
-                </button>
-              );
-            })}
-          </div>
+          <CustomerPicker
+            customers={customers}
+            value={customerId}
+            onChange={setCustomerId}
+            onReload={loadCustomers}
+          />
         </div>
 
-        <div className="mt-4">
-          <p className="text-[11px] md:text-xs text-(--muted-2) mb-2">Customer</p>
-          <input
-            className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 py-1.5 text-sm outline-none"
-            placeholder="Search customers…"
-            value={customerSearch}
-            onChange={(e) => setCustomerSearch(e.target.value)}
+        <div className="min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <EnterpriseDatePicker
+            label="Start date"
+            value={startDate}
+            onChange={setStartDate}
           />
-          <div className="mt-2 max-h-28 overflow-y-auto rounded-md border border-(--border) bg-(--surface-2)">
+          <EnterpriseDatePicker
+            label="End date"
+            value={targetDate}
+            onChange={setTargetDate}
+          />
+        </div>
+
+        <div className="relative z-0 min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--muted) mb-2">
+            Properties
+          </p>
+          <div className="flex flex-wrap gap-2" ref={dropdownRef}>
             <button
               type="button"
-              className={`w-full text-left px-2 py-1.5 text-xs hover:bg-(--surface-3) ${
-                customerId === null ? "bg-sky-100" : ""
-              }`}
-              onClick={() => setCustomerId(null)}
+              onClick={() =>
+                setShowOptionsDropdown(showOptionsDropdown === "health" ? false : "health")
+              }
+              className="ef-pill"
             >
-              No customer
+              {status}
             </button>
-            {filteredCustomers.slice(0, 40).map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className={`w-full text-left px-2 py-1.5 text-xs hover:bg-(--surface-3) ${
-                  customerId === c.id ? "bg-sky-100" : ""
-                }`}
-                onClick={() => setCustomerId(c.id)}
+            {showOptionsDropdown === "health" && (
+              <div className="absolute left-0 top-full z-30 mt-1 w-40 max-w-full rounded-md border border-(--border-strong) bg-(--surface-1) shadow-lg py-1">
+                {statusOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm text-(--foreground) hover:bg-(--surface-3)"
+                    onClick={() => {
+                      setStatus(option as ProjectStatusType);
+                      setShowOptionsDropdown(false);
+                    }}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                setShowOptionsDropdown(showOptionsDropdown === "priority" ? false : "priority")
+              }
+              className="ef-pill"
+            >
+              {priority}
+            </button>
+            {showOptionsDropdown === "priority" && (
+              <div className="absolute left-0 top-full z-30 mt-1 w-40 max-w-full rounded-md border border-(--border-strong) bg-(--surface-1) shadow-lg py-1">
+                {priorityOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm text-(--foreground) hover:bg-(--surface-3)"
+                    onClick={() => {
+                      setPriority(option as ProjectPriorityType);
+                      setShowOptionsDropdown(false);
+                    }}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+            {(["lead", "members"] as const).map((label) => (
+              <span
+                key={label}
+                className="ef-pill opacity-60 cursor-not-allowed"
+                title="Coming soon"
               >
-                <span className="font-medium">{c.organizationName}</span>
-                <span className="text-(--muted-2)"> · {c.name}</span>
-              </button>
+                {label}
+              </span>
             ))}
           </div>
         </div>
 
-        <div className="my-2 h-10 gap-x-2 flex items-center  text-[10px]  md:text-[14px] lg:text-[15px] xl:text-[16px] ">
-          <button
-            onClick={() => setShowOptionsDropdown("health")}
-            className="border border-(--border) flex items-center bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300"
-          >
-            {status}
-          </button>
-          {showOptionsDropdown == "health" && (
-            <div className="absolute bg-(--surface-1) border border-(--border) rounded-md mt-2 shadow-md z-10">
-              {statusOptions.map((option, index) => (
-                <div
-                  key={index}
-                  className="px-4 py-2 hover:bg-(--surface-3) cursor-pointer rounded"
-                  onClick={() => {
-                    //@ts-expect-error //status type differ
-                    setStatus(option);
-                    setShowOptionsDropdown(false);
-                  }}
-                >
-                  {option}
-                </div>
-              ))}
-            </div>
-          )}
-          <button
-            onClick={() => setShowOptionsDropdown("priority")}
-            className="border border-(--border) flex items-center bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300"
-          >
-            {priority}
-          </button>
-          {showOptionsDropdown == "priority" && (
-            <div className="absolute bg-(--surface-1) border border-(--border) rounded-md mt-2 shadow-md z-10">
-              {priorityOptions.map((option, index) => (
-                <div
-                  key={index}
-                  className="px-4 py-2 hover:bg-(--surface-3) cursor-pointer rounded"
-                  onClick={() => {
-                    //@ts-expect-error //project type is different
-                    setPriority(option);
-                    setShowOptionsDropdown(false);
-                  }}
-                >
-                  {option}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
-            lead
-          </button>
-          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
-            members
-          </button>
-          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
-            start date
-          </button>
-          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
-            target date
-          </button>
-        </div>
-
-        <div className="border-t border-(--border) mt-1 sm:mt-2 md:mt-3"></div>
-        <div
-          id="content"
-          className="grow mt-2 sm:mt-5 md:mt-10 font-extralight"
-        >
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--muted) mb-2">
+            Brief
+          </p>
           <textarea
-            className=" text-[14px]  lg:text-[15px] xl:text-lg w-full outline-none h-full resize-none"
+            className="ef-field text-sm px-3 py-2 outline-none min-h-[120px] resize-y w-full min-w-0"
             placeholder="Add project brief, long description, collect ideas and resources…"
             value={projContent}
-            onChange={(e) => {
-              setProjContent(e.target.value);
-            }}
+            onChange={(e) => setProjContent(e.target.value)}
           />
         </div>
+      </WorkflowModalBody>
 
-        <div className="border-t border-(--border) w-full h-20 flex items-center justify-end gap-x-3  text-[12px]  md:text-[14px] lg:text-[15px] xl:text-[16px] ">
-          <button
-            onClick={() => setClose(false)}
-            className="px-2 border border-(--border) rounded-md h-9 hover:bg-(--surface-3) transition-all duration-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={createProject}
-            disabled={
-              isCreating || !projTitle.trim() || serviceLine === null
-            }
-            className="px-2 border border-sky-500 bg-sky-500 text-white min-w-16 flex items-center justify-center rounded-md h-9 hover:bg-sky-600 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {isCreating ? (
-              <SVGIcon svgString={RAW_ICONS.WhiteLoader} />
-            ) : (
-              "Create"
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+      <WorkflowModalFooter>
+        <button type="button" onClick={() => setClose(false)} className="ef-btn-outline h-9 px-4 rounded-md text-sm font-medium">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={createProject}
+          disabled={isCreating || !projTitle.trim() || serviceLine === null}
+          className="ef-btn-primary h-9 min-w-[5.5rem] flex items-center justify-center rounded-md text-sm font-medium disabled:opacity-40 disabled:pointer-events-none"
+        >
+          {isCreating ? <SVGIcon svgString={RAW_ICONS.WhiteLoader} /> : "Create"}
+        </button>
+      </WorkflowModalFooter>
+    </WorkflowModal>
   );
 };
 
@@ -781,35 +769,33 @@ const DeleteWindow = ({
   };
 
   return (
-    <div className="absolute bg-sky-950/20 backdrop-blur-sm w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44">
-      <div className="flex flex-col justify-between border border-(--border) rounded-xl bg-(--surface-1) shadow-lg h-56 w-96 lg:w-[500px] p-4 text-(--foreground)">
-        <div className="">
-          <p className="font-bold text-2xl">Are you sure?</p>
-          <p className="text-[#f2534d]">
-            Deleting this project will automatically delete all the issues
-            related under this project.
-          </p>
-        </div>
-        <div className="flex items-center justify-end gap-x-2 h-10">
-          <button
-            onClick={() => closeDeleteWindow(false)}
-            className="border border-[#8c8e85] bg-[#8c8e8533] h-9 w-20 rounded-lg  hover:bg-[#908d8c5e] hover:text-white transition-all duration-200 cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={deleteProject}
-            disabled={isDeleting}
-            className="border border-[#9e3e28] flex items-center justify-center bg-[#421c1370] h-9 w-20 rounded-lg text-[#cb4b2e] hover:bg-[#421c13] hover:text-white transition-all duration-200 cursor-pointer"
-          >
-            {isDeleting ? (
-              <SVGIcon svgString={RAW_ICONS.RedDeleteLoader} />
-            ) : (
-              "Delete"
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+    <WorkflowModal maxWidth="max-w-md" onClose={() => closeDeleteWindow(false)}>
+      <WorkflowModalHeader onClose={() => closeDeleteWindow(false)}>
+        <p className="font-semibold text-lg text-(--foreground)">Delete project?</p>
+      </WorkflowModalHeader>
+      <WorkflowModalBody>
+        <p className="text-sm text-(--muted) leading-relaxed">
+          Deleting this project will permanently remove all tickets and related data under it.
+          This cannot be undone.
+        </p>
+      </WorkflowModalBody>
+      <WorkflowModalFooter>
+        <button
+          type="button"
+          onClick={() => closeDeleteWindow(false)}
+          className="ef-btn-outline h-9 px-4 rounded-md text-sm font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={deleteProject}
+          disabled={isDeleting}
+          className="h-9 min-w-[5rem] px-4 rounded-md border border-red-400 bg-red-50 text-red-700 font-medium hover:bg-red-100 transition-colors disabled:opacity-50 flex items-center justify-center"
+        >
+          {isDeleting ? <SVGIcon svgString={RAW_ICONS.RedDeleteLoader} /> : "Delete"}
+        </button>
+      </WorkflowModalFooter>
+    </WorkflowModal>
   );
 };

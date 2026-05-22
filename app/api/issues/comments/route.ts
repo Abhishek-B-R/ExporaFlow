@@ -9,6 +9,7 @@ import {
   notifyUsers,
   resolveMentionedUserIds,
 } from "@/lib/collaboration";
+import { getAccessibleEmployeesForUser } from "@/lib/store-access";
 
 export async function POST(request: NextRequest) {
   const { issueId, body } = await request.json();
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
   const projectUsers = await prisma.project.findUnique({
     where: { id: issue.projectId },
     select: {
+      workspaceId: true,
       creator: { select: { id: true, name: true, email: true, username: true } },
       projectMembers: {
         select: {
@@ -58,6 +60,33 @@ export async function POST(request: NextRequest) {
     ...(projectUsers?.creator ? [projectUsers.creator] : []),
     ...(projectUsers?.projectMembers.map((member) => member.user) ?? []),
   ];
+
+  const storeEmployees = await getAccessibleEmployeesForUser(session.user.id);
+  const emailsNeedingLookup = new Set<string>();
+  for (const emp of storeEmployees) {
+    if (emp.user) {
+      mentionCandidates.push({
+        ...emp.user,
+        username: emp.user.email?.includes("@") ? emp.user.email.split("@")[0] : null,
+      });
+      continue;
+    }
+    if (emp.email) emailsNeedingLookup.add(emp.email.toLowerCase());
+    mentionCandidates.push({
+      id: emp.userId ?? emp.email,
+      name: emp.fullName,
+      email: emp.email,
+      username: emp.email.includes("@") ? emp.email.split("@")[0] : null,
+    });
+  }
+
+  if (emailsNeedingLookup.size > 0) {
+    const usersByEmail = await prisma.user.findMany({
+      where: { email: { in: [...emailsNeedingLookup], mode: "insensitive" } },
+      select: { id: true, name: true, email: true, username: true },
+    });
+    for (const user of usersByEmail) mentionCandidates.push(user);
+  }
   const mentionedUserIds = resolveMentionedUserIds(body, mentionCandidates);
 
   const comment = await prisma.issueComment.create({

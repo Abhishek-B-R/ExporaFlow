@@ -83,13 +83,13 @@ const ToastBody = ({
   return (
     <div
       onClick={onDismiss}
-      className="max-w-sm w-full rounded-xl bg-white/10 dark:bg-zinc-900/30 backdrop-blur-md shadow-xl ring-1 ring-white/10 px-4 py-3 text-white cursor-pointer flex items-center justify-between"
+      className="max-w-sm w-full rounded-xl bg-(--surface-1) shadow-lg ring-1 ring-(--border) px-4 py-3 text-(--foreground) cursor-pointer flex items-center justify-between"
     >
       <div className="flex items-center gap-3">
         <span className="text-lg">{icon}</span>
         <div className="flex flex-col">
           {title && <p className="text-sm font-semibold">{title}</p>}
-          <p className="text-sm text-[#a4a6aa]">{description}</p>
+          <p className="text-sm text-(--muted-2)">{description}</p>
         </div>
       </div>
       <button

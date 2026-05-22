@@ -30,7 +30,7 @@ type SprintPlanning = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  Backlog: "text-[#a4a6aa]",
+  Backlog: "text-(--muted-2)",
   Planned: "text-sky-600",
   Working: "text-[#e5a63b]",
   Completed: "text-[#30b27a]",
@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<string, string> = {
 const SPRINT_STATUS_BADGE: Record<string, string> = {
   Planned: "border-sky-200 bg-sky-50 text-sky-600",
   Active: "border-[#30b27a]/30 bg-[#30b27a]/10 text-[#30b27a]",
-  Closed: "border-[#a4a6aa]/30 bg-[#a4a6aa]/10 text-[#a4a6aa]",
+  Closed: "border-[#a4a6aa]/30 bg-[#a4a6aa]/10 text-(--muted-2)",
 };
 
 export default function SprintsPage() {
@@ -309,7 +309,7 @@ export default function SprintsPage() {
                 </button>
                 <button
                   onClick={() => setPlanning(null)}
-                  className="text-xs text-(--muted-2) hover:text-white px-2 py-1.5 rounded border border-(--border) hover:bg-(--surface-3)"
+                  className="text-xs text-(--muted-2) hover:text-(--foreground) px-2 py-1.5 rounded border border-(--border) hover:bg-(--surface-3)"
                 >
                   Dismiss
                 </button>

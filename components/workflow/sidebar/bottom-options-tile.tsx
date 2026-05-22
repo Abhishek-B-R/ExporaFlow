@@ -54,7 +54,7 @@ export const BottomOptionsTile = () => {
     <>
       {/* Options Button */}
       <div
-        className="flex border w-8 h-8 items-center justify-center cursor-pointer rounded-full absolute bottom-2 md:bottom-4 left-4 border-(--border) hover:bg-[#23252A] transition-all duration-300"
+        className="flex border w-8 h-8 items-center justify-center cursor-pointer rounded-full absolute bottom-2 md:bottom-4 left-4 border-(--border) hover:bg-(--surface-3) transition-all duration-300"
         onClick={() => setOptionsOpen(!optionsOpen)} // Toggle popup visibility
       >
         <SVGIcon className="flex w-5" svgString={RAW_ICONS.Gliter} />
@@ -100,7 +100,7 @@ export const BottomOptionLabel = ({
     <Link
       href={redirectHref}
       target={openToNewPage ? "_blank" : "_self"}
-      className="rounded-lg flex items-center h-9 px-2 gap-x-2 hover:bg-[#4b4b4b48] transition-all duration-300  border border-transparent hover:border-[#4b4b4b] "
+      className="rounded-lg flex items-center h-9 px-2 gap-x-2 hover:bg-(--surface-3) transition-all duration-300 border border-transparent hover:border-(--border) text-(--foreground)"
     >
       <SVGIcon className="flex w-4" svgString={svg} />
       <p>{title}</p>
@@ -133,7 +133,7 @@ export const LogoutBtn = () => {
   return (
     <div
       onClick={handleSignout}
-      className="rounded-lg flex items-center h-9 px-2 gap-x-2 hover:bg-[#a52f0b28] transition-all duration-300  border border-[#5a2418] bg-[#9c44302b] hover:border-[#A5300B] cursor-pointer"
+      className="rounded-lg flex items-center h-9 px-2 gap-x-2 hover:bg-red-50 transition-all duration-300 border border-red-300 bg-red-50/80 text-red-800 hover:border-red-400 cursor-pointer"
     >
       <SVGIcon className="flex w-4" svgString={RAW_ICONS.Logout} />
       <p>Log out</p>

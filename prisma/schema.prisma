@@ -146,6 +146,7 @@ model Project {
   /// Primary company service for this engagement (set at project creation).
   serviceLine ProjectServiceLine?
   lead        String?
+  startDate   DateTime?
   targetDate  DateTime?
   status      String?
   member      User[]

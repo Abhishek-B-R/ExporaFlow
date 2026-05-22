@@ -201,7 +201,7 @@ function BoardCard(props: {
             src={assignee.image}
             alt={assigneeName ?? ""}
             title={assigneeName ?? "Unassigned"}
-            className="h-5 w-5 rounded-full object-cover border border-[#2C2E33] ml-auto"
+            className="h-5 w-5 rounded-full object-cover border border-(--border) ml-auto"
           />
         ) : assigneeInitial ? (
           <div

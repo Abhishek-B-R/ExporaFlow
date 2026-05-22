@@ -355,27 +355,32 @@ export default function Issue() {
       <WorkflowLayout windowSvg={RAW_ICONS.Issue} windowTitle="Tickets">
         <div className="flex flex-col flex-1 min-h-0">
         <ProjectNavbar projectId={project_id} projectTitle={project?.title} />
-        <div className="border-b border-(--border) h-10 flex items-center justify-end px-4 bg-(--surface-2)">
-          <div className="flex gap-1">
-            <button
-              onClick={saveCurrentView}
-              disabled={isSavingView}
-              className="flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded-lg hover:bg-(--surface-2) transition-all duration-300 text-xs"
-            >
-              {isSavingView ? "Saving..." : "Save view"}
-            </button>
-            <div
-              onClick={() => {
-                setCreateIssueWindowOpen(true);
-              }}
-              className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent  px-2 rounded-lg hover:bg-(--surface-2) hover:border-(--border) transition-all duration-300"
-            >
-              <SVGIcon className="flex w-4" svgString={RAW_ICONS.Add} />
-            </div>
-            <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent  px-2 rounded-lg hover:bg-(--surface-2) hover:border-(--border) transition-all duration-300">
-              <SVGIcon className="flex w-5" svgString={RAW_ICONS.SideBar} />
-            </div>
-          </div>
+        <div className="border-b border-(--border) h-10 flex items-center justify-end px-4 bg-(--surface-2) gap-2">
+          <button
+            type="button"
+            onClick={saveCurrentView}
+            disabled={isSavingView}
+            className="ef-btn-outline h-7 px-3 rounded-md text-xs font-medium text-(--foreground) disabled:opacity-50"
+          >
+            {isSavingView ? "Saving…" : "Save view"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCreateIssueWindowOpen(true)}
+            className="ef-icon-btn-primary gap-1.5 px-2.5 text-xs font-medium"
+            aria-label="New ticket"
+          >
+            <SVGIcon className="w-4 h-4" svgString={RAW_ICONS.Add} />
+            <span className="hidden sm:inline">New ticket</span>
+          </button>
+          <button
+            type="button"
+            className="ef-icon-btn w-8 px-0"
+            aria-label="Toggle sidebar"
+            title="Panel layout"
+          >
+            <SVGIcon className="w-4 h-4" svgString={RAW_ICONS.SideBar} />
+          </button>
         </div>
 
         <div
@@ -399,7 +404,7 @@ export default function Issue() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="h-7 rounded-md border border-(--border) bg-(--surface-2) px-2 text-xs outline-none cursor-pointer"
+            className="h-7 rounded-md border border-(--border-strong) bg-(--surface-1) px-2 text-xs text-(--foreground) outline-none cursor-pointer"
           >
             <option value="">All priorities</option>
             <option value="Urgent">Urgent</option>
@@ -413,7 +418,7 @@ export default function Issue() {
           <select
             value={assigneeFilter}
             onChange={(e) => setAssigneeFilter(e.target.value)}
-            className="h-7 rounded-md border border-(--border) bg-(--surface-2) px-2 text-xs outline-none cursor-pointer"
+            className="h-7 rounded-md border border-(--border-strong) bg-(--surface-1) px-2 text-xs text-(--foreground) outline-none cursor-pointer"
           >
             <option value="">All assignees</option>
             <option value="unassigned">Unassigned</option>
@@ -439,7 +444,7 @@ export default function Issue() {
                 setAssigneeFilter("");
                 setTicketTypeFilter("");
               }}
-              className="h-7 px-2 rounded-md border border-red-400/30 bg-red-400/10 text-red-400 text-xs hover:bg-red-400/20 transition-colors"
+              className="h-7 px-2 rounded-md border border-red-300 bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100 transition-colors"
             >
               Clear filters
             </button>
@@ -490,10 +495,10 @@ export default function Issue() {
             <button
               onClick={hydrateAiInputFromSelection}
               disabled={!filteredIssues[selectedIssueIndex]}
-              className="h-7 px-2 rounded-md border border-(--border) bg-(--surface-2) text-xs disabled:opacity-50"
-            >
-              Use selected
-            </button>
+            className="ef-btn-outline h-7 px-2 rounded-md text-xs font-medium disabled:opacity-50"
+          >
+            Use selected
+          </button>
           </div>
           <div className="flex gap-2">
             <textarea
@@ -506,9 +511,9 @@ export default function Issue() {
             <button
               onClick={runAiDrafting}
               disabled={aiLoading || !aiInput.trim()}
-              className="h-16 px-3 rounded-md border border-(--border-strong) bg-(--surface-3) text-xs disabled:opacity-50"
+              className="h-16 px-3 rounded-md border border-sky-400 bg-sky-100 text-sky-800 text-xs font-medium hover:bg-sky-200 disabled:opacity-50 transition-colors"
             >
-              {aiLoading ? "Thinking..." : "Draft with AI"}
+              {aiLoading ? "Thinking…" : "Draft with AI"}
             </button>
           </div>
           {(aiDraft || aiTriage || aiDuplicates.length > 0) && (
@@ -658,8 +663,10 @@ const IssuesViewButton = ({
     <button
       onClick={isAll ? () => setFilter("") : () => setFilter(title)}
       className={
-        (isActive ? "bg-(--surface-2) " : "") +
-        "flex items-center gap-x-1 border border-(--border) h-7 px-2 rounded-md text-(--muted-2) text-sm hover:bg-(--surface-3) transition-all duration-300 min-w-[90px] shrink-0"
+        (isActive
+          ? "bg-sky-100 border-sky-400 text-sky-900 font-medium "
+          : "text-(--foreground) ") +
+        "flex items-center gap-x-1 border border-(--border-strong) h-7 px-2 rounded-md text-sm hover:bg-(--surface-3) transition-all duration-300 min-w-[90px] shrink-0 bg-(--surface-1)"
       }
     >
       <SVGIcon className="flex w-4" svgString={svg} />

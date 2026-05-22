@@ -246,7 +246,13 @@ export default function Project({
                       Lead: {project.lead?.trim() || "—"}
                     </div>
                     <div className="h-8 px-3 rounded-md flex items-center border border-(--border) bg-(--surface-2) text-(--muted) text-[12px]">
-                      Target:{" "}
+                      Start:{" "}
+                      {project.startDate
+                        ? new Date(project.startDate).toLocaleDateString()
+                        : "—"}
+                    </div>
+                    <div className="h-8 px-3 rounded-md flex items-center border border-(--border) bg-(--surface-2) text-(--muted) text-[12px]">
+                      End:{" "}
                       {project.targetDate
                         ? new Date(project.targetDate).toLocaleDateString()
                         : "—"}

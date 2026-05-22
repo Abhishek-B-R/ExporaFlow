@@ -105,7 +105,7 @@ const ProfileWindow = ({
   return (
     <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
-      <p className="text-white ">Profile</p>
+      <p className="text-(--foreground)">Profile</p>
       <div className="grid grid-cols-2 gap-x-2 mt-2">
         <DockOptions svg={RAW_ICONS.Target} optName="Inbox" />
         <DockOptions svg={RAW_ICONS.Target} optName="My Issues" />
@@ -129,7 +129,7 @@ const WorkflowWindow = ({
   return (
     <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
-      <p className="text-white ">Workflow</p>
+      <p className="text-(--foreground)">Workflow</p>
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-2">
         <DockOptions
           svg={RAW_ICONS.RubiksCube}
@@ -159,7 +159,7 @@ const FeaturesWindow = ({
   return (
     <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
-      <p className="text-white ">Features</p>
+      <p className="text-(--foreground)">Features</p>
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-2">
         <DockOptions svg={RAW_ICONS.GitHub} optName="GitHub" />
         <DockOptions svg={RAW_ICONS.Target} optName="Import Iss…" />
@@ -184,7 +184,7 @@ const TeamsWindow = ({
   return (
     <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
-      <p className="text-white ">Teams</p>
+      <p className="text-(--foreground)">Teams</p>
 
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-2">
         <DockOptions svg={RAW_ICONS.Target} optName="Issues" />
@@ -212,7 +212,7 @@ function DockOptions({
   redirectUri?: string;
 }) {
   return (
-    <div className="border border-(--border) h-8 flex px-4 rounded-lg items-center gap-x-2 hover:bg-[#1d1d21] transition-all duration-200 cursor-pointer">
+    <div className="border border-(--border) h-8 flex px-4 rounded-lg items-center gap-x-2 hover:bg-(--surface-3) text-(--foreground) transition-all duration-200 cursor-pointer">
       <div className="">
         <SVGIcon className="flex w-5" svgString={svg} />
       </div>

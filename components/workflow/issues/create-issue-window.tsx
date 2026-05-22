@@ -9,12 +9,28 @@ import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-pick
 import { renderPrioritySvg, RenderStatusSvg } from "./issue-label";
 import { PriorityOptionsArray } from "@/utils/issues-view-options";
 import { customToast } from "@/lib/custom-toast";
+import {
+  WorkflowModal,
+  WorkflowModalBody,
+  WorkflowModalFooter,
+  WorkflowModalHeader,
+} from "@/components/workflow/workflow-modal";
 
 type DuplicateCandidate = {
   id: string;
   title: string;
   status?: string | null;
   score: number;
+};
+
+type ProjectMember = {
+  id: string;
+  user: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
 };
 
 export const CreateIssueWindow = ({
@@ -34,11 +50,12 @@ export const CreateIssueWindow = ({
     useState("No Priority");
   const [selectedStatusOption, setSelectedStatusOption] = useState("Working");
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
-    "status" | "priority" | boolean
+    "status" | "priority" | "assignee" | false
   >(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [assignedUserId, setAssignedUserId] = useState("");
 
-  // AI states
   const [isDrafting, setIsDrafting] = useState(false);
   const [isTriaging, setIsTriaging] = useState(false);
   const [triageSuggestion, setTriageSuggestion] = useState<{
@@ -63,6 +80,36 @@ export const CreateIssueWindow = ({
     );
   }, [ticketType]);
 
+  useEffect(() => {
+    if (!project_id) return;
+    const loadMembers = async () => {
+      try {
+        const res = await axios.get<ProjectMember[]>("/api/workflow/getmembers", {
+          params: { projectId: project_id },
+        });
+        let list = res.data ?? [];
+        if (list.length === 0) {
+          const wsRes = await axios.get<ProjectMember[]>("/api/workflow/getmembers");
+          list = wsRes.data ?? [];
+        }
+        setMembers(list);
+      } catch {
+        setMembers([]);
+      }
+    };
+    loadMembers();
+  }, [project_id]);
+
+  useEffect(() => {
+    if (!showOptionsDropdown) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (actionsRef.current?.contains(e.target as Node)) return;
+      setShowOptionsDropdown(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [showOptionsDropdown]);
+
   const createIssue = async () => {
     try {
       const response = await axios.post("/api/issues/createissue", {
@@ -77,6 +124,7 @@ export const CreateIssueWindow = ({
         durationMinutes: durationMinutes
           ? Number.parseInt(durationMinutes, 10)
           : undefined,
+        assignedUser: assignedUserId || null,
       });
 
       if (response.data) {
@@ -177,29 +225,31 @@ export const CreateIssueWindow = ({
     setShowOptionsDropdown(false);
   };
 
+  const assigneeMember = members.find((m) => m.user.id === assignedUserId);
+  const assigneeLabel =
+    assigneeMember?.user.name ||
+    assigneeMember?.user.email?.split("@")[0] ||
+    null;
+
+  const toggleDropdown = (key: "priority" | "status" | "assignee") => {
+    setShowOptionsDropdown((current) => (current === key ? false : key));
+  };
+
   return (
-    <div className="absolute bg-[rgba(0,0,0,0.1)] backdrop-blur-lg w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44 z-40">
-      {/* Issue Box */}
-      <div className="border border-(--border) bg-(--surface-1) rounded-xl w-[95%] xl:w-[70%] p-4 flex flex-col max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center">
-            <div className="w-20 border border-[#2D3035] h-8 rounded-lg flex items-center justify-center font-medium">
-              {project_title?.toUpperCase().slice(0, 3)}
-            </div>
-            <SVGIcon svgString={RAW_ICONS.ArrowRight} />
-            <p className="font-medium text-lg">New ticket</p>
-          </div>
-          <div
-            onClick={() => {
-              setClose(false);
-            }}
-            className="p-1 rounded-md hover:bg-[#2D3035] transition-all duration-200"
-          >
-            <SVGIcon className="flex" svgString={RAW_ICONS.Close} />
-          </div>
+    <WorkflowModal maxWidth="max-w-3xl" onClose={() => setClose(false)}>
+      <WorkflowModalHeader onClose={() => setClose(false)}>
+        <div className="flex items-center gap-2 min-w-0 text-sm">
+          <span className="shrink-0 rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 text-xs font-semibold text-(--muted)">
+            {project_title?.toUpperCase().slice(0, 3) ?? "PRJ"}
+          </span>
+          <SVGIcon className="flex shrink-0 w-3" svgString={RAW_ICONS.ArrowRight} />
+          <span className="font-semibold text-(--foreground) truncate">New ticket</span>
         </div>
+      </WorkflowModalHeader>
+
+      <WorkflowModalBody>
         <input
-          className="mt-4 text-2xl flex-shrink-0 outline-none bg-transparent"
+          className="ef-field text-2xl font-semibold px-3 py-2 outline-none min-w-0"
           onChange={(e) => {
             setIssueTitle(e.target.value);
             setDuplicateWarning(null);
@@ -208,17 +258,17 @@ export const CreateIssueWindow = ({
           value={issueTitle}
         />
         <textarea
-          className="w-full mt-4 text-lg outline-none flex-1 resize-none min-h-[120px] bg-transparent"
+          className="ef-field w-full text-base px-3 py-2 outline-none resize-y min-h-[120px] min-w-0"
           onChange={(e) => {
             setIssueDescription(e.target.value);
           }}
           placeholder="Ticket description"
           name="description"
           value={issueDescription}
-        ></textarea>
+        />
 
         <div className="mt-4 space-y-3">
-          <p className="text-xs text-[#a4a6aa] uppercase tracking-wide">Ticket type</p>
+          <p className="text-xs text-(--muted) uppercase tracking-wide font-medium">Ticket type</p>
           <div className="flex flex-wrap gap-2">
             {(
               [
@@ -230,10 +280,8 @@ export const CreateIssueWindow = ({
                 key={t}
                 type="button"
                 onClick={() => setTicketType(t)}
-                className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                  ticketType === t
-                    ? "border-[#4f6bed] bg-[#4f6bed]/15 text-white"
-                    : "border-[#6A6C75] bg-[#1f2025] text-[#caccd4] hover:bg-[#212227]"
+                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  ticketType === t ? "ef-chip-active" : "ef-chip"
                 }`}
               >
                 {label}
@@ -253,13 +301,13 @@ export const CreateIssueWindow = ({
                 onChange={setEndDate}
               />
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-[#a4a6aa]">
+                <label className="text-xs font-medium text-(--muted)">
                   Duration (minutes)
                 </label>
                 <input
                   type="number"
                   min={1}
-                  className="h-10 rounded-md border border-[#6A6C75] bg-[#1f2025] px-3 text-sm"
+                  className="h-10 rounded-md border border-(--border-strong) bg-(--surface-2) px-3 text-sm text-(--foreground)"
                   placeholder="If no end date"
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(e.target.value)}
@@ -269,26 +317,27 @@ export const CreateIssueWindow = ({
           ) : null}
         </div>
 
-        {/* Duplicate warning */}
         {duplicateWarning && (
-          <div className="mt-3 rounded-lg border border-[#e05f5f]/40 bg-[#e05f5f]/10 p-3 text-sm">
-            <p className="font-medium text-[#e05f5f]">Possible duplicate detected</p>
-            <p className="text-[#a4a6aa] mt-1">
+          <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm">
+            <p className="font-medium text-red-700">Possible duplicate detected</p>
+            <p className="text-(--muted) mt-1">
               &quot;{duplicateWarning.title}&quot; ({duplicateWarning.status ?? "Open"}) — {Math.round(duplicateWarning.score * 100)}% match
             </p>
             <div className="flex gap-2 mt-2">
               <button
+                type="button"
                 onClick={() => setDuplicateWarning(null)}
-                className="text-xs px-2 py-1 rounded border border-[#e05f5f]/30 hover:bg-[#e05f5f]/20"
+                className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 hover:bg-red-100"
               >
                 Create anyway
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setDuplicateWarning(null);
                   setClose(false);
                 }}
-                className="text-xs px-2 py-1 rounded border border-[#6A6C75] hover:bg-[#2D3035]"
+                className="text-xs px-2 py-1 rounded ef-control"
               >
                 Cancel
               </button>
@@ -296,131 +345,204 @@ export const CreateIssueWindow = ({
           </div>
         )}
 
-        {/* AI Triage Suggestion Panel */}
         {triageSuggestion && (
-          <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm">
+          <div className="mt-3 rounded-lg border border-sky-300 bg-sky-50 p-3 text-sm">
             <div className="flex items-center justify-between">
-              <p className="font-medium text-sky-600">AI Triage Suggestion</p>
+              <p className="font-medium text-sky-800">AI Triage Suggestion</p>
               <button
+                type="button"
                 onClick={() => setTriageSuggestion(null)}
-                className="text-xs text-[#a4a6aa] hover:text-white"
+                className="text-xs text-(--muted-2) hover:text-sky-800"
               >
                 Dismiss
               </button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 text-xs text-[#caccd4]">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 text-xs text-(--foreground)">
               <div>
-                <span className="text-[#a4a6aa]">Priority:</span> {triageSuggestion.priority}
+                <span className="text-(--muted-2)">Priority:</span> {triageSuggestion.priority}
               </div>
               <div>
-                <span className="text-[#a4a6aa]">Severity:</span> {triageSuggestion.severity}
+                <span className="text-(--muted-2)">Severity:</span> {triageSuggestion.severity}
               </div>
               <div>
-                <span className="text-[#a4a6aa]">Effort:</span> {triageSuggestion.effortHint}
+                <span className="text-(--muted-2)">Effort:</span> {triageSuggestion.effortHint}
               </div>
               <div>
-                <span className="text-[#a4a6aa]">Team:</span> {triageSuggestion.routingTeamHint}
+                <span className="text-(--muted-2)">Team:</span> {triageSuggestion.routingTeamHint}
               </div>
               <div className="col-span-2">
-                <span className="text-[#a4a6aa]">Risk:</span> {triageSuggestion.risk}
+                <span className="text-(--muted-2)">Risk:</span> {triageSuggestion.risk}
               </div>
             </div>
-            <p className="text-xs text-[#a4a6aa] mt-2">{triageSuggestion.rationale}</p>
+            <p className="text-xs text-(--muted-2) mt-2">{triageSuggestion.rationale}</p>
             <button
+              type="button"
               onClick={applyTriageSuggestion}
-              className="mt-2 text-xs px-2 py-1 rounded border border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-600"
+              className="mt-2 text-xs px-2 py-1 rounded border border-sky-400 bg-sky-100 hover:bg-sky-200 text-sky-800 font-medium"
             >
               Apply priority suggestion
             </button>
           </div>
         )}
 
-        <div className="h-fit my-4 items-center flex text-[#caccd4]">
-          <div className="flex items-center gap-x-2 flex-wrap">
-            <div className=" relative" ref={dropdownRef}>
-              <div
-                className="flex border border-[#6A6C75] bg-[#1f2025] items-center text-sm justify-center h-7 w-8 rounded-md hover:bg-[#212227] transition-all duration-300 cursor-pointer"
-                onClick={() =>
-                  setShowOptionsDropdown(
-                    showOptionsDropdown == "priority" ? false : "priority"
-                  )
-                }
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--muted) mb-2">
+            Actions
+          </p>
+          <div ref={actionsRef} className="flex items-center gap-2 flex-wrap min-w-0">
+            <div className="relative">
+              <button
+                type="button"
+                className="flex ef-control items-center text-sm justify-center h-7 w-8 rounded-md cursor-pointer"
+                onClick={() => toggleDropdown("priority")}
+                aria-expanded={showOptionsDropdown === "priority"}
+                aria-haspopup="listbox"
               >
                 {renderPrioritySvg(selectedPriorityOption)}
-              </div>
-              {showOptionsDropdown == "priority" && (
-                <div className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg mt-1 z-10">
+              </button>
+              {showOptionsDropdown === "priority" && (
+                <div className="absolute w-36 top-full left-0 ef-dropdown-panel rounded-lg mt-1 z-[110] py-0.5">
                   {PriorityOptionsArray.map((option, key) => (
-                    <div
+                    <button
                       key={key}
-                      className="px-2 py-2 hover:bg-[#151818] cursor-pointer text-white flex items-center  gap-x-2"
+                      type="button"
+                      className="w-full px-2 py-2 ef-dropdown-item flex items-center gap-x-2 text-sm text-left"
                       onClick={() => handlePriorityOptionClick(option.name)}
                     >
                       <SVGIcon className="flex w-4" svgString={option.svg} />
-                      <p className="text-sm">{option.name}</p>
-                    </div>
+                      {option.name}
+                    </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="col-span-1 relative" ref={dropdownRef}>
-              <div
-                className="flex border border-[#6A6C75] bg-[#1f2025] items-center text-sm justify-center h-7 w-8 rounded-md hover:bg-[#212227] transition-all duration-300 cursor-pointer"
-                onClick={() =>
-                  setShowOptionsDropdown(
-                    showOptionsDropdown == "status" ? false : "status"
-                  )
-                }
+            <div className="relative">
+              <button
+                type="button"
+                className="flex ef-control items-center text-sm justify-center h-7 w-8 rounded-md cursor-pointer"
+                onClick={() => toggleDropdown("status")}
+                aria-expanded={showOptionsDropdown === "status"}
+                aria-haspopup="listbox"
               >
                 <RenderStatusSvg status={selectedStatusOption} />
-              </div>
-              {showOptionsDropdown == "status" && (
-                <div className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg mt-1 z-10">
+              </button>
+              {showOptionsDropdown === "status" && (
+                <div className="absolute w-36 top-full left-0 ef-dropdown-panel rounded-lg mt-1 z-[110] py-0.5">
                   {statusesForTicketType(ticketType).map((optionTitle) => (
-                    <div
+                    <button
                       key={optionTitle}
-                      className="px-2 flex gap-x-2 rounded-lg items-center py-2 hover:bg-[#151818] cursor-pointer text-white text-sm"
+                      type="button"
+                      className="w-full px-2 flex gap-x-2 items-center py-2 ef-dropdown-item text-sm text-left"
                       onClick={() => handleStatusOptionClick(optionTitle)}
                     >
                       <RenderStatusSvg status={optionTitle} />
-                      <p>{optionTitle}</p>
-                    </div>
+                      {optionTitle}
+                    </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <button className="border border-[#696c75] bg-[#1f2025] rounded-md text-sm px-2 h-7">
-              Assignee
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                className="ef-control rounded-md text-sm px-2 h-7 max-w-[9rem] truncate"
+                onClick={() => toggleDropdown("assignee")}
+                aria-expanded={showOptionsDropdown === "assignee"}
+                aria-haspopup="listbox"
+              >
+                {assigneeLabel ?? "Assignee"}
+              </button>
+              {showOptionsDropdown === "assignee" && (
+                <div className="absolute left-0 top-full z-[110] mt-1 w-52 max-h-56 overflow-y-auto rounded-lg border border-(--border-strong) bg-(--surface-1) shadow-lg py-1">
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm text-(--foreground) hover:bg-(--surface-3)"
+                    onClick={() => {
+                      setAssignedUserId("");
+                      setShowOptionsDropdown(false);
+                    }}
+                  >
+                    Unassigned
+                  </button>
+                  {members.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-(--muted-2)">
+                      No project members found
+                    </p>
+                  ) : (
+                    members.map((member) => {
+                      const name =
+                        member.user.name ||
+                        member.user.email ||
+                        "Team member";
+                      const active = member.user.id === assignedUserId;
+                      return (
+                        <button
+                          key={member.id}
+                          type="button"
+                          className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${
+                            active
+                              ? "bg-sky-100 text-sky-900"
+                              : "text-(--foreground) hover:bg-(--surface-3)"
+                          }`}
+                          onClick={() => {
+                            setAssignedUserId(member.user.id);
+                            setShowOptionsDropdown(false);
+                          }}
+                        >
+                          {member.user.image ? (
+                            <img
+                              src={member.user.image}
+                              alt=""
+                              className="h-6 w-6 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <span className="h-6 w-6 rounded-full bg-sky-100 text-sky-700 text-xs font-semibold flex items-center justify-center shrink-0">
+                              {name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="truncate">{name}</span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
 
-            {/* AI Buttons */}
             <button
+              type="button"
               onClick={aiDraft}
               disabled={isDrafting}
-              className="border border-sky-200 bg-sky-50 text-sky-600 rounded-md text-sm px-2 h-7 hover:bg-sky-100 transition-colors disabled:opacity-50"
+              className="border border-sky-400 bg-sky-100 text-sky-800 rounded-md text-sm px-2 h-7 hover:bg-sky-200 font-medium transition-colors disabled:opacity-50"
             >
               {isDrafting ? "Drafting…" : "✨ AI Draft"}
             </button>
             <button
+              type="button"
               onClick={aiTriage}
               disabled={isTriaging}
-              className="border border-[#7c5cff]/30 bg-[#7c5cff]/10 text-[#7c5cff] rounded-md text-sm px-2 h-7 hover:bg-[#7c5cff]/20 transition-colors disabled:opacity-50"
+              className="border border-violet-400 bg-violet-100 text-violet-800 rounded-md text-sm px-2 h-7 hover:bg-violet-200 font-medium transition-colors disabled:opacity-50"
             >
               {isTriaging ? "Triaging…" : "⚡ AI Triage"}
             </button>
           </div>
         </div>
-        <div className=" justify-end flex items-center">
-          <button
-            onClick={createIssue}
-            className="bg-gradient-to-b from-[#6A6C75] to-[#35373E] text-white  px-2 rounded-md h-8"
-          >
-            Create ticket
-          </button>
-        </div>
-      </div>
-    </div>
+      </WorkflowModalBody>
+
+      <WorkflowModalFooter>
+        <button type="button" onClick={() => setClose(false)} className="ef-btn-outline h-9 px-4 rounded-md text-sm font-medium">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={createIssue}
+          className="ef-btn-primary h-9 px-4 rounded-md text-sm font-medium"
+        >
+          Create ticket
+        </button>
+      </WorkflowModalFooter>
+    </WorkflowModal>
   );
 };

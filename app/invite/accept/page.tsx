@@ -57,7 +57,7 @@ function AcceptInviteContent() {
           {status === "loading" && (
             <>
               <div className="mx-auto mb-4 h-12 w-12 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
-              <h1 className="text-xl font-semibold text-white mb-2">
+              <h1 className="text-xl font-semibold text-(--foreground) mb-2">
                 Accepting invitation…
               </h1>
               <p className="text-sm text-(--muted-2)">
@@ -80,7 +80,7 @@ function AcceptInviteContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold text-white mb-2">
+              <h1 className="text-xl font-semibold text-(--foreground) mb-2">
                 Welcome to {workspaceName}!
               </h1>
               <p className="text-sm text-(--muted-2) mb-1">{message}</p>
@@ -112,7 +112,7 @@ function AcceptInviteContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold text-white mb-2">
+              <h1 className="text-xl font-semibold text-(--foreground) mb-2">
                 Invitation Error
               </h1>
               <p className="text-sm text-(--muted-2) mb-6">{message}</p>

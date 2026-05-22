@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     startDate,
     endDate,
     durationMinutes,
+    assignedUser,
   } = parsed.data;
 
   const session = await getServerSession(authOptions);
@@ -134,6 +135,10 @@ export async function POST(request: NextRequest) {
       endDate: end,
       durationMinutes: durationMinutes ?? null,
       slaDueAt,
+      assignedUser:
+        typeof assignedUser === "string" && assignedUser.length > 0
+          ? assignedUser
+          : null,
     },
   });
 
@@ -151,11 +156,17 @@ export async function POST(request: NextRequest) {
         projectMembers: { select: { userId: true } },
       },
     });
-    await notifyUsers({
-      userIds: [
+    const notifyIds = new Set(
+      [
         project?.createdBy ?? "",
         ...(project?.projectMembers.map((member) => member.userId) ?? []),
-      ],
+        typeof assignedUser === "string" && assignedUser.length > 0
+          ? assignedUser
+          : "",
+      ].filter(Boolean),
+    );
+    await notifyUsers({
+      userIds: [...notifyIds],
       actorId: session.user.id,
       type: "ISSUE_CREATED",
       title: "New ticket created",

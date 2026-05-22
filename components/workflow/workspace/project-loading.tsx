@@ -1,8 +1,8 @@
 export default function ProjectLoadingScreen() {
   return (
-    <div className="w-full  bg-[#0A0A0A] h-screen flex flex-col">
+    <div className="w-full bg-(--background) h-screen flex flex-col">
       <div className="flex justify-center items-center gap-x-1 h-10 md:h-12">
-        <div className="bg-[#858687] w-40 rounded animate-pulse"></div>
+        <div className="bg-(--surface-3) w-40 rounded animate-pulse"></div>
       </div>
       <div className="flex flex-col flex-grow border border-(--border) bg-(--surface-1) rounded-lg ml-2 md:ml-0 mr-2 mb-2 p-1">
         <div className="border h-10 rounded border-[#2d3036] flex items-center justify-between px-4">

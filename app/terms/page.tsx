@@ -52,7 +52,7 @@ export default function TermsConditions() {
               className="flex w-3 xl:w-4"
               svgString={RAW_ICONS.GitHubIcon}
             />
-            <p className="text-[#b0a9a9] font-extralight text-[14px] lg:text-[15px] xl:text-[17px] hover:text-white transition-all duration-200">
+            <p className="text-[#b0a9a9] font-extralight text-[14px] lg:text-[15px] xl:text-[17px] hover:text-(--foreground) transition-all duration-200">
               Open an issue on GitHub
             </p>
           </Link>

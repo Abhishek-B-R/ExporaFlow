@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma, Role } from "@prisma/client";
 import { isProjectServiceLineValue } from "@/utils/project-service-line";
+import { parseStoredDate } from "@/lib/ticket-sla";
 
 function normalizeName(value: string) {
   return value
@@ -14,8 +15,17 @@ function normalizeName(value: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const { projTitle, projDescription, projContent, priority, status, serviceLine, customerId } =
-    await request.json();
+  const {
+    projTitle,
+    projDescription,
+    projContent,
+    priority,
+    status,
+    serviceLine,
+    customerId,
+    startDate,
+    targetDate,
+  } = await request.json();
 
   const session = await getServerSession(authOptions);
 
@@ -30,6 +40,19 @@ export async function POST(request: NextRequest) {
   if (!isProjectServiceLineValue(serviceLine)) {
     return Response.json(
       { message: "Select a service line for this project." },
+      { status: 400 },
+    );
+  }
+
+  const parsedStart = parseStoredDate(
+    typeof startDate === "string" ? startDate : undefined,
+  );
+  const parsedTarget = parseStoredDate(
+    typeof targetDate === "string" ? targetDate : undefined,
+  );
+  if (parsedStart && parsedTarget && parsedTarget < parsedStart) {
+    return Response.json(
+      { message: "End date must be on or after the start date." },
       { status: 400 },
     );
   }
@@ -93,6 +116,8 @@ export async function POST(request: NextRequest) {
           status: status,
           serviceLine,
           customerId: resolvedCustomerId,
+          startDate: parsedStart,
+          targetDate: parsedTarget,
           workspaceId: workspaceMember?.workspaceId ?? null,
           projectMembers: {
             create: {

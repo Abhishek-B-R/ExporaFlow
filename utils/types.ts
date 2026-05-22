@@ -11,7 +11,8 @@ export type ProjectBody = {
   serviceLine?: string | null;
   customerId?: string | null;
   status: string;
-  targetDate: any;
+  startDate?: string | Date | null;
+  targetDate?: string | Date | null;
   creator?: { name: string | null; email: string | null } | null;
   stats?: {
     incidentTickets: number;

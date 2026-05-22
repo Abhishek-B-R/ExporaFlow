@@ -3,7 +3,7 @@ import SVGIcon from "@/lib/svg-icon";
 
 export default function ProjectListSkeleton() {
   return (
-    <div className="w-full bg-[#0A0A0A] h-screen flex flex-col">
+    <div className="w-full bg-(--background) h-screen flex flex-col">
       {/* Header */}
       <div className="flex justify-center items-center gap-x-1 h-10 md:h-12">
         <p className="text-[13px] sm:text-[15px]">Projects</p>

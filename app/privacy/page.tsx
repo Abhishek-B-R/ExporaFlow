@@ -56,7 +56,7 @@ export default function TermsConditions() {
             target="_blank"
             className="flex items-center gap-x-1 md:gap-x-2 mt-2"
           >
-            <p className="text-[#b0a9a9] font-extralight text-[14px] lg:text-[15px] xl:text-[17px] hover:text-white transition-all duration-200">
+            <p className="text-[#b0a9a9] font-extralight text-[14px] lg:text-[15px] xl:text-[17px] hover:text-(--foreground) transition-all duration-200">
               You may contact us on the given mail
             </p>
             <SVGIcon

@@ -112,7 +112,7 @@ const PriceCard = ({
           return (
             <li
               key={elem.id}
-              className="flex items-center gap-x-2 cursor-pointer text-[#a7b0b3] hover:text-white transition-all duration-200"
+              className="flex items-center gap-x-2 cursor-pointer text-[#a7b0b3] hover:text-(--foreground) transition-all duration-200"
             >
               <p>✔︎</p>
               <p className="">{elem.content}</p>

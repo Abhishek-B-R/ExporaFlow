@@ -27,8 +27,10 @@
   --radius-lg: 10px;
 
   --shell-shadow: 0 1px 3px rgba(14, 165, 233, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --sidebar-active-bg: rgba(14, 165, 233, 0.12);
-  --sidebar-active-border: rgba(14, 165, 233, 0.4);
+  --sidebar-active-bg: rgba(14, 165, 233, 0.22);
+  --sidebar-active-border: #0284c7;
+  --text-on-accent: #ffffff;
+  --text-on-surface: #0c4a6e;
 
   /* shadcn — sky primary */
   --card: 0 0% 100%;
@@ -155,6 +157,116 @@ a:focus-visible {
 }
 .ef-btn-outline:hover {
   background: var(--surface-3);
+}
+
+.ef-field {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-on-surface);
+  border-radius: var(--radius-md);
+}
+.ef-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.ef-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-on-surface);
+  white-space: nowrap;
+}
+.ef-pill:hover {
+  background: var(--surface-3);
+}
+.ef-pill-active {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+  color: #075985;
+  font-weight: 600;
+}
+
+/* Light UI controls — use on chips, toolbar buttons, modal fields */
+.ef-modal-overlay {
+  background: rgba(12, 74, 110, 0.28);
+}
+
+.ef-chip {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-on-surface);
+}
+.ef-chip:hover {
+  background: var(--surface-3);
+}
+.ef-chip-active {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+  color: #075985;
+  font-weight: 600;
+}
+
+.ef-control {
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-on-surface);
+}
+.ef-control:hover {
+  background: var(--surface-3);
+}
+
+.ef-dropdown-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shell-shadow);
+}
+.ef-dropdown-item {
+  color: var(--text-on-surface);
+}
+.ef-dropdown-item:hover {
+  background: var(--surface-3);
+}
+
+.ef-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  padding: 0 0.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-1);
+  color: var(--text-on-surface);
+  transition: background 0.15s, border-color 0.15s;
+}
+.ef-icon-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+.ef-icon-btn-primary {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+.ef-icon-btn-primary:hover {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-2);
+  opacity: 1;
 }
 
 .scrollbar-hide::-webkit-scrollbar {

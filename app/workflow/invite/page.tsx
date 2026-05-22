@@ -24,13 +24,13 @@ const ROLE_COLORS: Record<string, string> = {
   MANAGER: "text-[#e5a63b]",
   ENGINEER: "text-sky-600",
   QA: "text-sky-600",
-  VIEWER: "text-[#a4a6aa]",
+  VIEWER: "text-(--muted-2)",
 };
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "border-[#e5a63b]/30 bg-[#e5a63b]/10 text-[#e5a63b]",
   accepted: "border-[#30b27a]/30 bg-[#30b27a]/10 text-[#30b27a]",
-  expired: "border-[#a4a6aa]/30 bg-[#a4a6aa]/10 text-[#a4a6aa]",
+  expired: "border-[#a4a6aa]/30 bg-[#a4a6aa]/10 text-(--muted-2)",
 };
 
 export default function InvitePage() {
@@ -162,7 +162,7 @@ export default function InvitePage() {
                 Email could not be sent. Share this link manually:
               </p>
               <div className="flex items-center gap-2">
-                <code className="text-xs text-[#caccd4] bg-(--surface-2) rounded px-2 py-1 flex-1 overflow-x-auto break-all">
+                <code className="text-xs text-(--foreground) bg-(--surface-2) rounded px-2 py-1 flex-1 overflow-x-auto break-all">
                   {fallbackLink}
                 </code>
                 <button
@@ -198,7 +198,7 @@ export default function InvitePage() {
             <p className="text-sm font-medium">Invitation History</p>
             <button
               onClick={fetchInvitations}
-              className="text-xs text-(--muted-2) hover:text-white px-2 py-1 rounded border border-(--border) hover:bg-(--surface-3) transition-colors"
+              className="text-xs text-(--muted-2) hover:text-(--foreground) px-2 py-1 rounded border border-(--border) hover:bg-(--surface-3) transition-colors"
             >
               Refresh
             </button>

@@ -214,7 +214,7 @@ export default function IssueLabel({
         )}
         <div className="min-w-0 flex items-center gap-2 flex-1">
           {onHoldChange ? (
-            <span className="shrink-0 rounded border border-amber-500/35 bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-100">
+            <span className="shrink-0 rounded border border-amber-400 bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
               Hold
             </span>
           ) : null}
@@ -315,14 +315,14 @@ export default function IssueLabel({
           <img
             src={assigneeInfo.image}
             alt={assigneeName ?? ""}
-            className="h-7 w-7 rounded-full object-cover border border-[#2C2E33]"
+            className="h-7 w-7 rounded-full object-cover border border-(--border)"
           />
         ) : assigneeInitial ? (
           <div className="h-7 w-7 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center text-xs font-medium text-sky-600">
             {assigneeInitial}
           </div>
         ) : (
-          <div className="border border-[#2C2E33] h-7 w-7 rounded-full flex items-center justify-center hover:bg-[#4141414f] transition-all duration-200">
+          <div className="border border-(--border) h-7 w-7 rounded-full flex items-center justify-center hover:bg-(--surface-3) transition-all duration-200">
             <SVGIcon className="flex w-6" svgString={RAW_ICONS.AssignedUser} />
           </div>
         )}

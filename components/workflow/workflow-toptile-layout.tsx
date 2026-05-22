@@ -48,9 +48,13 @@ export const WorkflowToptileLayout: React.FC<WrapperProps> = ({
         })}
       </div>
       <div className="flex gap-x-2 md:gap-x-4 ">
-        <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent px-2 rounded-lg hover:bg-[color:var(--surface-2)] hover:border-[color:var(--border-strong)] transition-all duration-300">
-          <SVGIcon className="flex w-5" svgString={RAW_ICONS.SideBar} />
-        </div>
+        <button
+          type="button"
+          className="ef-icon-btn w-8 px-0"
+          aria-label="Toggle sidebar"
+        >
+          <SVGIcon className="w-4 h-4" svgString={RAW_ICONS.SideBar} />
+        </button>
       </div>
     </div>
   );

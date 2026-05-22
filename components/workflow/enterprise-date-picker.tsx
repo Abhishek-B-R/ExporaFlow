@@ -35,7 +35,7 @@ export function EnterpriseDatePicker(props: {
           {label}
         </label>
       ) : null}
-      <Popover>
+      <Popover modal={false}>
         <PopoverTrigger asChild>
           <Button
             id={id}
@@ -43,7 +43,7 @@ export function EnterpriseDatePicker(props: {
             variant="outline"
             disabled={disabled}
             className={cn(
-              "w-full min-h-11 justify-start text-left font-normal text-sm px-3 py-2.5 rounded-md border border-(--border) bg-(--surface-1) hover:bg-(--surface-2) shadow-sm",
+              "w-full min-h-11 justify-start text-left font-normal text-sm px-3 py-2.5 rounded-md border border-(--border) bg-(--surface-1) hover:bg-(--surface-2) shadow-sm pointer-events-auto",
               !valid && "text-(--muted-2)",
             )}
           >
@@ -51,7 +51,11 @@ export function EnterpriseDatePicker(props: {
             {valid ? fmt(selected!) : <span>Pick a date</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 border-(--border) bg-(--surface-1) shadow-lg" align="start">
+        <PopoverContent
+          className="z-[110] w-auto p-0 border-(--border) bg-(--surface-1) shadow-lg pointer-events-auto"
+          align="start"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <Calendar
             mode="single"
             selected={valid ? selected : undefined}

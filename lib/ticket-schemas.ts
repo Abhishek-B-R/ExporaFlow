@@ -24,6 +24,7 @@ export const createIssueBodySchema = z
     dueDate: optionalDate,
     labels: z.array(z.string()).optional(),
     parentIssueId: z.string().nullable().optional(),
+    assignedUser: z.union([z.string(), z.null()]).optional(),
     startDate: optionalDate,
     endDate: optionalDate,
     durationMinutes: z.number().int().positive().nullable().optional(),

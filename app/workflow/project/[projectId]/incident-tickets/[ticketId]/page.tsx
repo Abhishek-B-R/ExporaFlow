@@ -13,10 +13,19 @@ import SVGIcon from "@/lib/svg-icon";
 import { TicketType } from "@prisma/client";
 import { statusesForTicketType } from "@/lib/issue-status-machine";
 import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
+import { MentionTextarea } from "@/components/workflow/mentions/mention-textarea";
+import { mentionHandleFromUser, type MentionSuggestion } from "@/lib/mention-utils";
 
 type WorkspaceMember = {
   id: string;
-  user: { id: string; name?: string; email?: string; image?: string };
+  user: { id: string; name?: string; email?: string; image?: string; username?: string };
+};
+
+type StoreEmployee = {
+  id: string;
+  fullName: string;
+  email: string;
+  userId?: string | null;
 };
 
 type IssueComment = {
@@ -63,6 +72,7 @@ export default function Issue({
   const [sprints, setSprints] = useState<SprintBody[]>([]);
   const [issuesInProject, setIssuesInProject] = useState<IssueBody[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [employees, setEmployees] = useState<StoreEmployee[]>([]);
   const router = useRouter();
 
   const [titleInput, setTitleInput] = useState("");
@@ -108,18 +118,26 @@ export default function Issue({
   const fetchIssueData = useCallback(
     async (options?: { resetForm?: boolean }) => {
       if (!issueId || !projectId) return;
-      const [issueRes, sprintRes, allIssuesRes, membersRes] = await Promise.all([
+      const [issueRes, sprintRes, allIssuesRes, membersRes, employeesRes] =
+        await Promise.all([
         axios.post("/api/issues/getissue", { issueId }),
         axios.post("/api/sprints/getsprints", { projectId }),
         axios.post("/api/issues/getissues", { project_id: projectId }),
         axios.get("/api/workflow/getmembers", { params: { projectId } }),
+        axios.get("/api/employees").catch(() => ({ data: [] })),
       ]);
 
       const issueData = issueRes.data as FullIssue;
       setIssue(issueData);
       setSprints(sprintRes.data ?? []);
       setIssuesInProject(allIssuesRes.data ?? []);
-      setMembers(membersRes.data ?? []);
+      let memberList: WorkspaceMember[] = membersRes.data ?? [];
+      if (memberList.length === 0) {
+        const wsRes = await axios.get<WorkspaceMember[]>("/api/workflow/getmembers");
+        memberList = wsRes.data ?? [];
+      }
+      setMembers(memberList);
+      setEmployees(employeesRes.data ?? []);
       if (options?.resetForm ?? true) {
         populateIssueForm(issueData);
       }
@@ -213,21 +231,62 @@ export default function Issue({
     }
   };
 
-  const mentionHints = useMemo(
-    () =>
-      members.map((member) => {
-        const handle =
-          member.user.name?.toLowerCase().replace(/\s+/g, "") ??
-          member.user.email?.split("@")[0] ??
-          member.user.id;
-        return {
-          id: member.user.id,
-          label: member.user.name || member.user.email || member.user.id,
-          handle,
-        };
-      }),
-    [members],
-  );
+  const mentionSuggestions = useMemo(() => {
+    const byId = new Map<string, MentionSuggestion>();
+
+    for (const member of members) {
+      byId.set(member.user.id, {
+        id: member.user.id,
+        label: member.user.name || member.user.email || "Team member",
+        handle: mentionHandleFromUser(member.user),
+        email: member.user.email,
+        image: member.user.image,
+      });
+    }
+
+    for (const emp of employees) {
+      const key = emp.userId ?? `emp:${emp.id}`;
+      if (byId.has(key)) continue;
+      byId.set(key, {
+        id: key,
+        label: emp.fullName,
+        handle: mentionHandleFromUser({
+          id: emp.id,
+          name: emp.fullName,
+          email: emp.email,
+        }),
+        email: emp.email,
+      });
+    }
+
+    const issueUser = issue?.User;
+    if (issueUser?.id && !byId.has(issueUser.id)) {
+      byId.set(issueUser.id, {
+        id: issueUser.id,
+        label: issueUser.name || issueUser.email || "Reporter",
+        handle: mentionHandleFromUser(issueUser),
+        email: issueUser.email,
+        image: issueUser.image,
+      });
+    }
+
+    if (assignedUserInput) {
+      const assignee = members.find((m) => m.user.id === assignedUserInput)?.user;
+      if (assignee && !byId.has(assignee.id)) {
+        byId.set(assignee.id, {
+          id: assignee.id,
+          label: assignee.name || assignee.email || "Assignee",
+          handle: mentionHandleFromUser(assignee),
+          email: assignee.email,
+          image: assignee.image,
+        });
+      }
+    }
+
+    return Array.from(byId.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+    );
+  }, [members, employees, issue, assignedUserInput]);
 
   const assigneeMember = members.find((m) => m.user.id === assignedUserInput);
   const assigneeName = assigneeMember?.user.name || assigneeMember?.user.email || null;
@@ -263,7 +322,7 @@ export default function Issue({
           {projectId && (
             <Link
               href={`/workflow/project/${projectId}/incident-tickets`}
-              className="text-sm text-(--muted-2) hover:text-white transition-colors flex items-center gap-1"
+              className="text-sm text-(--muted-2) hover:text-(--foreground) transition-colors flex items-center gap-1"
             >
               <SVGIcon className="flex w-4" svgString={RAW_ICONS.ArrowLeft ?? RAW_ICONS.Close} />
               Back
@@ -324,7 +383,7 @@ export default function Issue({
             value={descriptionInput}
             onChange={(e) => setDescriptionInput(e.target.value)}
             rows={6}
-            className="w-full bg-transparent text-sm text-[#c0c0c4] outline-none border-none resize-none placeholder:text-(--muted-2) leading-relaxed"
+            className="w-full bg-transparent text-sm text-(--muted) outline-none border-none resize-none placeholder:text-(--muted-2) leading-relaxed"
             placeholder="Add a description… (supports markdown)"
           />
 
@@ -367,26 +426,16 @@ export default function Issue({
             {activityTab === "comments" && (
               <div className="space-y-3">
                 {/* Comment input */}
-                <div className="rounded-lg border border-(--border) bg-(--surface-2) overflow-hidden">
-                  <textarea
+                <div className="rounded-lg border border-(--border) bg-(--surface-2)">
+                  <MentionTextarea
                     value={commentInput}
-                    onChange={(e) => setCommentInput(e.target.value)}
+                    onChange={setCommentInput}
+                    suggestions={mentionSuggestions}
                     rows={3}
-                    placeholder="Add a comment… Use @username for mentions"
-                    className="w-full bg-transparent px-3 py-2.5 text-sm outline-none resize-none placeholder:text-(--muted-2)"
+                    placeholder="Add a comment… Type @ to mention a teammate"
+                    disabled={isPostingComment}
                   />
-                  <div className="flex items-center justify-between px-3 py-2 border-t border-(--border)">
-                    <div className="flex flex-wrap gap-1">
-                      {mentionHints.slice(0, 5).map((hint) => (
-                        <button
-                          key={hint.id}
-                          onClick={() => setCommentInput((prev) => `${prev} @${hint.handle}`.trim())}
-                          className="text-[10px] px-1.5 py-0.5 rounded bg-(--surface-3) text-(--muted-2) hover:text-white transition-colors"
-                        >
-                          @{hint.handle}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-end px-3 py-2 border-t border-(--border)">
                     <button
                       onClick={addComment}
                       disabled={isPostingComment || !commentInput.trim()}
@@ -417,7 +466,7 @@ export default function Issue({
                         <p className="text-sm font-medium">{comment.author.name || comment.author.email || "Unknown"}</p>
                         <p className="text-xs text-(--muted-2)">{timeAgo(comment.createdAt)}</p>
                       </div>
-                      <p className="text-sm text-[#c0c0c4] mt-1 whitespace-pre-wrap">{comment.body}</p>
+                      <p className="text-sm text-(--muted) mt-1 whitespace-pre-wrap">{comment.body}</p>
                     </div>
                   </div>
                 ))}
