@@ -360,7 +360,7 @@ export default function Issue() {
             <button
               onClick={saveCurrentView}
               disabled={isSavingView}
-              className="flex h-7 items-center gap-x-1 cursor-pointer border border-[#2E3035] px-2 rounded-lg hover:bg-[#1C1D21] transition-all duration-300 text-xs"
+              className="flex h-7 items-center gap-x-1 cursor-pointer border border-(--border) px-2 rounded-lg hover:bg-(--surface-2) transition-all duration-300 text-xs"
             >
               {isSavingView ? "Saving..." : "Save view"}
             </button>
@@ -368,11 +368,11 @@ export default function Issue() {
               onClick={() => {
                 setCreateIssueWindowOpen(true);
               }}
-              className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent  px-2 rounded-lg hover:bg-[#1C1D21] hover:border-[#2E3035] transition-all duration-300"
+              className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent  px-2 rounded-lg hover:bg-(--surface-2) hover:border-(--border) transition-all duration-300"
             >
               <SVGIcon className="flex w-4" svgString={RAW_ICONS.Add} />
             </div>
-            <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent  px-2 rounded-lg hover:bg-[#1C1D21] hover:border-[#2E3035] transition-all duration-300">
+            <div className="flex h-7 items-center gap-x-1 cursor-pointer border border-transparent  px-2 rounded-lg hover:bg-(--surface-2) hover:border-(--border) transition-all duration-300">
               <SVGIcon className="flex w-5" svgString={RAW_ICONS.SideBar} />
             </div>
           </div>
@@ -380,7 +380,7 @@ export default function Issue() {
 
         <div
           className="
-    h-10 border-b border-[#2E3035] flex items-center px-2 gap-x-2
+    h-10 border-b border-(--border) flex items-center px-2 gap-x-2
     overflow-x-auto whitespace-nowrap
     sm:overflow-x-visible scrollbar-hide
   "
@@ -617,7 +617,7 @@ export default function Issue() {
               })
             ) : (
               <div className="h-10 flex items-center w-full justify-center">
-                <p className="text-[#939494]">No tickets found</p>
+                <p className="text-(--muted-2)">No tickets found</p>
               </div>
             )}
           </div>
@@ -658,8 +658,8 @@ const IssuesViewButton = ({
     <button
       onClick={isAll ? () => setFilter("") : () => setFilter(title)}
       className={
-        (isActive ? "bg-[#1C1D21] " : "") +
-        "flex items-center gap-x-1 border border-[#2C2E34] h-7 px-2 rounded-md text-[#9a9a9a] text-sm hover:bg-[#1c1e22] transition-all duration-300 min-w-[90px] shrink-0"
+        (isActive ? "bg-(--surface-2) " : "") +
+        "flex items-center gap-x-1 border border-(--border) h-7 px-2 rounded-md text-(--muted-2) text-sm hover:bg-(--surface-3) transition-all duration-300 min-w-[90px] shrink-0"
       }
     >
       <SVGIcon className="flex w-4" svgString={svg} />

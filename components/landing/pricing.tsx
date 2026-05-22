@@ -24,7 +24,7 @@ export default function Pricing() {
 
       {/* Pricing container */}
 
-      <MistContainer className="mt-5 mb-10  border border-[#565555] rounded-3xl">
+      <MistContainer className="mt-5 mb-10  border border-(--border) rounded-3xl">
         {/* content */}
         <div className="relative z-10 p-4 lg:p-5 grid grid-cols-1 md:grid-cols-3 h-full gap-x-4 lg:gap-x-5 gap-y-4 md:gap-y-0">
           {PriceCardContents.map((elem, key) => {
@@ -47,7 +47,7 @@ export default function Pricing() {
 }
 
 const ProClass =
-  "rounded-xl p-4 h-full bg-[rgba(0,0,0,0.4)] backdrop-blur-lg border-2 border-[#565555]";
+  "rounded-xl p-4 h-full bg-[rgba(0,0,0,0.4)] backdrop-blur-lg border-2 border-(--border)";
 
 const PriceCard = ({
   tier,
@@ -92,18 +92,18 @@ const PriceCard = ({
       ) : (
         <button
           onClick={onClickHandler}
-          className="h-10 md:text-sm lg:text-[16px] rounded-xl w-full bg-[#2A2A2C] mb-4 border-[0.3px] border-[#565555] cursor-pointer hover:bg-[#383737] transition-all duration-300"
+          className="h-10 md:text-sm lg:text-[16px] rounded-xl w-full bg-[#2A2A2C] mb-4 border-[0.3px] border-(--border) cursor-pointer hover:bg-[#383737] transition-all duration-300"
         >
           {btnText}
         </button>
       )}
 
       <div className="flex items-center gap-x-4 text-sm lg:text-[16px]">
-        <div className="border border-[#565555] bg-[#565555] w-2 h-2 rounded-full"></div>
-        <div className="border-b border-[#565555] flex-1 h-0.5"></div>
+        <div className="border border-(--border) bg-[#565555] w-2 h-2 rounded-full"></div>
+        <div className="border-b border-(--border) flex-1 h-0.5"></div>
         <p>Features</p>
-        <div className="border-b border-[#565555] flex-1 h-0.5"></div>
-        <div className="border border-[#565555] bg-[#565555] w-2 h-2 rounded-full"></div>
+        <div className="border-b border-(--border) flex-1 h-0.5"></div>
+        <div className="border border-(--border) bg-[#565555] w-2 h-2 rounded-full"></div>
       </div>
 
       {/* features */}

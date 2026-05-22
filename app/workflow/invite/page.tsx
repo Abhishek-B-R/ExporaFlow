@@ -22,8 +22,8 @@ const ROLES = ["ADMIN", "MANAGER", "ENGINEER", "QA", "VIEWER"] as const;
 const ROLE_COLORS: Record<string, string> = {
   ADMIN: "text-[#e05f5f]",
   MANAGER: "text-[#e5a63b]",
-  ENGINEER: "text-[#6f86ff]",
-  QA: "text-[#7c5cff]",
+  ENGINEER: "text-sky-600",
+  QA: "text-sky-600",
   VIEWER: "text-[#a4a6aa]",
 };
 
@@ -133,7 +133,7 @@ export default function InvitePage() {
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendInvite()}
               placeholder="name@company.com"
-              className="flex-1 h-10 rounded-lg border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus:border-[#6f86ff]/50 transition-colors"
+              className="flex-1 h-10 rounded-lg border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus:border-sky-400/50 transition-colors"
             />
             <select
               value={role}
@@ -149,7 +149,7 @@ export default function InvitePage() {
             <button
               onClick={sendInvite}
               disabled={isSending || !email.trim()}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-[#6f86ff] to-[#5a6ee0] text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity shrink-0"
+              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity shrink-0"
             >
               {isSending ? "Sending…" : "Send Invite"}
             </button>

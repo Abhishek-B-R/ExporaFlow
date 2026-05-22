@@ -69,17 +69,17 @@ export default function ProjectBacklogPage() {
         </div>
 
         {isLoading ? (
-          <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A] p-2 space-y-2">
+          <div className="rounded-xl border border-(--border) bg-(--surface-1) p-2 space-y-2">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-lg border border-[#2f2f2f] bg-[#0F0F0F] px-3 py-3 animate-pulse">
-                <div className="h-3.5 bg-[#1a1a1a] rounded w-2/3 mb-2" />
-                <div className="h-2.5 bg-[#1a1a1a] rounded w-1/2" />
+              <div key={i} className="rounded-lg border border-(--border) bg-(--surface-2) px-3 py-3 animate-pulse">
+                <div className="h-3.5 bg-(--surface-3) rounded w-2/3 mb-2" />
+                <div className="h-2.5 bg-(--surface-3) rounded w-1/2" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-[#2d2d2d] bg-[#0A0A0A]">
-            <div className="px-3 py-2 border-b border-[#2d2d2d] bg-[#101010] flex items-center justify-between">
+          <div className="rounded-xl border border-(--border) bg-(--surface-1)">
+            <div className="px-3 py-2 border-b border-(--border) bg-(--surface-2) flex items-center justify-between">
               <p className="text-sm font-medium">Backlog issues</p>
               <p className="text-xs text-(--muted-2)">{backlog.length}</p>
             </div>
@@ -87,7 +87,7 @@ export default function ProjectBacklogPage() {
               {backlog.map((issue) => (
                 <div
                   key={issue.id}
-                  className="rounded-lg border border-[#2f2f2f] bg-[#0F0F0F] px-3 py-2"
+                  className="rounded-lg border border-(--border) bg-(--surface-2) px-3 py-2"
                 >
                   <p className="text-sm font-medium">{issue.title}</p>
                   {issue.description && (

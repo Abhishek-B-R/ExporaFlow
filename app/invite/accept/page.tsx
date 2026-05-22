@@ -50,17 +50,17 @@ function AcceptInviteContent() {
   }, [token, router]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-(--background) flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-xl border border-[#393b42] bg-[#0f1111] p-8 text-center">
+        <div className="rounded-xl border border-(--border) bg-(--surface-1) p-8 text-center">
           {/* Loading state */}
           {status === "loading" && (
             <>
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full border-2 border-[#6f86ff] border-t-transparent animate-spin" />
+              <div className="mx-auto mb-4 h-12 w-12 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
               <h1 className="text-xl font-semibold text-white mb-2">
                 Accepting invitation…
               </h1>
-              <p className="text-sm text-[#a4a6aa]">
+              <p className="text-sm text-(--muted-2)">
                 Please wait while we process your invitation.
               </p>
             </>
@@ -83,15 +83,15 @@ function AcceptInviteContent() {
               <h1 className="text-xl font-semibold text-white mb-2">
                 Welcome to {workspaceName}!
               </h1>
-              <p className="text-sm text-[#a4a6aa] mb-1">{message}</p>
+              <p className="text-sm text-(--muted-2) mb-1">{message}</p>
               {role && (
-                <p className="text-xs text-[#6f86ff] mb-6">
+                <p className="text-xs text-sky-600 mb-6">
                   Role: <span className="font-medium">{role}</span>
                 </p>
               )}
               <button
                 onClick={() => router.push("/workflow/inbox")}
-                className="h-10 px-6 rounded-lg bg-gradient-to-b from-[#6f86ff] to-[#5a6ee0] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                className="h-10 px-6 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium hover:opacity-90 transition-opacity"
               >
                 Go to Workspace
               </button>
@@ -115,17 +115,17 @@ function AcceptInviteContent() {
               <h1 className="text-xl font-semibold text-white mb-2">
                 Invitation Error
               </h1>
-              <p className="text-sm text-[#a4a6aa] mb-6">{message}</p>
+              <p className="text-sm text-(--muted-2) mb-6">{message}</p>
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => router.push("/auth/signin")}
-                  className="h-10 px-5 rounded-lg border border-[#6f86ff]/30 bg-[#6f86ff]/10 text-[#6f86ff] text-sm hover:bg-[#6f86ff]/20 transition-colors"
+                  className="h-10 px-5 rounded-lg border border-sky-200 bg-sky-50 text-sky-600 text-sm hover:bg-sky-100 transition-colors"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => router.push("/")}
-                  className="h-10 px-5 rounded-lg border border-[#393b42] text-[#a4a6aa] text-sm hover:bg-[#1a1b1e] transition-colors"
+                  className="h-10 px-5 rounded-lg border border-(--border) text-(--muted-2) text-sm hover:bg-(--surface-3) transition-colors"
                 >
                   Go Home
                 </button>
@@ -142,8 +142,8 @@ export default function AcceptInvitePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center">
-          <div className="h-12 w-12 rounded-full border-2 border-[#6f86ff] border-t-transparent animate-spin" />
+        <div className="min-h-screen bg-(--background) flex items-center justify-center">
+          <div className="h-12 w-12 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
         </div>
       }
     >

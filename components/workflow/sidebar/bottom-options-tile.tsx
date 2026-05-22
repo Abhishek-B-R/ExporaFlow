@@ -54,7 +54,7 @@ export const BottomOptionsTile = () => {
     <>
       {/* Options Button */}
       <div
-        className="flex border w-8 h-8 items-center justify-center cursor-pointer rounded-full absolute bottom-2 md:bottom-4 left-4 border-[#414141] hover:bg-[#23252A] transition-all duration-300"
+        className="flex border w-8 h-8 items-center justify-center cursor-pointer rounded-full absolute bottom-2 md:bottom-4 left-4 border-(--border) hover:bg-[#23252A] transition-all duration-300"
         onClick={() => setOptionsOpen(!optionsOpen)} // Toggle popup visibility
       >
         <SVGIcon className="flex w-5" svgString={RAW_ICONS.Gliter} />
@@ -62,7 +62,7 @@ export const BottomOptionsTile = () => {
 
       {/* Popup */}
       <div
-        className={`absolute bottom-16 left-4 w-52 h-fit bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-xl shadow-lg p-1 transition-all duration-300 ${
+        className={`absolute bottom-16 left-4 w-52 h-fit bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-xl shadow-lg p-1 transition-all duration-300 ${
           optionsOpen
             ? "opacity-100 scale-100"
             : "opacity-0 scale-95 pointer-events-none"

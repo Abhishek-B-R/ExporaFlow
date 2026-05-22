@@ -133,14 +133,14 @@ export default function GitHubPage() {
             className="rounded-xl border border-(--border) bg-(--surface-1) p-4 hover:bg-(--surface-2) transition-colors group"
           >
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-[#6f86ff]/15 flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6f86ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                   <polyline points="7,10 12,15 17,10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </div>
-              <p className="text-sm font-medium group-hover:text-[#6f86ff] transition-colors">
+              <p className="text-sm font-medium group-hover:text-sky-600 transition-colors">
                 Import Issues
               </p>
             </div>
@@ -187,8 +187,8 @@ export default function GitHubPage() {
             </button>
           </div>
 
-          <div className="rounded-lg border border-(--border) bg-[#6f86ff]/5 p-3 text-xs space-y-2">
-            <p className="font-medium text-[#6f86ff]">Setup instructions</p>
+          <div className="rounded-lg border border-(--border) bg-sky-50 p-3 text-xs space-y-2">
+            <p className="font-medium text-sky-600">Setup instructions</p>
             <ol className="list-decimal list-inside space-y-1 text-(--muted-2)">
               <li>
                 Go to your GitHub repo → <strong className="text-(--muted-1)">Settings → Webhooks → Add webhook</strong>

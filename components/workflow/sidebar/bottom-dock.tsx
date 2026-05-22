@@ -7,9 +7,9 @@ import { useState } from "react";
 type activePopupProp = "profile" | "workflow" | "features" | "teams" | "none";
 
 const dockOptionActive =
-  "flex items-center justify-center gap-x-1 bg-[#2E3035] h-10 rounded-full cursor-pointer";
+  "flex items-center justify-center gap-x-1 bg-(--surface-3) h-10 rounded-full cursor-pointer";
 const dockOptionInactive =
-  "flex items-center justify-center gap-x-1  h-10 rounded-full cursor-pointer hover:bg-[#4b4b4b48] transition-all duration-200";
+  "flex items-center justify-center gap-x-1  h-10 rounded-full cursor-pointer hover:bg-sky-100 transition-all duration-200";
 
 export default function BottomDock() {
   const [windowActive, setWindowActive] = useState(false);
@@ -19,7 +19,7 @@ export default function BottomDock() {
     <>
       {/* Bottom Dock */}
       <div className="fixed bottom-2 w-full h-12 px-2 md:hidden md:pointer-events-none flex justify-center">
-        <div className="border border-[#414141] relative h-12 rounded-full gap-x-1 items-center px-1 w-[350px] grid grid-cols-4 bg-black">
+        <div className="border border-(--border) relative h-12 rounded-full gap-x-1 items-center px-1 w-[350px] grid grid-cols-4 bg-black">
           {/* Profile Option */}
           <div
             className={
@@ -103,7 +103,7 @@ const ProfileWindow = ({
   setClose: React.Dispatch<React.SetStateAction<activePopupProp>>;
 }) => {
   return (
-    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg p-2 transition-all duration-300">
+    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
       <p className="text-white ">Profile</p>
       <div className="grid grid-cols-2 gap-x-2 mt-2">
@@ -114,7 +114,7 @@ const ProfileWindow = ({
       {/* Close Button */}
       <button
         onClick={() => setClose("none")}
-        className="absolute top-1 right-1 rounded-lg  hover:bg-[#2E3035] transition-colors duration-200"
+        className="absolute top-1 right-1 rounded-lg  hover:bg-(--surface-3) transition-colors duration-200"
       >
         <SVGIcon className="" svgString={RAW_ICONS.Close} />
       </button>
@@ -127,7 +127,7 @@ const WorkflowWindow = ({
   setClose: React.Dispatch<React.SetStateAction<activePopupProp>>;
 }) => {
   return (
-    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg p-2 transition-all duration-300">
+    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
       <p className="text-white ">Workflow</p>
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-2">
@@ -157,7 +157,7 @@ const FeaturesWindow = ({
   setClose: React.Dispatch<React.SetStateAction<activePopupProp>>;
 }) => {
   return (
-    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg p-2 transition-all duration-300">
+    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
       <p className="text-white ">Features</p>
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-2">
@@ -182,7 +182,7 @@ const TeamsWindow = ({
   setClose: React.Dispatch<React.SetStateAction<activePopupProp>>;
 }) => {
   return (
-    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg p-2 transition-all duration-300">
+    <div className="fixed bottom-16 transform w-[350px] md:hidden md:pointer-events-none bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg p-2 transition-all duration-300">
       {/* Popup Content */}
       <p className="text-white ">Teams</p>
 
@@ -212,7 +212,7 @@ function DockOptions({
   redirectUri?: string;
 }) {
   return (
-    <div className="border border-[#414141] h-8 flex px-4 rounded-lg items-center gap-x-2 hover:bg-[#1d1d21] transition-all duration-200 cursor-pointer">
+    <div className="border border-(--border) h-8 flex px-4 rounded-lg items-center gap-x-2 hover:bg-[#1d1d21] transition-all duration-200 cursor-pointer">
       <div className="">
         <SVGIcon className="flex w-5" svgString={svg} />
       </div>

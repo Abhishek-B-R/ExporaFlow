@@ -206,7 +206,7 @@ function BoardCard(props: {
         ) : assigneeInitial ? (
           <div
             title={assigneeName ?? ""}
-            className="h-5 w-5 rounded-full bg-[#6f86ff]/20 border border-[#6f86ff]/30 flex items-center justify-center text-[10px] font-medium text-[#6f86ff] ml-auto"
+            className="h-5 w-5 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center text-[10px] font-medium text-sky-600 ml-auto"
           >
             {assigneeInitial}
           </div>

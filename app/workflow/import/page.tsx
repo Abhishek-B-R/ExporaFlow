@@ -163,7 +163,7 @@ export default function ImportIssuesPage() {
   const tabClass = (tab: ImportTab) =>
     `h-9 px-4 rounded-lg text-sm font-medium transition-colors ${
       activeTab === tab
-        ? "bg-[#6f86ff]/15 text-[#6f86ff] border border-[#6f86ff]/30"
+        ? "bg-sky-100 text-sky-600 border border-sky-200"
         : "border border-(--border) text-(--muted-2) hover:bg-(--surface-2)"
     }`;
 
@@ -241,12 +241,12 @@ export default function ImportIssuesPage() {
             {/* File upload */}
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-(--border) rounded-lg p-6 text-center cursor-pointer hover:border-[#6f86ff]/40 hover:bg-[#6f86ff]/5 transition-colors"
+              className="border-2 border-dashed border-(--border) rounded-lg p-6 text-center cursor-pointer hover:border-sky-300 hover:bg-sky-50 transition-colors"
             >
               <SVGIcon className="inline-flex w-8 mb-2 opacity-40" svgString={RAW_ICONS.Download} />
               {csvFileName ? (
                 <p className="text-sm">
-                  <span className="text-[#6f86ff] font-medium">{csvFileName}</span> selected
+                  <span className="text-sky-600 font-medium">{csvFileName}</span> selected
                 </p>
               ) : (
                 <>
@@ -270,14 +270,14 @@ export default function ImportIssuesPage() {
                 value={csvContent}
                 onChange={(e) => setCsvContent(e.target.value)}
                 placeholder={`title,description,status,priority\n"Fix login bug","Users can't login with Google",Working,High\n"Add dark mode","Support theme toggle",Backlog,Medium`}
-                className="w-full h-40 rounded-lg border border-(--border) bg-(--surface-2) px-3 py-2 text-sm font-mono resize-none outline-none focus:border-[#6f86ff]/40 transition-colors"
+                className="w-full h-40 rounded-lg border border-(--border) bg-(--surface-2) px-3 py-2 text-sm font-mono resize-none outline-none focus:border-sky-300 transition-colors"
               />
             </div>
 
             <button
               onClick={importCsv}
               disabled={isImporting || !csvContent.trim() || !projectId}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-[#6f86ff] to-[#5a6ee0] text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               {isImporting ? "Importing…" : "Import CSV"}
             </button>
@@ -294,8 +294,8 @@ export default function ImportIssuesPage() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-(--border) bg-[#6f86ff]/5 p-3 text-xs text-(--muted-2)">
-              <p className="font-medium text-[#6f86ff] mb-1">How to export from Jira:</p>
+            <div className="rounded-lg border border-(--border) bg-sky-50 p-3 text-xs text-(--muted-2)">
+              <p className="font-medium text-sky-600 mb-1">How to export from Jira:</p>
               <ol className="list-decimal list-inside space-y-0.5">
                 <li>Go to your Jira project → Issues → search/filter</li>
                 <li>Use the Jira REST API: <code className="bg-(--surface-2) px-1 rounded">GET /rest/api/2/search?jql=project=YOUR_PROJECT</code></li>
@@ -307,13 +307,13 @@ export default function ImportIssuesPage() {
               value={jiraJson}
               onChange={(e) => setJiraJson(e.target.value)}
               placeholder={`{\n  "issues": [\n    {\n      "fields": {\n        "summary": "Issue title",\n        "description": "Issue description",\n        "status": { "name": "To Do" },\n        "priority": { "name": "High" }\n      }\n    }\n  ]\n}`}
-              className="w-full h-52 rounded-lg border border-(--border) bg-(--surface-2) px-3 py-2 text-sm font-mono resize-none outline-none focus:border-[#6f86ff]/40 transition-colors"
+              className="w-full h-52 rounded-lg border border-(--border) bg-(--surface-2) px-3 py-2 text-sm font-mono resize-none outline-none focus:border-sky-300 transition-colors"
             />
 
             <button
               onClick={importJira}
               disabled={isImporting || !jiraJson.trim() || !projectId}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-[#6f86ff] to-[#5a6ee0] text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               {isImporting ? "Importing…" : "Import Jira Issues"}
             </button>
@@ -357,14 +357,14 @@ export default function ImportIssuesPage() {
                 onChange={(e) => setGithubRepo(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && importGitHub()}
                 placeholder="e.g. facebook/react"
-                className="h-10 w-full max-w-md rounded-lg border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus:border-[#6f86ff]/40 transition-colors"
+                className="h-10 w-full max-w-md rounded-lg border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus:border-sky-300 transition-colors"
               />
             </div>
 
             <button
               onClick={importGitHub}
               disabled={isImporting || !githubRepo.trim() || !projectId}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-[#6f86ff] to-[#5a6ee0] text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               {isImporting ? "Importing…" : "Import GitHub Issues"}
             </button>

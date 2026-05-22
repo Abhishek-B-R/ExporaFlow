@@ -31,14 +31,14 @@ type SprintPlanning = {
 
 const STATUS_COLORS: Record<string, string> = {
   Backlog: "text-[#a4a6aa]",
-  Planned: "text-[#6f86ff]",
+  Planned: "text-sky-600",
   Working: "text-[#e5a63b]",
   Completed: "text-[#30b27a]",
   Cancelled: "text-[#e05f5f]",
 };
 
 const SPRINT_STATUS_BADGE: Record<string, string> = {
-  Planned: "border-[#6f86ff]/30 bg-[#6f86ff]/10 text-[#6f86ff]",
+  Planned: "border-sky-200 bg-sky-50 text-sky-600",
   Active: "border-[#30b27a]/30 bg-[#30b27a]/10 text-[#30b27a]",
   Closed: "border-[#a4a6aa]/30 bg-[#a4a6aa]/10 text-[#a4a6aa]",
 };
@@ -248,7 +248,7 @@ export default function SprintsPage() {
             <button
               onClick={runAiSprintPlan}
               disabled={isPlanning || issues.length === 0}
-              className="h-8 px-3 rounded-md border border-[#7c5cff]/30 bg-[#7c5cff]/10 text-[#7c5cff] text-sm hover:bg-[#7c5cff]/20 transition-colors disabled:opacity-50"
+              className="h-8 px-3 rounded-md border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 text-[#0ea5e9] text-sm hover:bg-[#0ea5e9]/20 transition-colors disabled:opacity-50"
             >
               {isPlanning ? "Planning…" : "✨ AI Sprint Plan"}
             </button>
@@ -291,10 +291,10 @@ export default function SprintsPage() {
 
         {/* AI Sprint Planning Panel */}
         {planning && (
-          <div className="rounded-xl border border-[#7c5cff]/20 bg-[#7c5cff]/5 p-4 space-y-3">
+          <div className="rounded-xl border border-[#0ea5e9]/20 bg-[#0ea5e9]/5 p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-[#7c5cff]">AI Sprint Planning Recommendation</p>
+                <p className="text-sm font-medium text-[#0ea5e9]">AI Sprint Planning Recommendation</p>
                 <p className="text-xs text-(--muted-2)">
                   {(planning.recommendedScope ?? []).length || issues.length} issues scoped · Review before committing
                 </p>
@@ -303,7 +303,7 @@ export default function SprintsPage() {
                 <button
                   onClick={acceptAiPlan}
                   disabled={isAccepting}
-                  className="text-xs px-3 py-1.5 rounded-md bg-[#7c5cff] text-white hover:bg-[#6a4de0] transition-colors disabled:opacity-50 font-medium"
+                  className="text-xs px-3 py-1.5 rounded-md bg-[#0ea5e9] text-white hover:bg-sky-600 transition-colors disabled:opacity-50 font-medium"
                 >
                   {isAccepting ? "Creating…" : "✓ Accept & Create Sprint"}
                 </button>
@@ -426,7 +426,7 @@ export default function SprintsPage() {
                           </span>
                           <Link
                             href={`/workflow/project/${projectId}/incident-tickets/${issue.id}`}
-                            className="text-sm truncate flex-1 hover:text-[#6f86ff] transition-colors"
+                            className="text-sm truncate flex-1 hover:text-sky-600 transition-colors"
                           >
                             {issue.title}
                           </Link>
@@ -502,7 +502,7 @@ export default function SprintsPage() {
                       </span>
                       <Link
                         href={`/workflow/project/${projectId}/incident-tickets/${issue.id}`}
-                        className="text-sm truncate flex-1 hover:text-[#6f86ff] transition-colors"
+                        className="text-sm truncate flex-1 hover:text-sky-600 transition-colors"
                       >
                         {issue.title}
                       </Link>
@@ -553,7 +553,7 @@ export default function SprintsPage() {
                     </div>
                     <div className="h-7 rounded bg-(--surface-2) relative overflow-hidden border border-(--border)">
                       <div
-                        className="absolute top-1 bottom-1 rounded bg-[#6f86ff]/30 border border-[#6f86ff]/40"
+                        className="absolute top-1 bottom-1 rounded bg-sky-100 border border-sky-300"
                         style={{ left: `${left}%`, width: `${Math.max(width, 2)}%` }}
                       />
                     </div>

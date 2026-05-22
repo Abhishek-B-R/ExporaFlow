@@ -318,7 +318,7 @@ export default function IssueLabel({
             className="h-7 w-7 rounded-full object-cover border border-[#2C2E33]"
           />
         ) : assigneeInitial ? (
-          <div className="h-7 w-7 rounded-full bg-[#6f86ff]/20 border border-[#6f86ff]/30 flex items-center justify-center text-xs font-medium text-[#6f86ff]">
+          <div className="h-7 w-7 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center text-xs font-medium text-sky-600">
             {assigneeInitial}
           </div>
         ) : (

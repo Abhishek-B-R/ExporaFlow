@@ -1,51 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  /* Default: refined dark slate (enterprise ops — not pitch black) */
-  --background: #0f1419;
-  --foreground: #e2e8f0;
+  /* Sky blue enterprise — light, clean, professional */
+  --background: #f0f9ff;
+  --foreground: #0c4a6e;
 
-  --surface-1: #1a2130;
-  --surface-2: #1f2738;
-  --surface-3: #273143;
-  --surface-4: #323e52;
+  --surface-1: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #e0f2fe;
+  --surface-4: #bae6fd;
 
-  --border: rgba(148, 163, 184, 0.12);
-  --border-strong: rgba(148, 163, 184, 0.22);
+  --border: rgba(14, 165, 233, 0.18);
+  --border-strong: rgba(2, 132, 199, 0.28);
 
-  --muted: rgba(203, 213, 225, 0.88);
-  --muted-2: rgba(148, 163, 184, 0.82);
+  --muted: #0369a1;
+  --muted-2: #64748b;
 
-  --accent: #7b8fc9;
-  --accent-2: #9aacd4;
-  --accent-soft: rgba(123, 143, 201, 0.14);
-  --success: #2dd4bf;
-  --danger: #f97316;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --accent: #0ea5e9;
+  --accent-2: #38bdf8;
+  --accent-hover: #0284c7;
+  --accent-soft: rgba(14, 165, 233, 0.14);
+  --accent-muted: #e0f2fe;
+  --success: #059669;
+  --danger: #dc2626;
+  --radius-md: 8px;
+  --radius-lg: 10px;
 
-  --shell-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
-  --sidebar-active-bg: rgba(123, 143, 201, 0.12);
-  --sidebar-active-border: rgba(123, 143, 201, 0.28);
+  --shell-shadow: 0 1px 3px rgba(14, 165, 233, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --sidebar-active-bg: rgba(14, 165, 233, 0.12);
+  --sidebar-active-border: rgba(14, 165, 233, 0.4);
 
-  /* shadcn-style HSL tokens (dark enterprise) */
-  --card: 222 32% 11%;
-  --card-foreground: 210 30% 96%;
-  --popover: 222 32% 11%;
-  --popover-foreground: 210 30% 96%;
-  --primary: 226 58% 52%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 217 24% 18%;
-  --secondary-foreground: 210 25% 92%;
-  --muted-shadcn: 217 20% 20%;
-  --muted-foreground: 215 16% 72%;
-  --accent-shadcn: 224 40% 22%;
-  --accent-foreground: 210 30% 96%;
-  --destructive: 0 72% 55%;
+  /* shadcn — sky primary */
+  --card: 0 0% 100%;
+  --card-foreground: 204 80% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 204 80% 16%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 204 94% 94%;
+  --secondary-foreground: 204 80% 22%;
+  --muted-shadcn: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent-shadcn: 199 89% 48%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border-hsl: 217 24% 22%;
-  --input: 217 24% 22%;
-  --ring: 226 58% 52%;
+  --border-hsl: 199 89% 90%;
+  --input: 199 89% 90%;
+  --ring: 199 89% 48%;
   --radius: 0.5rem;
 }
 
@@ -56,43 +58,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #f8fafc;
-    --foreground: #0f172a;
-
-    --surface-1: #ffffff;
-    --surface-2: #f1f5f9;
-    --surface-3: #e2e8f0;
-    --surface-4: #cbd5e1;
-
-    --border: rgba(15, 23, 42, 0.08);
-    --border-strong: rgba(15, 23, 42, 0.14);
-
-    --muted: rgba(51, 65, 85, 0.92);
-    --muted-2: rgba(100, 116, 139, 0.95);
-
-    --accent: #4c5d8a;
-    --accent-2: #3d4a6e;
-    --accent-soft: rgba(76, 93, 138, 0.14);
-    --success: #0d9488;
-    --danger: #c2410c;
-    --shell-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --sidebar-active-bg: rgba(76, 93, 138, 0.1);
-    --sidebar-active-border: rgba(76, 93, 138, 0.22);
-  }
-}
-
 @layer utilities {
-  /* Hide scrollbar for Chrome, Safari, and Opera */
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
   }
-
-  /* Hide scrollbar for IE and Edge */
   .scrollbar-hidden {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
@@ -101,6 +73,7 @@ body {
   color: var(--foreground);
   font-family: inherit;
   letter-spacing: -0.01em;
+  line-height: 1.5;
 }
 
 * {
@@ -119,7 +92,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  box-shadow: 0 0 0 2px var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
   border-radius: 6px;
 }
 
@@ -136,7 +109,6 @@ a:focus-visible {
   border-radius: var(--radius-md);
 }
 
-/* Centered workspace column inside shell */
 .ef-workspace-inner {
   width: 100%;
   max-width: 1440px;
@@ -153,17 +125,48 @@ a:focus-visible {
   }
 }
 
+.ef-landing-page {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.ef-landing-glow {
+  background: radial-gradient(
+    ellipse 90% 60% at 50% -10%,
+    rgba(56, 189, 248, 0.35),
+    rgba(224, 242, 254, 0.5) 45%,
+    transparent 72%
+  );
+}
+
+.ef-btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent-hover);
+}
+.ef-btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.ef-btn-outline {
+  background: var(--surface-1);
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+}
+.ef-btn-outline:hover {
+  background: var(--surface-3);
+}
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
-
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
 .animate-pulse {
-  animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes pulse {
@@ -171,8 +174,8 @@ a:focus-visible {
   100% {
     opacity: 1;
   }
-  40% {
-    opacity: 0.4;
+  50% {
+    opacity: 0.55;
   }
 }
 
@@ -182,7 +185,6 @@ a:focus-visible {
   line-height: 1.6;
 }
 
-/* First child of editor-content must have margin-top = 1rem */
 .editor-content > :first-child {
   margin-top: 1rem;
 }
@@ -219,7 +221,7 @@ a:focus-visible {
 .editor-content a:hover,
 .editor-content a:active,
 .editor-content a:visited {
-  color: var(--link-color);
+  color: var(--accent-hover);
   text-decoration: underline;
 }
 
@@ -243,7 +245,7 @@ a:focus-visible {
 }
 
 .editor-content blockquote {
-  border-left: 3px solid var(--border-color);
+  border-left: 3px solid var(--accent);
   padding-left: 0.75rem;
   margin-left: 0;
   margin-right: 0;
@@ -271,7 +273,7 @@ a:focus-visible {
 
 .editor-content ul li::marker,
 .editor-content ol li::marker {
-  color: var(--list-marker-color);
+  color: var(--accent);
 }
 
 .editor-content ol {
@@ -284,11 +286,10 @@ a:focus-visible {
 .editor-content pre {
   background-color: var(--code-block-bg-color);
   color: var(--code-block-text-color);
-  border-radius: 0.3rem;
+  border-radius: 0.5rem;
   padding: 1rem;
   font-size: 0.875rem;
   line-height: 1.6;
-  border-radius: 0.5rem;
   border: 1px solid var(--border-color);
   font-family: var(--font-mono);
 }
@@ -331,7 +332,6 @@ a:focus-visible {
   margin-top: 0.25rem;
 }
 
-/* Placeholder */
 .ProseMirror p.is-editor-empty:first-child::before {
   color: hsl(var(--muted-foreground));
   content: attr(data-placeholder);
@@ -349,7 +349,6 @@ a:focus-visible {
     rgba(0, 0, 0, 0.3) 55%,
     transparent 70%
   );
-
   mask-image: linear-gradient(
     to bottom,
     black 0%,

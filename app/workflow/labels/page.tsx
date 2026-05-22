@@ -7,7 +7,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 
 const PRESET_COLORS = [
-  "#6f86ff", "#ef4444", "#f59e0b", "#22c55e", "#06b6d4",
+  "#0ea5e9", "#ef4444", "#f59e0b", "#22c55e", "#06b6d4",
   "#a855f7", "#ec4899", "#f97316", "#14b8a6", "#8b5cf6",
 ];
 
@@ -23,7 +23,7 @@ export default function LabelsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#6f86ff");
+  const [color, setColor] = useState("#0ea5e9");
   const [description, setDescription] = useState("");
 
   const fetchLabels = async () => {
@@ -50,7 +50,7 @@ export default function LabelsPage() {
       customToast.success({ title: "", description: `Label "${name.trim()}" created.` });
       setName("");
       setDescription("");
-      setColor("#6f86ff");
+      setColor("#0ea5e9");
       await fetchLabels();
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err)
@@ -140,7 +140,7 @@ export default function LabelsPage() {
             <button
               onClick={handleCreate}
               disabled={isSubmitting || !name.trim()}
-              className="h-9 px-4 rounded-md bg-[#6f86ff] hover:bg-[#5a70e6] text-white text-sm font-medium transition-colors disabled:opacity-50"
+              className="h-9 px-4 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isSubmitting ? "Creating…" : "Create label"}
             </button>

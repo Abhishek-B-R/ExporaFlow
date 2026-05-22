@@ -111,23 +111,23 @@ export async function POST(request: NextRequest) {
         subject: `${senderName} invited you to join "${workspaceName}" on ExporaFlow`,
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto;">
-            <div style="padding: 32px 24px; background: #0f1111; border-radius: 12px; border: 1px solid #393b42;">
-              <h1 style="margin: 0 0 8px; font-size: 22px; color: #ffffff; font-weight: 600;">
+            <div style="padding: 32px 24px; background: #f0f9ff; border-radius: 12px; border: 1px solid rgba(14,165,233,0.25);">
+              <h1 style="margin: 0 0 8px; font-size: 22px; color: #0c4a6e; font-weight: 600;">
                 You're invited to ${workspaceName}
               </h1>
-              <p style="margin: 0 0 24px; color: #a4a6aa; font-size: 14px; line-height: 1.6;">
-                <strong style="color: #caccd4;">${senderName}</strong> has invited you to collaborate on
-                <strong style="color: #caccd4;">${workspaceName}</strong> as a <strong style="color: #6f86ff;">${role}</strong>.
+              <p style="margin: 0 0 24px; color: #64748b; font-size: 14px; line-height: 1.6;">
+                <strong style="color: #0369a1;">${senderName}</strong> has invited you to collaborate on
+                <strong style="color: #0369a1;">${workspaceName}</strong> as a <strong style="color: #0ea5e9;">${role}</strong>.
               </p>
               <a href="${inviteLink}"
-                 style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #6f86ff, #7c5cff);
+                 style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #0ea5e9, #0284c7);
                         color: #fff; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px;">
                 Accept Invitation
               </a>
               <p style="margin: 24px 0 0; color: #6a6c75; font-size: 12px; line-height: 1.5;">
                 This invitation expires in 7 days.<br/>
                 If the button doesn't work, copy and paste this link:<br/>
-                <a href="${inviteLink}" style="color: #6f86ff; word-break: break-all;">${inviteLink}</a>
+                <a href="${inviteLink}" style="color: #0ea5e9; word-break: break-all;">${inviteLink}</a>
               </p>
             </div>
             <p style="margin: 16px 0 0; color: #6a6c75; font-size: 11px; text-align: center;">

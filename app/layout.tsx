@@ -4,11 +4,11 @@ import Navbar from "@/components/landing/navbar";
 import { Toaster } from "sonner";
 import { siteConfig } from "@/config/site-config";
 import { Providers } from "./providers";
-import { Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 
-const outfit = Outfit({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = siteConfig;
@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.className} font-light`}>
+      <body className={`${inter.className} font-normal bg-(--background) text-(--foreground) antialiased`}>
         <Providers>
           {children}
           <Toaster />

@@ -550,12 +550,11 @@ const CreateProjectWindow = ({
   };
 
   return (
-    <div className="absolute bg-[rgba(0,0,0,0.1)] backdrop-blur-lg w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44">
-      {/* Main content */}
-      <div className="flex flex-col border border-[#393B42] w-full h-[550px] lg:h-[600px] xl:h-[700px] rounded-xl bg-[#0F1111] px-2 md:px-4 xl:px-5 pt-2 md:pt-4 xl:pt-5">
+    <div className="absolute bg-sky-950/20 backdrop-blur-sm w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44">
+      <div className="flex flex-col border border-(--border) w-full h-[550px] lg:h-[600px] xl:h-[700px] rounded-xl bg-(--surface-1) shadow-lg px-2 md:px-4 xl:px-5 pt-2 md:pt-4 xl:pt-5 text-(--foreground)">
         <div className=" h-10 flex justify-between items-center gap-x-2">
           <div className="flex items-center">
-            <div className="border border-[#2E3035] bg-[#1C1D21] rounded h-7 md:h-9 w-16 md:w-20 flex justify-center items-center">
+            <div className="border border-(--border) bg-(--surface-2) rounded h-7 md:h-9 w-16 md:w-20 flex justify-center items-center">
               <p className="text-[12px] md:text-[14px] xl:text-[16px]">Team</p>
             </div>
             <SVGIcon className="flex w-t" svgString={RAW_ICONS.ArrowRight} />
@@ -589,7 +588,7 @@ const CreateProjectWindow = ({
         </div>
 
         <div className="mt-4">
-          <p className="text-[11px] md:text-xs text-[#858687] mb-2">
+          <p className="text-[11px] md:text-xs text-(--muted-2) mb-2">
             Service line
           </p>
           <div className="flex flex-wrap gap-2">
@@ -602,8 +601,8 @@ const CreateProjectWindow = ({
                   onClick={() => setServiceLine(line.value)}
                   className={`rounded-md border px-2.5 py-1.5 text-[11px] md:text-[13px] transition-all duration-300 ${
                     selected
-                      ? "border-[#6D78E7] bg-[#2a2f4a] text-white"
-                      : "border-[#525353] bg-[#1D1D21] text-[#c5c6c8] hover:bg-[#29292e]"
+                      ? "border-sky-400 bg-sky-100 text-sky-900"
+                      : "border-(--border) bg-(--surface-2) text-(--muted) hover:bg-(--surface-3)"
                   }`}
                 >
                   {line.label}
@@ -614,18 +613,18 @@ const CreateProjectWindow = ({
         </div>
 
         <div className="mt-4">
-          <p className="text-[11px] md:text-xs text-[#858687] mb-2">Customer</p>
+          <p className="text-[11px] md:text-xs text-(--muted-2) mb-2">Customer</p>
           <input
-            className="w-full rounded-md border border-[#525353] bg-[#1D1D21] px-2 py-1.5 text-sm outline-none"
+            className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 py-1.5 text-sm outline-none"
             placeholder="Search customers…"
             value={customerSearch}
             onChange={(e) => setCustomerSearch(e.target.value)}
           />
-          <div className="mt-2 max-h-28 overflow-y-auto rounded-md border border-[#525353] bg-[#151518]">
+          <div className="mt-2 max-h-28 overflow-y-auto rounded-md border border-(--border) bg-(--surface-2)">
             <button
               type="button"
-              className={`w-full text-left px-2 py-1.5 text-xs hover:bg-[#29292e] ${
-                customerId === null ? "bg-[#2a2f4a]" : ""
+              className={`w-full text-left px-2 py-1.5 text-xs hover:bg-(--surface-3) ${
+                customerId === null ? "bg-sky-100" : ""
               }`}
               onClick={() => setCustomerId(null)}
             >
@@ -635,13 +634,13 @@ const CreateProjectWindow = ({
               <button
                 key={c.id}
                 type="button"
-                className={`w-full text-left px-2 py-1.5 text-xs hover:bg-[#29292e] ${
-                  customerId === c.id ? "bg-[#2a2f4a]" : ""
+                className={`w-full text-left px-2 py-1.5 text-xs hover:bg-(--surface-3) ${
+                  customerId === c.id ? "bg-sky-100" : ""
                 }`}
                 onClick={() => setCustomerId(c.id)}
               >
                 <span className="font-medium">{c.organizationName}</span>
-                <span className="text-[#858687]"> · {c.name}</span>
+                <span className="text-(--muted-2)"> · {c.name}</span>
               </button>
             ))}
           </div>
@@ -650,16 +649,16 @@ const CreateProjectWindow = ({
         <div className="my-2 h-10 gap-x-2 flex items-center  text-[10px]  md:text-[14px] lg:text-[15px] xl:text-[16px] ">
           <button
             onClick={() => setShowOptionsDropdown("health")}
-            className="border border-[#525353] flex items-center  bg-[#1D1D21] h-8 px-2 lg:px-3 rounded-md hover:bg-[#29292e] transition-all duration-300"
+            className="border border-(--border) flex items-center bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300"
           >
             {status}
           </button>
           {showOptionsDropdown == "health" && (
-            <div className="absolute bg-[#1D1D21] border border-[#525353] rounded-md mt-2">
+            <div className="absolute bg-(--surface-1) border border-(--border) rounded-md mt-2 shadow-md z-10">
               {statusOptions.map((option, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 hover:bg-[#29292e] cursor-pointer rounded"
+                  className="px-4 py-2 hover:bg-(--surface-3) cursor-pointer rounded"
                   onClick={() => {
                     //@ts-expect-error //status type differ
                     setStatus(option);
@@ -673,16 +672,16 @@ const CreateProjectWindow = ({
           )}
           <button
             onClick={() => setShowOptionsDropdown("priority")}
-            className="border border-[#525353] flex items-center bg-[#1D1D21] h-8 px-2 lg:px-3 rounded-md hover:bg-[#29292e] transition-all duration-300"
+            className="border border-(--border) flex items-center bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300"
           >
             {priority}
           </button>
           {showOptionsDropdown == "priority" && (
-            <div className="absolute bg-[#1D1D21] border border-[#525353] rounded-md mt-2">
+            <div className="absolute bg-(--surface-1) border border-(--border) rounded-md mt-2 shadow-md z-10">
               {priorityOptions.map((option, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 hover:bg-[#29292e] cursor-pointer rounded"
+                  className="px-4 py-2 hover:bg-(--surface-3) cursor-pointer rounded"
                   onClick={() => {
                     //@ts-expect-error //project type is different
                     setPriority(option);
@@ -695,21 +694,21 @@ const CreateProjectWindow = ({
             </div>
           )}
 
-          <button className="border border-[#525353] bg-[#1D1D21] h-8 px-2 lg:px-3 rounded-md hover:bg-[#29292e] transition-all duration-300">
+          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
             lead
           </button>
-          <button className="border border-[#525353] bg-[#1D1D21] h-8 px-2 lg:px-3 rounded-md hover:bg-[#29292e] transition-all duration-300">
+          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
             members
           </button>
-          <button className="border border-[#525353] bg-[#1D1D21] h-8 px-2 lg:px-3 rounded-md hover:bg-[#29292e] transition-all duration-300">
+          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
             start date
           </button>
-          <button className="border border-[#525353] bg-[#1D1D21] h-8 px-2 lg:px-3 rounded-md hover:bg-[#29292e] transition-all duration-300">
+          <button className="border border-(--border) bg-(--surface-2) h-8 px-2 lg:px-3 rounded-md hover:bg-(--surface-3) transition-all duration-300">
             target date
           </button>
         </div>
 
-        <div className="border-t border-[#525353] mt-1 sm:mt-2 md:mt-3"></div>
+        <div className="border-t border-(--border) mt-1 sm:mt-2 md:mt-3"></div>
         <div
           id="content"
           className="grow mt-2 sm:mt-5 md:mt-10 font-extralight"
@@ -724,10 +723,10 @@ const CreateProjectWindow = ({
           />
         </div>
 
-        <div className="border-t border-[#393B42] w-full h-20 flex items-center justify-end gap-x-3  text-[12px]  md:text-[14px] lg:text-[15px] xl:text-[16px] ">
+        <div className="border-t border-(--border) w-full h-20 flex items-center justify-end gap-x-3  text-[12px]  md:text-[14px] lg:text-[15px] xl:text-[16px] ">
           <button
             onClick={() => setClose(false)}
-            className="px-2 border border-[#393B42] rounded-md h-9 hover:bg-[#23252A] transition-all duration-300"
+            className="px-2 border border-(--border) rounded-md h-9 hover:bg-(--surface-3) transition-all duration-300"
           >
             Cancel
           </button>
@@ -736,7 +735,7 @@ const CreateProjectWindow = ({
             disabled={
               isCreating || !projTitle.trim() || serviceLine === null
             }
-            className="px-2 border border-[#6D78E7] bg-[#5E6AD2] min-w-16 flex items-center justify-center rounded-md h-9 hover:bg-[#6D78E7] transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
+            className="px-2 border border-sky-500 bg-sky-500 text-white min-w-16 flex items-center justify-center rounded-md h-9 hover:bg-sky-600 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
           >
             {isCreating ? (
               <SVGIcon svgString={RAW_ICONS.WhiteLoader} />
@@ -782,9 +781,8 @@ const DeleteWindow = ({
   };
 
   return (
-    <div className="absolute bg-[rgba(0,0,0,0.1)] backdrop-blur-lg w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44">
-      {/* Main content */}
-      <div className="flex flex-col justify-between border border-[#393B42] rounded-xl bg-[#0F1111] h-56 w-96 lg:w-[500px] p-4">
+    <div className="absolute bg-sky-950/20 backdrop-blur-sm w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44">
+      <div className="flex flex-col justify-between border border-(--border) rounded-xl bg-(--surface-1) shadow-lg h-56 w-96 lg:w-[500px] p-4 text-(--foreground)">
         <div className="">
           <p className="font-bold text-2xl">Are you sure?</p>
           <p className="text-[#f2534d]">

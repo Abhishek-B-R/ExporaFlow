@@ -20,12 +20,12 @@ export function SimpleEditor({ className, editor }: SimpleEditorProps) {
   return (
     <div
       className={cn(
-        "bg-background rounded-lg border border-[#313032] shadow-sm",
+        "bg-background rounded-lg border border-(--border) shadow-sm",
         className
       )}
     >
       {/* Menu Bar */}
-      <div className="border-b border-[#313032] px-4 py-2">
+      <div className="border-b border-(--border) px-4 py-2">
         <SimpleEditorMenuBar editor={editor} />
       </div>
 
@@ -33,7 +33,7 @@ export function SimpleEditor({ className, editor }: SimpleEditorProps) {
       <EditorContent editor={editor} className="simple-editor" />
 
       {/* Word Count Footer */}
-      {/* <div className="text-muted-foreground border-t border-[#313032] px-4 py-2 text-sm">
+      {/* <div className="text-muted-foreground border-t border-(--border) px-4 py-2 text-sm">
         {words} words, {characters} characters
       </div> */}
     </div>

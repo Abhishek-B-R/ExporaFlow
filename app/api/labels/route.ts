@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const label = await prisma.label.create({
       data: {
         name: name.trim(),
-        color: color || "#6f86ff",
+        color: color || "#0ea5e9",
         description: description || null,
         workspaceId: membership.workspaceId,
       },

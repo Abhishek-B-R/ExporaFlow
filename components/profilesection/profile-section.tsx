@@ -89,7 +89,7 @@ export default function ProfileSection() {
 
   return (
     <div className="pt-16 min-h-screen px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28 2xl:px-40 flex">
-      <div className="border border-[#565555] mt-4 rounded-2xl p-2 md:p-4 flex-1 mb-5 bg-[#0F1111]">
+      <div className="border border-(--border) mt-4 rounded-2xl p-2 md:p-4 flex-1 mb-5 bg-(--surface-1)">
         <p className="text-[18px] md:text-xl xl:text-2xl font-medium mt-1 md:mt-0">
           Profile
         </p>
@@ -108,7 +108,7 @@ export default function ProfileSection() {
                 <div className="border-b border-[#2e3232] flex items-center justify-between px-2">
                   <p>Profile picture</p>
                   <div
-                    className="border border-[#565555] h-12 aspect-square rounded-full bg-[#56555569] flex items-center justify-center"
+                    className="border border-(--border) h-12 aspect-square rounded-full bg-[#56555569] flex items-center justify-center"
                     aria-label="Profile initials"
                   >
                     {getInitials(userInfo?.name)}
@@ -171,7 +171,7 @@ export default function ProfileSection() {
                     <button
                       type="submit"
                       disabled={!inEditMode || !hasChanges || updatingUserInfo}
-                      className="border px-4 h-8 rounded-lg border-[#565555] bg-[#2f2f2fb1] cursor-pointer hover:bg-[#2f2f2ff0]  transition-all duration-200 min-w-20 md:w-24"
+                      className="border px-4 h-8 rounded-lg border-(--border) bg-[#2f2f2fb1] cursor-pointer hover:bg-[#2f2f2ff0]  transition-all duration-200 min-w-20 md:w-24"
                       aria-label="Save changes"
                     >
                       {updatingUserInfo ? "Wait…" : "Save"}

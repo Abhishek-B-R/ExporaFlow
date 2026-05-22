@@ -2,56 +2,187 @@
 
 import axios from "axios";
 import { useState } from "react";
-import { z } from "zod";
 import { BlurFade } from "../magicui/blur-fade";
-import Image from "next/image";
-import grid from "@/public/assets/bg/grid.svg";
-import spinner from "@/public/assets/loader/spinner.svg";
+import Link from "next/link";
 import { customToast } from "@/lib/custom-toast";
 import { motion } from "framer-motion";
-
-const emailSchema = z.string().email({ message: "Invalid email address" });
+import { LayoutDashboard, ArrowRight } from "lucide-react";
 
 export default function Hero() {
+  return (
+    <div className="relative">
+      <div className="relative flex px-4 sm:px-6 md:px-10 lg:px-14 xl:px-28 2xl:px-40 justify-center items-center min-h-[320px] sm:min-h-[380px]">
+        <div className="flex flex-col items-center text-center max-w-4xl">
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--accent) mb-4"
+          >
+            Enterprise consulting operations
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08 }}
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-(--foreground)"
+          >
+            Run projects, incidents, and change{" "}
+            <span className="text-(--accent)">in one workspace</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.16 }}
+            className="mt-4 text-sm sm:text-base text-(--muted-2) max-w-2xl leading-relaxed"
+          >
+            ExporaFlow is built for SAP, Oracle, managed services, and software delivery teams —
+            with SLA-aware change management, store directory, and the same operational dashboard
+            your delivery leads use every day.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.24 }}
+            className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          >
+            <Link
+              href="/workflow/dashboard"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] px-4 text-sm font-medium text-(--foreground) shadow-sm hover:bg-(--surface-3) transition-colors"
+            >
+              <LayoutDashboard className="size-4 text-(--accent)" />
+              Open dashboard
+              <ArrowRight className="size-4 opacity-70" />
+            </Link>
+            <Link
+              href="/signup"
+              className="inline-flex h-10 items-center rounded-md ef-btn-primary px-4 text-sm font-medium shadow-sm transition-colors"
+            >
+              Get started
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+      <DashboardPreview />
+      <WaitlistStrip />
+    </div>
+  );
+}
+
+function DashboardPreview() {
+  const metrics = [
+    { label: "Open incident tickets", value: "24" },
+    { label: "Open change tickets", value: "11" },
+    { label: "Change on hold", value: "3" },
+    { label: "SLA breaches", value: "2" },
+    { label: "Active customers", value: "18" },
+    { label: "Your projects", value: "9" },
+  ];
+
+  return (
+    <BlurFade delay={0.35} inView className="px-4 sm:px-6 md:px-10 lg:px-14 xl:px-28 2xl:px-40 pb-8">
+      <div className="rounded-lg border border-(--border) bg-(--surface-1) shadow-[var(--shell-shadow)] overflow-hidden">
+        <div className="h-10 border-b border-(--border) bg-(--surface-2) px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-(--foreground)">Operations overview</span>
+            <span className="hidden sm:inline text-[11px] text-(--muted-2)">
+              — same view as your signed-in dashboard
+            </span>
+          </div>
+          <span className="text-[10px] uppercase tracking-wide text-(--muted-2)">Preview</span>
+        </div>
+        <div className="p-4 md:p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {metrics.map((m) => (
+              <div
+                key={m.label}
+                className="rounded-lg border border-(--border) bg-(--surface-2) px-3 py-4 shadow-sm"
+              >
+                <p className="text-[10px] uppercase tracking-wide text-(--muted-2) leading-snug">
+                  {m.label}
+                </p>
+                <p className="text-xl font-semibold text-(--foreground) mt-2 tabular-nums">
+                  {m.value}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-12 gap-3 rounded-md border border-(--border) bg-(--surface-2)/60 p-3">
+            <div className="col-span-3 hidden sm:block space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-(--muted-2) px-2 py-1">
+                Workspace
+              </p>
+              {["Dashboard", "Projects", "Store", "People"].map((item, i) => (
+                <div
+                  key={item}
+                  className={`rounded-md px-2 py-1.5 text-[11px] ${
+                    i === 0
+                      ? "bg-[var(--sidebar-active-bg)] border border-[var(--sidebar-active-border)] text-(--foreground)"
+                      : "text-(--muted) hover:bg-(--surface-3)/50"
+                  }`}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+            <div className="col-span-12 sm:col-span-9 rounded-md border border-(--border) bg-(--surface-1) p-3 min-h-[140px]">
+              <p className="text-xs text-(--muted-2) mb-3">Portfolio · operational density</p>
+              <div className="space-y-2">
+                {[
+                  { name: "SAP S/4 rollout", status: "Working", sla: "Clear" },
+                  { name: "Oracle AMS", status: "Planned", sla: "2 at risk" },
+                  { name: "Managed NOC", status: "Backlog", sla: "Clear" },
+                ].map((row) => (
+                  <div
+                    key={row.name}
+                    className="flex items-center justify-between gap-2 rounded-md border border-(--border)/80 bg-(--surface-2) px-3 py-2 text-[12px]"
+                  >
+                    <span className="font-medium text-(--foreground) truncate">{row.name}</span>
+                    <span className="shrink-0 rounded border border-(--border) px-1.5 py-0.5 text-[10px] text-(--muted)">
+                      {row.status}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] ${
+                        row.sla.includes("risk")
+                          ? "border-rose-400/40 bg-rose-50 text-rose-700"
+                          : "border-emerald-400/40 bg-emerald-50 text-emerald-700"
+                      }`}
+                    >
+                      {row.sla}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </BlurFade>
+  );
+}
+
+function WaitlistStrip() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const waitListCall = async (): Promise<void> => {
+  const waitListCall = async () => {
     try {
       setIsLoading(true);
-
-      // Basic client-side validation
       if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-        customToast.warning({
-          title: "",
-          description: `The email body is invalid`,
-        });
+        customToast.warning({ title: "", description: "Enter a valid email address." });
         return;
       }
-
-      const response = await axios.post<{ message: string; emailId?: string }>(
-        "/api/waitlist",
-        {
-          userEmail: email.trim(),
-        },
-      );
-
+      const response = await axios.post<{ message: string }>("/api/waitlist", {
+        userEmail: email.trim(),
+      });
       if (response.data) {
-        customToast.info({
-          title: "",
-          description: `${response.data.message}`,
-        });
+        customToast.info({ title: "", description: response.data.message });
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         customToast.error({
           title: "",
-          description: error.response?.data?.message || "An error occurred",
-        });
-      } else {
-        customToast.error({
-          title: "",
-          description: "An error occurred",
+          description: error.response?.data?.message || "Something went wrong.",
         });
       }
     } finally {
@@ -60,141 +191,34 @@ export default function Hero() {
     }
   };
 
-  const handleKeyPress = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-  ): void => {
-    if (event.key === "Enter" && !isLoading) {
-      waitListCall();
-    }
-  };
-
   return (
-    <div className="">
-      <div className="relative h-[300px] sm:h-[400px] flex px-4 sm:px-6 md:px-10 lg:px-14 xl:px-28 2xl:px-40 justify-center items-center ">
-        <Image className="absolute opacity-20 z-0" src={grid} alt="" />
-        <div className=" flex flex-col items-center md:font-bold ">
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold md:mb-2"
+    <div className="px-4 sm:px-6 md:px-10 lg:px-14 xl:px-28 2xl:px-40 pb-12">
+      <div className="rounded-lg border border-(--border) bg-(--surface-2) px-4 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-(--foreground)">Join the waitlist</p>
+          <p className="text-xs text-(--muted-2) mt-0.5">
+            Early access for consulting and MSP operations teams.
+          </p>
+        </div>
+        <div className="flex w-full sm:w-auto gap-2">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !isLoading && void waitListCall()}
+            placeholder="you@company.com"
+            className="flex-1 sm:w-56 h-10 rounded-md border border-(--border) bg-(--surface-1) px-3 text-sm text-(--foreground) placeholder:text-(--muted-2) outline-none focus:border-[var(--sidebar-active-border)] focus:ring-2 focus:ring-[var(--accent-soft)]"
+          />
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => void waitListCall()}
+            className="h-10 shrink-0 rounded-md border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] px-4 text-sm font-medium text-(--foreground) hover:bg-(--surface-3) disabled:opacity-50 transition-colors"
           >
-            Streamline your workflow
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-wrap justify-center items-center gap-x-1 xl:gap-x-3 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold"
-          >
-            Amplify your impact with
-            <p className="text-transparent bg-gradient-to-b from-gray-600 via-gray-400 to-white bg-clip-text ml-2">
-              ExporaFlow
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-4 flex flex-col items-center font-extralight text-[#AEAEAE] text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl"
-          >
-            <p>Issue tracking and sprint planning.</p>
-            <p>Projects, boards, and timelines that keep work moving.</p>
-          </motion.div>
+            {isLoading ? "…" : "Notify me"}
+          </button>
         </div>
       </div>
-      <HomeBanner />
     </div>
   );
 }
-
-const HomeBanner = () => {
-  return (
-    <BlurFade
-      delay={1}
-      inView
-      className="px-4 sm:px-6 md:px-10 lg:px-14 xl:px-28 2xl:px-40"
-    >
-      <div className="relative flex justify-center border-t border-[#313032c6] rounded-2xl p-1 md:p-2 bg-[#0A0A0A]">
-        <div className="relative rounded-[11px] border border-[#2d3552] mask-bottom-dark w-full h-[260px] sm:h-[340px] md:h-[410px] bg-gradient-to-b from-[#101a36] via-[#0b1227] to-[#070b17] overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(75,225,166,0.15),transparent_35%),radial-gradient(circle_at_85%_20%,rgba(124,92,255,0.16),transparent_35%)]" />
-
-          <div className="relative z-10 h-full p-4 sm:p-5 md:p-6">
-            <div className="h-8 rounded-lg border border-[#2b3556] bg-[#0a1020] flex items-center px-3 gap-2">
-              <div className="h-2 w-2 rounded-full bg-[#4be1a6]" />
-              <div className="h-2 w-2 rounded-full bg-[#7c5cff]" />
-              <div className="h-2 w-2 rounded-full bg-[#1f6feb]" />
-              <p className="ml-2 text-[10px] sm:text-xs tracking-[0.18em] text-[#8ea0d5] uppercase">
-                ExporaFlow Workspace Preview
-              </p>
-            </div>
-
-            <div className="grid grid-cols-12 gap-3 mt-3 h-[calc(100%-2.8rem)]">
-              <div className="col-span-3 rounded-lg border border-[#243055] bg-[#0a1020]/90 p-2 space-y-2">
-                <div className="h-6 rounded bg-[#121b38] border border-[#2a3760] px-2 flex items-center text-[10px] text-[#8ea0d5] tracking-wide">
-                  WORKSPACE
-                </div>
-                <div className="h-5 rounded bg-[#111a33] px-2 flex items-center text-[10px] text-[#a9b7df]">
-                  Inbox
-                </div>
-                <div className="h-5 rounded bg-[#111a33] px-2 flex items-center text-[10px] text-[#a9b7df]">
-                  Projects
-                </div>
-                <div className="h-5 rounded bg-[#111a33] px-2 flex items-center text-[10px] text-[#a9b7df]">
-                  Sprints
-                </div>
-                <div className="h-5 rounded bg-[#111a33] px-2 flex items-center text-[10px] text-[#a9b7df]">
-                  Reports
-                </div>
-              </div>
-
-              <div className="col-span-9 rounded-lg border border-[#243055] bg-[#0a1020]/80 p-3 flex flex-col">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm text-[#9fb0dd]">Release Sprint - Board</p>
-                  <div className="h-7 px-3 rounded-md bg-[#162247] border border-[#2a3760] flex items-center text-[10px] sm:text-xs text-[#c2cff1]">
-                    + New issue
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mt-3">
-                  <div className="h-16 rounded-md bg-[#101938] border border-[#26345d] p-2">
-                    <p className="text-[10px] text-[#93a5d5]">Backlog</p>
-                    <p className="text-xs mt-2 text-[#dce5ff]">12 issues</p>
-                  </div>
-                  <div className="h-16 rounded-md bg-[#101938] border border-[#26345d] p-2">
-                    <p className="text-[10px] text-[#93a5d5]">In Progress</p>
-                    <p className="text-xs mt-2 text-[#dce5ff]">7 issues</p>
-                  </div>
-                  <div className="h-16 rounded-md bg-[#101938] border border-[#26345d] p-2">
-                    <p className="text-[10px] text-[#93a5d5]">Completed</p>
-                    <p className="text-xs mt-2 text-[#dce5ff]">23 issues</p>
-                  </div>
-                </div>
-
-                <div className="mt-3 grow rounded-md border border-[#26345d] bg-gradient-to-b from-[#0e1731] to-[#0a1122] p-3">
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <div className="h-16 rounded border border-[#2a3760] bg-[#0a1020] p-2">
-                      <p className="text-[10px] text-[#93a5d5]">Velocity</p>
-                      <p className="text-sm text-[#dce5ff] mt-1">+18%</p>
-                    </div>
-                    <div className="h-16 rounded border border-[#2a3760] bg-[#0a1020] p-2">
-                      <p className="text-[10px] text-[#93a5d5]">Risk flags</p>
-                      <p className="text-sm text-[#dce5ff] mt-1">2 open</p>
-                    </div>
-                  </div>
-                  <div className="h-20 rounded border border-[#2a3760] bg-[#0a1020] p-2">
-                    <p className="text-[10px] text-[#93a5d5] mb-2">Recent updates</p>
-                    <div className="h-1.5 rounded bg-[#29416e] w-full mb-1.5" />
-                    <div className="h-1.5 rounded bg-[#274066] w-4/5 mb-1.5" />
-                    <div className="h-1.5 rounded bg-[#274066] w-2/3" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </BlurFade>
-  );
-};

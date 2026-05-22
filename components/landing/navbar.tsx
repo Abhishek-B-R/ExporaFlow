@@ -58,9 +58,9 @@ const navListArr: {
   redirectHref: string;
   onClickHandler?: () => void;
 }[] = [
-  { title: "Workflow", redirectHref: "/workflow/project" },
+  { title: "Dashboard", redirectHref: "/workflow/dashboard" },
+  { title: "Projects", redirectHref: "/workflow/project" },
   { title: "Contact", redirectHref: "" },
-  { title: "Blogs", redirectHref: "" },
 ];
 
 const itemVariants = {
@@ -152,7 +152,7 @@ export default function Navbar() {
       <div
         className={`top-0 fixed w-full py-2 flex px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28 2xl:px-40 z-50 transition-transform duration-300 ${showNavbar ? "translate-y-0" : "-translate-y-full"}`}
       >
-        <div className=" h-[55px] border border-[#313032] w-full rounded-xl flex items-center justify-between pl-3 pr-2 bg-[#121212]">
+        <div className="h-[55px] border border-(--border) w-full rounded-lg flex items-center justify-between pl-3 pr-2 bg-(--surface-1) shadow-[var(--shell-shadow)] backdrop-blur-md bg-(--surface-1)/95">
           <Link href="/">
             <Image
               className="w-8"
@@ -182,7 +182,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -5 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute top-13 -right-2 w-44 h-fit bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-xl shadow-lg p-1"
+                  className="absolute top-13 -right-2 w-44 h-fit border border-(--border) rounded-lg bg-(--surface-1) shadow-lg p-1"
                 >
                   {optionsArr.map((elem, key) => (
                     <BottomOptionLabel
@@ -202,7 +202,7 @@ export default function Navbar() {
               pathname !== "/signup" && (
                 <Link
                   href={"/signup"}
-                  className="border-2 flex items-center px-4 h-9 rounded-lg text-black bg-white cursor-pointer border-[#313032] hover:bg-[#1e1e1f] hover:border-[1px] hover:text-white transition-all duration-100"
+                  className="flex items-center px-4 h-9 rounded-md text-sm font-medium border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] text-(--foreground) hover:bg-(--surface-3) transition-colors"
                 >
                   Sign in
                 </Link>
@@ -213,24 +213,24 @@ export default function Navbar() {
                 aria-label="Toggle menu"
                 aria-expanded={profileTabOpen}
                 onClick={() => setProfileTabOpen(!profileTabOpen)}
-                className="flex flex-col justify-center items-center w-9 h-9 focus:outline-none group border border-[#313032] rounded-lg bg-[#38373771] cursor-pointer"
+                className="flex flex-col justify-center items-center w-9 h-9 focus:outline-none group border border-(--border) rounded-md bg-(--surface-2) cursor-pointer"
                 type="button"
               >
                 <span
                   className={`
-          block h-0.5 w-6 bg-[#959292] rounded transition-all duration-300
+          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
           ${profileTabOpen ? "rotate-45 translate-y-2" : ""}
         `}
                 />
                 <span
                   className={`
-          block h-0.5 w-6 bg-[#959292] rounded transition-all duration-300 my-1
+          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300 my-1
           ${profileTabOpen ? "opacity-0" : ""}
         `}
                 />
                 <span
                   className={`
-          block h-0.5 w-6 bg-[#959292] rounded transition-all duration-300
+          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
           ${profileTabOpen ? "-rotate-45 -translate-y-2" : ""}
         `}
                 />
@@ -246,24 +246,24 @@ export default function Navbar() {
               onClick={() => {
                 setIsOpen(!isOpen);
               }}
-              className="flex flex-col justify-center items-center w-9 h-9 focus:outline-none group border border-[#313032] rounded-lg bg-[#38373771] cursor-pointer"
+              className="flex flex-col justify-center items-center w-9 h-9 focus:outline-none group border border-(--border) rounded-md bg-(--surface-2) cursor-pointer"
               type="button"
             >
               <span
                 className={`
-          block h-0.5 w-6 bg-[#959292] rounded transition-all duration-300
+          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
           ${isOpen ? "rotate-45 translate-y-2" : ""}
         `}
               />
               <span
                 className={`
-          block h-0.5 w-6 bg-[#959292] rounded transition-all duration-300 my-1
+          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300 my-1
           ${isOpen ? "opacity-0" : ""}
         `}
               />
               <span
                 className={`
-          block h-0.5 w-6 bg-[#959292] rounded transition-all duration-300
+          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
           ${isOpen ? "-rotate-45 -translate-y-2" : ""}
         `}
               />
@@ -275,12 +275,12 @@ export default function Navbar() {
       {isOpen && (
         <div className="fixed mt-[70px] rounded px-4 w-full z-50">
           <motion.div
-            className=" z-50 relative w-full border border-[#313032] bg-[#121212] shadow-lg rounded-lg"
+            className="z-50 relative w-full border border-(--border) bg-(--surface-1) shadow-lg rounded-lg"
             initial="closed"
             animate={isOpen ? "open" : "closed"}
             variants={wrapperVariants}
           >
-            <div className="text-white font-medium  flex flex-col shadow-[inset_5px_2px_30px_rgba(0,0,0,0.1)]">
+            <div className="text-(--foreground) font-medium flex flex-col">
               {navListArr.map((elem, key) => {
                 return (
                   <NavLink
@@ -296,7 +296,7 @@ export default function Navbar() {
               <motion.div variants={itemVariants}>
                 {session?.user.email ? (
                   <div
-                    className="h-16 flex items-center hover:bg-[#3d3d3e80] transition-all duration-500 px-5 py-2 hover:rounded-md "
+                    className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2"
                     onClick={() => {
                       handleSignout();
                       setIsOpen(!isOpen);
@@ -307,7 +307,7 @@ export default function Navbar() {
                 ) : (
                   <Link
                     href={session?.user.email ? "" : "/signup"}
-                    className="h-16 flex items-center hover:bg-[#3d3d3e80] transition-all duration-500 px-5 py-2 hover:rounded-md "
+                    className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2"
                     onClick={() => {
                       setIsOpen(!isOpen);
                     }}
@@ -338,14 +338,14 @@ const NavListElement = ({
   return onClickHandler ? (
     <p
       onClick={onClickHandler}
-      className={`${className} text-[14px] lg:text-[16px]  rounded hover:text-[#a8a8a8] transition-all duration-300 cursor-pointer`}
+      className={`${className} text-[14px] lg:text-[16px] rounded text-(--muted) hover:text-(--accent) transition-colors cursor-pointer`}
     >
       {title}
     </p>
   ) : (
     <Link
       href={redirectHref}
-      className={`${className} text-[14px] lg:text-[16px]  rounded hover:text-[#a8a8a8] transition-all duration-300 cursor-pointer`}
+      className={`${className} text-[14px] lg:text-[16px] rounded text-(--muted) hover:text-(--accent) transition-colors cursor-pointer`}
     >
       {title}
     </Link>
@@ -368,7 +368,7 @@ const NavLink = ({
   <motion.div variants={itemVariants}>
     {onClickHandler ? (
       <div
-        className="h-16 flex items-center hover:bg-[#3d3d3e80] transition-all duration-500 px-5 py-2 hover:rounded-md border-b border-[#313032]"
+        className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2 border-b border-(--border)"
         onClick={() => {
           onClickHandler();
           setIsOpen(!isOpen);
@@ -379,7 +379,7 @@ const NavLink = ({
     ) : (
       <Link
         href={href}
-        className="h-16 flex items-center hover:bg-[#3d3d3e80] transition-all duration-500 px-5 py-2 hover:rounded-md border-b border-[#313032]"
+        className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2 border-b border-(--border)"
         onClick={() => {
           setIsOpen(!isOpen);
         }}

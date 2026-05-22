@@ -180,7 +180,7 @@ export const CreateIssueWindow = ({
   return (
     <div className="absolute bg-[rgba(0,0,0,0.1)] backdrop-blur-lg w-full min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-10 lg:px-14 xl:px-44 z-40">
       {/* Issue Box */}
-      <div className="border border-[#393B42] bg-[#0F1111] rounded-xl w-[95%] xl:w-[70%] p-4 flex flex-col max-h-[85vh] overflow-y-auto">
+      <div className="border border-(--border) bg-(--surface-1) rounded-xl w-[95%] xl:w-[70%] p-4 flex flex-col max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <div className="w-20 border border-[#2D3035] h-8 rounded-lg flex items-center justify-center font-medium">
@@ -298,9 +298,9 @@ export const CreateIssueWindow = ({
 
         {/* AI Triage Suggestion Panel */}
         {triageSuggestion && (
-          <div className="mt-3 rounded-lg border border-[#6f86ff]/30 bg-[#6f86ff]/5 p-3 text-sm">
+          <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm">
             <div className="flex items-center justify-between">
-              <p className="font-medium text-[#6f86ff]">AI Triage Suggestion</p>
+              <p className="font-medium text-sky-600">AI Triage Suggestion</p>
               <button
                 onClick={() => setTriageSuggestion(null)}
                 className="text-xs text-[#a4a6aa] hover:text-white"
@@ -328,7 +328,7 @@ export const CreateIssueWindow = ({
             <p className="text-xs text-[#a4a6aa] mt-2">{triageSuggestion.rationale}</p>
             <button
               onClick={applyTriageSuggestion}
-              className="mt-2 text-xs px-2 py-1 rounded border border-[#6f86ff]/40 bg-[#6f86ff]/10 hover:bg-[#6f86ff]/20 text-[#6f86ff]"
+              className="mt-2 text-xs px-2 py-1 rounded border border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-600"
             >
               Apply priority suggestion
             </button>
@@ -349,7 +349,7 @@ export const CreateIssueWindow = ({
                 {renderPrioritySvg(selectedPriorityOption)}
               </div>
               {showOptionsDropdown == "priority" && (
-                <div className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg mt-1 z-10">
+                <div className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg mt-1 z-10">
                   {PriorityOptionsArray.map((option, key) => (
                     <div
                       key={key}
@@ -376,7 +376,7 @@ export const CreateIssueWindow = ({
                 <RenderStatusSvg status={selectedStatusOption} />
               </div>
               {showOptionsDropdown == "status" && (
-                <div className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-[#414141] rounded-lg shadow-lg mt-1 z-10">
+                <div className="absolute w-36 top-full left-0 bg-[rgba(0,0,0,0.1)] backdrop-blur-lg border border-(--border) rounded-lg shadow-lg mt-1 z-10">
                   {statusesForTicketType(ticketType).map((optionTitle) => (
                     <div
                       key={optionTitle}
@@ -399,7 +399,7 @@ export const CreateIssueWindow = ({
             <button
               onClick={aiDraft}
               disabled={isDrafting}
-              className="border border-[#6f86ff]/30 bg-[#6f86ff]/10 text-[#6f86ff] rounded-md text-sm px-2 h-7 hover:bg-[#6f86ff]/20 transition-colors disabled:opacity-50"
+              className="border border-sky-200 bg-sky-50 text-sky-600 rounded-md text-sm px-2 h-7 hover:bg-sky-100 transition-colors disabled:opacity-50"
             >
               {isDrafting ? "Drafting…" : "✨ AI Draft"}
             </button>

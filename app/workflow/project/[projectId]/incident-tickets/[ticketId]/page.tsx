@@ -248,7 +248,7 @@ export default function Issue({
     return (
       <div className="grow min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-5 w-5 border-2 border-[#6f86ff] border-t-transparent rounded-full animate-spin" />
+          <div className="h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-(--muted-2)">Loading ticket…</p>
         </div>
       </div>
@@ -283,7 +283,7 @@ export default function Issue({
           <button
             onClick={saveIssueMeta}
             disabled={isSaving || isDeleting}
-            className="h-7 px-3 rounded-md bg-[#6f86ff] hover:bg-[#5a70e6] text-white text-xs font-medium transition-colors disabled:opacity-50"
+            className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
           >
             {isSaving ? "Saving…" : "Save changes"}
           </button>
@@ -352,13 +352,13 @@ export default function Issue({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActivityTab("comments")}
-                className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activityTab === "comments" ? "border-[#6f86ff] text-white" : "border-transparent text-(--muted-2) hover:text-white"}`}
+                className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activityTab === "comments" ? "border-sky-500 text-sky-700" : "border-transparent text-(--muted-2) hover:text-(--foreground)"}`}
               >
                 Comments ({(issue.comments ?? []).length})
               </button>
               <button
                 onClick={() => setActivityTab("activity")}
-                className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activityTab === "activity" ? "border-[#6f86ff] text-white" : "border-transparent text-(--muted-2) hover:text-white"}`}
+                className={`text-sm font-medium pb-1 border-b-2 transition-colors ${activityTab === "activity" ? "border-sky-500 text-sky-700" : "border-transparent text-(--muted-2) hover:text-(--foreground)"}`}
               >
                 Activity ({(issue.activities ?? []).length})
               </button>
@@ -390,7 +390,7 @@ export default function Issue({
                     <button
                       onClick={addComment}
                       disabled={isPostingComment || !commentInput.trim()}
-                      className="h-7 px-3 rounded-md bg-[#6f86ff] hover:bg-[#5a70e6] text-white text-xs font-medium transition-colors disabled:opacity-50"
+                      className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
                     >
                       {isPostingComment ? "Posting…" : "Comment"}
                     </button>
@@ -407,7 +407,7 @@ export default function Issue({
                       {comment.author.image ? (
                         <img src={comment.author.image} alt="" className="h-7 w-7 rounded-full object-cover" />
                       ) : (
-                        <div className="h-7 w-7 rounded-full bg-[#6f86ff]/20 flex items-center justify-center text-xs font-medium text-[#6f86ff]">
+                        <div className="h-7 w-7 rounded-full bg-sky-100 flex items-center justify-center text-xs font-medium text-sky-600">
                           {(comment.author.name || comment.author.email || "?").charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -546,7 +546,7 @@ export default function Issue({
               {labelsInput && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {labelsInput.split(",").map((l) => l.trim()).filter(Boolean).map((label) => (
-                    <span key={label} className="text-[10px] px-2 py-0.5 rounded-full bg-[#6f86ff]/15 text-[#6f86ff] border border-[#6f86ff]/20">
+                    <span key={label} className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-600 border border-sky-200">
                       {label}
                     </span>
                   ))}

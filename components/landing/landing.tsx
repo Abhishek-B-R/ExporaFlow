@@ -5,11 +5,14 @@ import ProductTimeline from "./product-timeline";
 
 export default function Landing() {
   return (
-    <div className="pt-[70px]">
-      <Hero />
-      <Features />
-      <ProductTimeline />
-      <Footer />
+    <div className="ef-landing-page min-h-screen pt-[70px]">
+      <div className="ef-landing-glow pointer-events-none fixed inset-x-0 top-0 h-[420px] z-0" />
+      <div className="relative z-10">
+        <Hero />
+        <Features />
+        <ProductTimeline />
+        <Footer />
+      </div>
     </div>
   );
 }
