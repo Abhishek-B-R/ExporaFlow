@@ -4,6 +4,7 @@ import SVGIcon from "@/lib/svg-icon";
 import { IssueStatus } from "@/utils/issues-view-options";
 import { HOLD_STATUS, statusesForTicketType } from "@/lib/issue-status-machine";
 import { TicketType } from "@prisma/client";
+import { formatTicketKey } from "@/lib/ticket-display";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export default function IssueLabel({
   updatedAt,
   selected,
   ticketType,
+  ticketNumber,
 }: {
   title: string;
   description?: string;
@@ -47,6 +49,7 @@ export default function IssueLabel({
   updatedAt?: string;
   selected?: boolean;
   ticketType?: TicketType | string | null;
+  ticketNumber?: number | null;
 }) {
   const date = new Date(updatedAt ? updatedAt : "");
   const router = useRouter();
@@ -192,6 +195,7 @@ export default function IssueLabel({
 
   const assigneeName = assigneeInfo?.name || assigneeInfo?.email || null;
   const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : null;
+  const ticketKey = formatTicketKey({ ticketType, ticketNumber });
 
   return (
     <div
@@ -213,6 +217,9 @@ export default function IssueLabel({
           <div className="border rounded-full h-5 w-5 shrink-0 border-(--border)" />
         )}
         <div className="min-w-0 flex items-center gap-2 flex-1">
+          {ticketKey ? (
+            <span className="shrink-0 font-mono text-[10px] text-(--muted-2)">{ticketKey}</span>
+          ) : null}
           {onHoldChange ? (
             <span className="shrink-0 rounded border border-amber-400 bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
               Hold

@@ -10,6 +10,8 @@ import { customToast } from "@/lib/custom-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+import { StoreStatusBadge } from "@/components/workflow/store-status-badge";
+
 type Employee = {
   id: string;
   fullName: string;
@@ -17,6 +19,7 @@ type Employee = {
   phoneNumber?: string | null;
   designation?: string | null;
   role: string;
+  isActive?: boolean;
 };
 
 export default function EmployeesPage() {
@@ -41,6 +44,19 @@ export default function EmployeesPage() {
   useEffect(() => {
     void refresh().catch(() => setRows([]));
   }, []);
+
+  const toggleActive = async (id: string, isActive: boolean) => {
+    try {
+      await axios.patch(`/api/employees/${id}`, { isActive });
+      await refresh();
+      customToast.success({
+        title: "",
+        description: isActive ? "Employee marked active." : "Employee marked inactive.",
+      });
+    } catch {
+      customToast.error({ title: "", description: "Could not update status." });
+    }
+  };
 
   const create = async () => {
     if (!fullName.trim() || !email.trim()) {
@@ -93,6 +109,8 @@ export default function EmployeesPage() {
                 <th className="px-3 py-2">Email</th>
                 <th className="px-3 py-2">Role</th>
                 <th className="px-3 py-2">Designation</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -102,6 +120,18 @@ export default function EmployeesPage() {
                   <td className="px-3 py-2 text-(--muted)">{e.email}</td>
                   <td className="px-3 py-2">{e.role}</td>
                   <td className="px-3 py-2 text-(--muted)">{e.designation ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    <StoreStatusBadge isActive={e.isActive !== false} />
+                  </td>
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      className="text-xs text-sky-700 hover:underline"
+                      onClick={() => void toggleActive(e.id, e.isActive === false)}
+                    >
+                      {e.isActive === false ? "Mark active" : "Mark inactive"}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

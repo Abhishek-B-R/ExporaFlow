@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TicketType } from "@prisma/client";
+import { TicketType, TicketUrgency } from "@prisma/client";
 
 /** ISO date `YYYY-MM-DD` or full ISO datetime string. */
 const dateString = z
@@ -25,6 +25,8 @@ export const createIssueBodySchema = z
     labels: z.array(z.string()).optional(),
     parentIssueId: z.string().nullable().optional(),
     assignedUser: z.union([z.string(), z.null()]).optional(),
+    urgency: z.nativeEnum(TicketUrgency).optional(),
+    requesterName: z.string().trim().min(1).optional(),
     startDate: optionalDate,
     endDate: optionalDate,
     durationMinutes: z.number().int().positive().nullable().optional(),
@@ -74,4 +76,6 @@ export const updateIssueBodySchema = z.object({
   endDate: optionalDate,
   durationMinutes: z.number().int().positive().nullable().optional(),
   ticketType: z.nativeEnum(TicketType).optional(),
+  urgency: z.nativeEnum(TicketUrgency).optional(),
+  requesterName: z.union([z.string(), z.null()]).optional(),
 });

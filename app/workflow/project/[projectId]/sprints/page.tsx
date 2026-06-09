@@ -11,6 +11,7 @@ import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import { ProjectNavbar } from "@/components/workflow/project-navbar";
 import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
+import { useProjectRole } from "@/hooks/use-project-role";
 
 function daysBetween(start: Date, end: Date) {
   const oneDay = 24 * 60 * 60 * 1000;
@@ -46,6 +47,7 @@ const SPRINT_STATUS_BADGE: Record<string, string> = {
 export default function SprintsPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params?.projectId;
+  const { can: canProject } = useProjectRole(projectId);
 
   const [issues, setIssues] = useState<IssueBody[]>([]);
   const [sprints, setSprints] = useState<SprintBody[]>([]);
@@ -239,19 +241,23 @@ export default function SprintsPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setShowCreateSprint(!showCreateSprint)}
-              className="h-8 px-3 rounded-md border border-(--border-strong) bg-(--surface-2) text-sm hover:bg-(--surface-3) transition-colors"
-            >
-              + New sprint
-            </button>
-            <button
-              onClick={runAiSprintPlan}
-              disabled={isPlanning || issues.length === 0}
-              className="h-8 px-3 rounded-md border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 text-[#0ea5e9] text-sm hover:bg-[#0ea5e9]/20 transition-colors disabled:opacity-50"
-            >
-              {isPlanning ? "Planning…" : "✨ AI Sprint Plan"}
-            </button>
+            {canProject("manageSprints") ? (
+              <button
+                onClick={() => setShowCreateSprint(!showCreateSprint)}
+                className="h-8 px-3 rounded-md border border-(--border-strong) bg-(--surface-2) text-sm hover:bg-(--surface-3) transition-colors"
+              >
+                + New sprint
+              </button>
+            ) : null}
+            {canProject("manageSprints") ? (
+              <button
+                onClick={runAiSprintPlan}
+                disabled={isPlanning || issues.length === 0}
+                className="h-8 px-3 rounded-md border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 text-[#0ea5e9] text-sm hover:bg-[#0ea5e9]/20 transition-colors disabled:opacity-50"
+              >
+                {isPlanning ? "Planning…" : "✨ AI Sprint Plan"}
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -433,28 +439,30 @@ export default function SprintsPage() {
                           <span className="text-xs text-(--muted-2) w-20 shrink-0 text-right">
                             {issue.priority ?? "—"}
                           </span>
-                          <select
-                            className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs rounded border border-(--border) bg-(--surface-2) px-1 w-28 shrink-0"
-                            onChange={(e) => {
-                              if (e.target.value === "__backlog__") {
-                                assignIssue(issue.id, null);
-                              } else if (e.target.value) {
-                                assignIssue(issue.id, e.target.value);
-                              }
-                              e.target.value = "";
-                            }}
-                            defaultValue=""
-                          >
-                            <option value="">Move to…</option>
-                            <option value="__backlog__">Backlog</option>
-                            {sprints
-                              .filter((s) => s.id !== sprint.id)
-                              .map((s) => (
-                                <option key={s.id} value={s.id}>
-                                  {s.name}
-                                </option>
-                              ))}
-                          </select>
+                          {canProject("updateTicket") ? (
+                            <select
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs rounded border border-(--border) bg-(--surface-2) px-1 w-28 shrink-0"
+                              onChange={(e) => {
+                                if (e.target.value === "__backlog__") {
+                                  assignIssue(issue.id, null);
+                                } else if (e.target.value) {
+                                  assignIssue(issue.id, e.target.value);
+                                }
+                                e.target.value = "";
+                              }}
+                              defaultValue=""
+                            >
+                              <option value="">Move to…</option>
+                              <option value="__backlog__">Backlog</option>
+                              {sprints
+                                .filter((s) => s.id !== sprint.id)
+                                .map((s) => (
+                                  <option key={s.id} value={s.id}>
+                                    {s.name}
+                                  </option>
+                                ))}
+                            </select>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -509,23 +517,25 @@ export default function SprintsPage() {
                       <span className="text-xs text-(--muted-2) w-20 shrink-0 text-right">
                         {issue.priority ?? "—"}
                       </span>
-                      <select
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs rounded border border-(--border) bg-(--surface-2) px-1 w-28 shrink-0"
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            assignIssue(issue.id, e.target.value);
-                          }
-                          e.target.value = "";
-                        }}
-                        defaultValue=""
-                      >
-                        <option value="">Move to…</option>
-                        {sprints.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
+                      {canProject("updateTicket") ? (
+                        <select
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs rounded border border-(--border) bg-(--surface-2) px-1 w-28 shrink-0"
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              assignIssue(issue.id, e.target.value);
+                            }
+                            e.target.value = "";
+                          }}
+                          defaultValue=""
+                        >
+                          <option value="">Move to…</option>
+                          {sprints.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
                     </div>
                   ))}
                 </div>

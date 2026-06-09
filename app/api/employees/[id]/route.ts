@@ -14,6 +14,7 @@ const patchSchema = z.object({
   role: z.nativeEnum(Role).optional(),
   organizationAccess: z.array(z.string()).nullable().optional(),
   userId: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -48,6 +49,7 @@ export async function PATCH(
   if (d.userId !== undefined) {
     data.user = d.userId ? { connect: { id: d.userId } } : { disconnect: true };
   }
+  if (d.isActive !== undefined) data.isActive = d.isActive;
 
   const row = await prisma.employee.update({
     where: { id },

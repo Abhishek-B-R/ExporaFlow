@@ -32,7 +32,7 @@ export async function DELETE(request: NextRequest) {
   const access = await assertProjectRole({
     userId: session.user.id,
     projectId: issue.projectId,
-    minimum: Role.ENGINEER,
+    minimum: Role.MANAGER,
   });
 
   if (!access.ok) {

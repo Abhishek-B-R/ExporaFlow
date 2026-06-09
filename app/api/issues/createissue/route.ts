@@ -5,8 +5,10 @@ import { prisma } from "@/db";
 import { assertProjectRole } from "@/lib/authz";
 import { logIssueActivity, notifyUsers } from "@/lib/collaboration";
 import { findDuplicateIssueCandidates } from "@/lib/ai/duplicates";
-import { Role, TicketType } from "@prisma/client";
+import { Role, TicketType, TicketUrgency } from "@prisma/client";
 import { createIssueBodySchema } from "@/lib/ticket-schemas";
+import { computeDueDateFromPolicy } from "@/lib/ticket-due-date-policy";
+import { allocateTicketNumber } from "@/lib/ticket-numbers";
 import { computeInitialSlaDueAt, parseStoredDate } from "@/lib/ticket-sla";
 
 function normalizeIdentity(value: string) {
@@ -44,6 +46,8 @@ export async function POST(request: NextRequest) {
     endDate,
     durationMinutes,
     assignedUser,
+    urgency,
+    requesterName,
   } = parsed.data;
 
   const session = await getServerSession(authOptions);
@@ -109,7 +113,29 @@ export async function POST(request: NextRequest) {
     typeof startDate === "string" ? startDate : undefined,
   );
   const end = parseStoredDate(typeof endDate === "string" ? endDate : undefined);
-  const due = parseStoredDate(typeof dueDate === "string" ? dueDate : undefined);
+  const parsedDue = parseStoredDate(typeof dueDate === "string" ? dueDate : undefined);
+  const effectiveUrgency = urgency ?? TicketUrgency.MEDIUM;
+  const effectivePriority = issuePriority ?? "No Priority";
+  const due =
+    parsedDue ??
+    (tType === TicketType.INCIDENT
+      ? computeDueDateFromPolicy({
+          urgency: effectiveUrgency,
+          priority: effectivePriority,
+          ticketType: tType,
+        })
+      : null);
+
+  const ticketNumber = await allocateTicketNumber(projectId);
+  const sessionUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true, email: true },
+  });
+  const resolvedRequesterName =
+    requesterName?.trim() ||
+    sessionUser?.name?.trim() ||
+    sessionUser?.email?.split("@")[0] ||
+    "Unknown";
 
   const slaDueAt =
     tType === TicketType.CHANGE
@@ -125,7 +151,11 @@ export async function POST(request: NextRequest) {
       title: issueTitle.trim(),
       description: typeof issueDescription === "string" ? issueDescription : "",
       status: issueStatus ?? "Backlog",
-      priority: issuePriority ?? "No Priority",
+      priority: effectivePriority,
+      urgency: effectiveUrgency,
+      ticketNumber,
+      requesterName: resolvedRequesterName,
+      requesterUserId: session.user.id,
       projectId,
       dueDate: due,
       labels: Array.isArray(labels) ? labels : [],

@@ -27,6 +27,13 @@ enum TicketType {
   CHANGE
 }
 
+enum TicketUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -82,6 +89,8 @@ model User {
   serviceLineGrants UserServiceLineGrant[]
   employee          Employee?
   managedTeams      Team[]              @relation("TeamManager")
+  requestedIssues   Issue[]             @relation("IssueRequester")
+  issueAttachments  IssueAttachment[]
 }
 
 model VerificationToken {
@@ -104,6 +113,7 @@ model Customer {
   address            String?
   email              String?
   phoneNumber        String?
+  isActive           Boolean   @default(true)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   projects           Project[]
@@ -122,6 +132,7 @@ model Employee {
   organizationAccess  Json?
   teamId              String?
   team                  Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -171,10 +182,16 @@ model Project {
 
 model Issue {
   id           String   @id @default(uuid())
+  /// Per-project sequence (displayed as INC-42 / CHG-42).
+  ticketNumber Int      @default(0)
   title        String
   description  String?
   status       String?
   priority     String?
+  urgency      TicketUrgency @default(MEDIUM)
+  requesterName String?
+  requesterUser User?   @relation("IssueRequester", fields: [requesterUserId], references: [id], onDelete: SetNull)
+  requesterUserId String?
   update       String?
   ticketType   TicketType @default(INCIDENT)
   User         User?    @relation(fields: [assignedUser], references: [id])
@@ -209,6 +226,24 @@ model Issue {
   comments IssueComment[]
   activities IssueActivity[]
   notifications Notification[]
+  attachments IssueAttachment[]
+
+  @@unique([projectId, ticketNumber])
+}
+
+model IssueAttachment {
+  id           String   @id @default(uuid())
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  storageKey   String   @unique
+  createdAt    DateTime @default(now())
+
+  issue        Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId      String
+
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedById String
 }
 
 model Workspace {

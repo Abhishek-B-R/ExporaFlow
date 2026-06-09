@@ -55,6 +55,12 @@ export async function POST(request: NextRequest) {
         orderBy: { createdAt: "desc" },
         take: 50,
       },
+      attachments: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          uploadedBy: { select: { id: true, name: true, email: true } },
+        },
+      },
     },
   });
   if (!issue) {

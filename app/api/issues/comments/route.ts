@@ -10,6 +10,7 @@ import {
   resolveMentionedUserIds,
 } from "@/lib/collaboration";
 import { getAccessibleEmployeesForUser } from "@/lib/store-access";
+import { sendMentionEmails } from "@/lib/mention-email";
 
 export async function POST(request: NextRequest) {
   const { issueId, body } = await request.json();
@@ -28,7 +29,13 @@ export async function POST(request: NextRequest) {
 
   const issue = await prisma.issue.findUnique({
     where: { id: issueId },
-    select: { id: true, title: true, projectId: true, assignedUser: true },
+    select: {
+      id: true,
+      title: true,
+      projectId: true,
+      ticketType: true,
+      ticketNumber: true,
+    },
   });
   if (!issue) {
     return Response.json({ message: "Issue not found." }, { status: 404 });
@@ -63,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   const storeEmployees = await getAccessibleEmployeesForUser(session.user.id);
   const emailsNeedingLookup = new Set<string>();
-  for (const emp of storeEmployees) {
+  for (const emp of storeEmployees.filter((e) => e.isActive !== false)) {
     if (emp.user) {
       mentionCandidates.push({
         ...emp.user,
@@ -120,15 +127,28 @@ export async function POST(request: NextRequest) {
       meta: { commentId: comment.id },
     });
 
-    await notifyUsers({
-      userIds: [...mentionedUserIds, issue.assignedUser ?? ""],
-      actorId: session.user.id,
-      type: "ISSUE_COMMENT",
-      title: "New comment on issue",
-      body: issue.title,
-      issueId: issue.id,
-      projectId: issue.projectId,
-    });
+    if (mentionedUserIds.length > 0) {
+      await notifyUsers({
+        userIds: mentionedUserIds,
+        actorId: session.user.id,
+        type: "ISSUE_MENTION",
+        title: "You were mentioned in a comment",
+        body: issue.title,
+        issueId: issue.id,
+        projectId: issue.projectId,
+      });
+
+      await sendMentionEmails({
+        mentionedUserIds,
+        actorId: session.user.id,
+        issueId: issue.id,
+        projectId: issue.projectId,
+        issueTitle: issue.title,
+        commentBody: body.trim(),
+        ticketType: issue.ticketType,
+        ticketNumber: issue.ticketNumber,
+      });
+    }
   } catch (sideEffectError) {
     console.error("Non-fatal comment side-effect failure:", sideEffectError);
   }

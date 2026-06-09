@@ -3,7 +3,8 @@ import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { assertProjectRole } from "@/lib/authz";
-import { Role, TicketType } from "@prisma/client";
+import { Role, TicketType, TicketUrgency } from "@prisma/client";
+import { computeDueDateFromPolicy } from "@/lib/ticket-due-date-policy";
 import { canTransitionIssueStatus } from "@/lib/issue-status-machine";
 import { logIssueActivity, notifyUsers } from "@/lib/collaboration";
 import { updateIssueBodySchema } from "@/lib/ticket-schemas";
@@ -42,6 +43,8 @@ export async function PATCH(request: NextRequest) {
     endDate,
     durationMinutes,
     ticketType,
+    urgency,
+    requesterName,
   } = parsed.data;
 
   const session = await getServerSession(authOptions);
@@ -75,6 +78,9 @@ export async function PATCH(request: NextRequest) {
         holdStartedAt: true,
         accumulatedHoldSeconds: true,
         slaDueAt: true,
+        urgency: true,
+        requesterName: true,
+        createdAt: true,
       },
     });
 
@@ -179,12 +185,44 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    const nextUrgency =
+      urgency !== undefined ? urgency : existing.urgency ?? TicketUrgency.MEDIUM;
+    const nextPriority =
+      issuePriority !== undefined ? issuePriority : existing.priority;
+
+    const priorityChanged =
+      issuePriority !== undefined && issuePriority !== existing.priority;
+    const urgencyChanged =
+      urgency !== undefined && urgency !== existing.urgency;
+
+    let resolvedDueDate: Date | null | undefined = undefined;
+    if (
+      effectiveType === TicketType.INCIDENT &&
+      (priorityChanged || urgencyChanged)
+    ) {
+      resolvedDueDate = computeDueDateFromPolicy({
+        urgency: nextUrgency,
+        priority: nextPriority,
+        baseDate: existing.createdAt,
+        ticketType: effectiveType,
+      });
+    } else if (typeof dueDate === "string") {
+      resolvedDueDate = dueDate ? parseStoredDate(dueDate) : null;
+    } else if (dueDate === null) {
+      resolvedDueDate = null;
+    }
+
     const updatedIssue = await prisma.issue.update({
       where: { id: issueId },
       data: {
         title: issueTitle,
         description: issueDescription,
         priority: issuePriority,
+        urgency,
+        requesterName:
+          requesterName !== undefined
+            ? requesterName?.trim() || null
+            : undefined,
         status: issueStatus,
         ticketType,
         startDate: startDate !== undefined ? nextStart : undefined,
@@ -211,14 +249,7 @@ export async function PATCH(request: NextRequest) {
             : sprintId === null
               ? null
               : undefined,
-        dueDate:
-          typeof dueDate === "string"
-            ? dueDate
-              ? parseStoredDate(dueDate)
-              : null
-            : dueDate === null
-              ? null
-              : undefined,
+        dueDate: resolvedDueDate,
         labels: Array.isArray(labels) ? labels : undefined,
         estimate:
           typeof estimate === "number"

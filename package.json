@@ -3,12 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:clean": "node scripts/dev.mjs --clean",
+    "dev:kill": "node scripts/kill-port.mjs 3000",
+    "db:migrate": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate"
   },
+  "packageManager": "pnpm@9.15.9",
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",
     "@prisma/client": "6.18.0",

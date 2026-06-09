@@ -107,17 +107,27 @@ export async function PATCH(request: NextRequest) {
 
     if (customerId !== undefined) {
       if (customerId === null || customerId === "") {
-        updateData.customer = { disconnect: true };
-      } else if (typeof customerId === "string") {
+        return new Response(
+          JSON.stringify({ message: "A customer is required for every project." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (typeof customerId === "string") {
         const c = await prisma.customer.findUnique({
           where: { id: customerId },
-          select: { id: true },
+          select: { id: true, isActive: true },
         });
         if (!c) {
           return new Response(JSON.stringify({ message: "Customer not found." }), {
             status: 400,
             headers: { "Content-Type": "application/json" },
           });
+        }
+        if (!c.isActive) {
+          return new Response(
+            JSON.stringify({ message: "Selected customer is inactive." }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          );
         }
         updateData.customer = { connect: { id: customerId } };
       }

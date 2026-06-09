@@ -37,6 +37,10 @@ export type IssueBody = {
   updatedAt: string | undefined;
   estimate?: number | null;
   ticketType?: "INCIDENT" | "CHANGE";
+  ticketNumber?: number;
+  urgency?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  requesterName?: string | null;
+  requesterUserId?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   durationMinutes?: number | null;

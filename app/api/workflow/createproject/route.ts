@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { Prisma, Role } from "@prisma/client";
 import { isProjectServiceLineValue } from "@/utils/project-service-line";
 import { parseStoredDate } from "@/lib/ticket-sla";
+import { assertWorkspaceMember } from "@/lib/rbac-permissions";
 
 function normalizeName(value: string) {
   return value
@@ -44,6 +45,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const workspaceAccess = await assertWorkspaceMember(session.user.id);
+  if (!workspaceAccess.ok) {
+    return Response.json({ message: workspaceAccess.message }, { status: workspaceAccess.status });
+  }
+
+  if (!customerId || typeof customerId !== "string") {
+    return Response.json(
+      { message: "A customer is required for every project." },
+      { status: 400 },
+    );
+  }
+
   const parsedStart = parseStoredDate(
     typeof startDate === "string" ? startDate : undefined,
   );
@@ -57,26 +70,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let resolvedCustomerId: string | null = null;
-  if (customerId != null && customerId !== "") {
-    if (typeof customerId !== "string") {
-      return Response.json({ message: "Invalid customer." }, { status: 400 });
-    }
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
-      select: { id: true },
-    });
-    if (!customer) {
-      return Response.json({ message: "Customer not found." }, { status: 400 });
-    }
-    resolvedCustomerId = customer.id;
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { id: true, isActive: true },
+  });
+  if (!customer) {
+    return Response.json({ message: "Customer not found." }, { status: 400 });
   }
+  if (!customer.isActive) {
+    return Response.json(
+      { message: "Selected customer is inactive. Choose an active customer." },
+      { status: 400 },
+    );
+  }
+  const resolvedCustomerId = customer.id;
 
   if (session?.user.id) {
-    const workspaceMember = await prisma.workspaceMember.findFirst({
-      where: { userId: session.user.id },
-      select: { workspaceId: true },
-    });
+    const workspaceMember = workspaceAccess.membership;
 
     const normalizedTitle = normalizeName(projTitle);
     const possibleDuplicates = await prisma.project.findMany({
@@ -118,7 +128,7 @@ export async function POST(request: NextRequest) {
           customerId: resolvedCustomerId,
           startDate: parsedStart,
           targetDate: parsedTarget,
-          workspaceId: workspaceMember?.workspaceId ?? null,
+          workspaceId: workspaceMember.workspaceId,
           projectMembers: {
             create: {
               userId: session.user.id,

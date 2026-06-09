@@ -14,6 +14,8 @@ type CustomerPickerProps = {
   value: string | null;
   onChange: (customerId: string | null) => void;
   onReload?: () => void | Promise<void>;
+  /** When true, user must pick a customer (no remove / no-customer). */
+  required?: boolean;
 };
 
 export function CustomerPicker({
@@ -21,6 +23,7 @@ export function CustomerPicker({
   value,
   onChange,
   onReload,
+  required = false,
 }: CustomerPickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -60,11 +63,13 @@ export function CustomerPicker({
                 <span className="text-(--muted-2) font-normal"> · {selected.name}</span>
               </p>
             ) : (
-              <p className="text-sm text-(--muted-2)">No customer linked to this project</p>
+              <p className="text-sm text-(--muted-2)">
+                {required ? "Select a customer to continue" : "No customer linked to this project"}
+              </p>
             )}
           </div>
           <div className="flex shrink-0 gap-2">
-            {selected ? (
+            {selected && !required ? (
               <button
                 type="button"
                 onClick={() => onChange(null)}
@@ -108,13 +113,17 @@ export function CustomerPicker({
             />
 
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => pick(null)}
-                className="ef-btn-outline h-8 px-3 rounded-md font-medium"
-              >
-                No customer
-              </button>
+              {!required ? (
+                <button
+                  type="button"
+                  onClick={() => pick(null)}
+                  className="ef-btn-outline h-8 px-3 rounded-md font-medium"
+                >
+                  No customer
+                </button>
+              ) : (
+                <span className="text-(--muted-2)">Customer is required</span>
+              )}
               <div className="flex gap-2">
                 {onReload ? (
                   <button

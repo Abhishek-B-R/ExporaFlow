@@ -14,6 +14,7 @@ import IssuesTopTile from "@/components/workflow/issues/issues-top-tile";
 import { WorkflowLayout } from "@/components/workflow/workflow-layout";
 import { customToast } from "@/lib/custom-toast";
 import { ProjectNavbar } from "@/components/workflow/project-navbar";
+import { useProjectRole } from "@/hooks/use-project-role";
 
 
 
@@ -71,6 +72,7 @@ export default function Issue() {
   const [aiLoading, setAiLoading] = useState(false);
   const searchParams = useSearchParams();
   const latestSearchRequest = useRef(0);
+  const { can: canProject, loading: roleLoading } = useProjectRole(project_id);
 
   const filteredIssues = useMemo(
     () =>
@@ -364,15 +366,31 @@ export default function Issue() {
           >
             {isSavingView ? "Saving…" : "Save view"}
           </button>
-          <button
-            type="button"
-            onClick={() => setCreateIssueWindowOpen(true)}
-            className="ef-icon-btn-primary gap-1.5 px-2.5 text-xs font-medium"
-            aria-label="New ticket"
-          >
-            <SVGIcon className="w-4 h-4" svgString={RAW_ICONS.Add} />
-            <span className="hidden sm:inline">New ticket</span>
-          </button>
+          {canProject("exportTickets") ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (!project_id) return;
+                const params = new URLSearchParams({ projectId: project_id });
+                if (ticketTypeFilter) params.set("ticketType", ticketTypeFilter);
+                window.location.href = `/api/issues/export?${params.toString()}`;
+              }}
+              className="ef-btn-outline h-7 px-3 rounded-md text-xs font-medium text-(--foreground)"
+            >
+              Export CSV
+            </button>
+          ) : null}
+          {!roleLoading && canProject("createTicket") ? (
+            <button
+              type="button"
+              onClick={() => setCreateIssueWindowOpen(true)}
+              className="ef-icon-btn-primary gap-1.5 px-2.5 text-xs font-medium"
+              aria-label="New ticket"
+            >
+              <SVGIcon className="w-4 h-4" svgString={RAW_ICONS.Add} />
+              <span className="hidden sm:inline">New ticket</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="ef-icon-btn w-8 px-0"
@@ -614,6 +632,7 @@ export default function Issue() {
                     priority={elem.priority}
                     status={elem.status}
                     ticketType={elem.ticketType}
+                    ticketNumber={elem.ticketNumber}
                     updatedAt={elem.updatedAt}
                     assigneeInfo={elem.User}
                     selected={selectedIssueIndex === key}

@@ -10,10 +10,14 @@ import { RenderStatusSvg, renderPrioritySvg } from "@/components/workflow/issues
 import { useRouter } from "next/navigation";
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
-import { TicketType } from "@prisma/client";
+import { TicketType, TicketUrgency } from "@prisma/client";
+import { formatTicketKey } from "@/lib/ticket-display";
+import { URGENCY_OPTIONS } from "@/lib/ticket-due-date-policy";
 import { statusesForTicketType } from "@/lib/issue-status-machine";
 import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 import { MentionTextarea } from "@/components/workflow/mentions/mention-textarea";
+import { IssueAttachmentsPanel } from "@/components/workflow/issues/issue-attachments-panel";
+import { useProjectRole } from "@/hooks/use-project-role";
 import { mentionHandleFromUser, type MentionSuggestion } from "@/lib/mention-utils";
 
 type WorkspaceMember = {
@@ -26,6 +30,7 @@ type StoreEmployee = {
   fullName: string;
   email: string;
   userId?: string | null;
+  isActive?: boolean;
 };
 
 type IssueComment = {
@@ -74,6 +79,8 @@ export default function Issue({
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [employees, setEmployees] = useState<StoreEmployee[]>([]);
   const router = useRouter();
+  const { can: canProject, loading: roleLoading } = useProjectRole(projectId);
+  const canEditTicket = canProject("updateTicket");
 
   const [titleInput, setTitleInput] = useState("");
   const [descriptionInput, setDescriptionInput] = useState("");
@@ -83,6 +90,8 @@ export default function Issue({
   const [parentIssueInput, setParentIssueInput] = useState("");
   const [labelsInput, setLabelsInput] = useState("");
   const [dueDateInput, setDueDateInput] = useState("");
+  const [urgencyInput, setUrgencyInput] = useState<TicketUrgency>(TicketUrgency.MEDIUM);
+  const [requesterNameInput, setRequesterNameInput] = useState("");
   const [sprintInput, setSprintInput] = useState("");
   const [estimateInput, setEstimateInput] = useState<number | null>(null);
   const [commentInput, setCommentInput] = useState("");
@@ -113,6 +122,8 @@ export default function Issue({
     );
     setSprintInput(issueData.sprintId ?? "");
     setEstimateInput(issueData.estimate ?? null);
+    setUrgencyInput(issueData.urgency ?? TicketUrgency.MEDIUM);
+    setRequesterNameInput(issueData.requesterName ?? "");
   }, []);
 
   const fetchIssueData = useCallback(
@@ -185,6 +196,8 @@ export default function Issue({
         parentIssueId: parentIssueInput || null,
         sprintId: sprintInput || null,
         dueDate: dueDateInput || null,
+        urgency: urgencyInput,
+        requesterName: requesterNameInput.trim() || null,
         labels,
         estimate: estimateInput,
       });
@@ -244,7 +257,7 @@ export default function Issue({
       });
     }
 
-    for (const emp of employees) {
+    for (const emp of employees.filter((e) => e.isActive !== false)) {
       const key = emp.userId ?? `emp:${emp.id}`;
       if (byId.has(key)) continue;
       byId.set(key, {
@@ -329,23 +342,32 @@ export default function Issue({
             </Link>
           )}
           <span className="text-(--muted-2) text-xs">·</span>
-          <p className="text-xs text-(--muted-2) font-mono">{issue.id.slice(0, 8)}</p>
+          <p className="text-xs text-(--muted-2) font-mono font-semibold">
+            {formatTicketKey({
+              ticketType: issue.ticketType,
+              ticketNumber: issue.ticketNumber,
+            }) ?? issue.id.slice(0, 8)}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={deleteIssue}
-            disabled={isDeleting || isSaving}
-            className="h-7 px-3 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium transition-colors disabled:opacity-50"
-          >
-            {isDeleting ? "Deleting…" : "Delete ticket"}
-          </button>
-          <button
-            onClick={saveIssueMeta}
-            disabled={isSaving || isDeleting}
-            className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
-          >
-            {isSaving ? "Saving…" : "Save changes"}
-          </button>
+          {!roleLoading && canProject("deleteTicket") ? (
+            <button
+              onClick={deleteIssue}
+              disabled={isDeleting || isSaving}
+              className="h-7 px-3 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? "Deleting…" : "Delete ticket"}
+            </button>
+          ) : null}
+          {!roleLoading && canProject("updateTicket") ? (
+            <button
+              onClick={saveIssueMeta}
+              disabled={isSaving || isDeleting}
+              className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              {isSaving ? "Saving…" : "Save changes"}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -357,6 +379,7 @@ export default function Issue({
           <input
             value={titleInput}
             onChange={(e) => setTitleInput(e.target.value)}
+            readOnly={!canEditTicket}
             className="w-full bg-transparent text-xl md:text-2xl font-semibold outline-none border-none placeholder:text-(--muted-2)"
             placeholder="Ticket title"
           />
@@ -383,9 +406,18 @@ export default function Issue({
             value={descriptionInput}
             onChange={(e) => setDescriptionInput(e.target.value)}
             rows={6}
+            readOnly={!canEditTicket}
             className="w-full bg-transparent text-sm text-(--muted) outline-none border-none resize-none placeholder:text-(--muted-2) leading-relaxed"
             placeholder="Add a description… (supports markdown)"
           />
+
+          {issueId ? (
+            <IssueAttachmentsPanel
+              issueId={issueId}
+              canUpload={canProject("uploadAttachment")}
+              canDelete={canProject("deleteAttachment")}
+            />
+          ) : null}
 
           {/* Sub-issues */}
           {(issue.subtasks ?? []).length > 0 && (
@@ -432,18 +464,24 @@ export default function Issue({
                     onChange={setCommentInput}
                     suggestions={mentionSuggestions}
                     rows={3}
-                    placeholder="Add a comment… Type @ to mention a teammate"
-                    disabled={isPostingComment}
+                    placeholder={
+                      canProject("comment")
+                        ? "Add a comment… Type @ to mention a teammate"
+                        : "You do not have permission to comment"
+                    }
+                    disabled={isPostingComment || !canProject("comment")}
                   />
-                  <div className="flex items-center justify-end px-3 py-2 border-t border-(--border)">
-                    <button
-                      onClick={addComment}
-                      disabled={isPostingComment || !commentInput.trim()}
-                      className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
-                    >
-                      {isPostingComment ? "Posting…" : "Comment"}
-                    </button>
-                  </div>
+                  {canProject("comment") ? (
+                    <div className="flex items-center justify-end px-3 py-2 border-t border-(--border)">
+                      <button
+                        onClick={addComment}
+                        disabled={isPostingComment || !commentInput.trim()}
+                        className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
+                      >
+                        {isPostingComment ? "Posting…" : "Comment"}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Comment list */}
@@ -522,10 +560,38 @@ export default function Issue({
               <select
                 value={statusInput}
                 onChange={(e) => setStatusInput(e.target.value)}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+                disabled={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 {statusesForTicketType(issue.ticketType ?? TicketType.INCIDENT).map((s) => (
                   <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </SidebarField>
+
+            {/* Requester */}
+            <SidebarField label="Requester">
+              <input
+                value={requesterNameInput}
+                onChange={(e) => setRequesterNameInput(e.target.value)}
+                placeholder="Who reported this?"
+                readOnly={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              />
+            </SidebarField>
+
+            {/* Urgency */}
+            <SidebarField label="Urgency">
+              <select
+                value={urgencyInput}
+                onChange={(e) => setUrgencyInput(e.target.value as TicketUrgency)}
+                disabled={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
+              >
+                {URGENCY_OPTIONS.map((u) => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
                 ))}
               </select>
             </SidebarField>
@@ -535,7 +601,8 @@ export default function Issue({
               <select
                 value={priorityInput}
                 onChange={(e) => setPriorityInput(e.target.value)}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+                disabled={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 {PriorityOptionsArray.map((p) => (
                   <option key={p.name} value={p.name}>{p.name}</option>
@@ -548,7 +615,8 @@ export default function Issue({
               <select
                 value={assignedUserInput}
                 onChange={(e) => setAssignedUserInput(e.target.value)}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+                disabled={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">Unassigned</option>
                 {members.map((member) => (
@@ -565,6 +633,7 @@ export default function Issue({
                 label=""
                 value={dueDateInput}
                 onChange={setDueDateInput}
+                disabled={!canEditTicket}
               />
             </SidebarField>
 
@@ -573,7 +642,8 @@ export default function Issue({
               <select
                 value={sprintInput}
                 onChange={(e) => setSprintInput(e.target.value)}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+                disabled={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">Backlog (no sprint)</option>
                 {sprints.map((sprint) => (
@@ -590,6 +660,7 @@ export default function Issue({
                 value={labelsInput}
                 onChange={(e) => setLabelsInput(e.target.value)}
                 placeholder="backend, urgent"
+                readOnly={!canEditTicket}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
               />
               {labelsInput && (
@@ -608,7 +679,8 @@ export default function Issue({
               <select
                 value={estimateInput ?? ""}
                 onChange={(e) => setEstimateInput(e.target.value ? parseInt(e.target.value, 10) : null)}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+                disabled={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">No estimate</option>
                 {[1, 2, 3, 5, 8, 13, 21].map((v) => (
@@ -622,7 +694,8 @@ export default function Issue({
               <select
                 value={parentIssueInput}
                 onChange={(e) => setParentIssueInput(e.target.value)}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+                disabled={!canEditTicket}
+                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">No parent</option>
                 {issuesInProject

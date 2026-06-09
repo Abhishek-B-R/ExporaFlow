@@ -21,7 +21,9 @@ import {
   Github,
   Download,
   UserPlus,
+  LogOut,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 const navActive =
   "bg-[var(--sidebar-active-bg)] border border-[var(--sidebar-active-border)] shadow-sm text-(--foreground)";
@@ -209,7 +211,15 @@ export default function WorkflowSidebar() {
         </Collapsible>
       </div>
 
-      <div className="mt-auto pt-1.5 pb-1.5 px-1 border-t border-(--border) bg-(--surface-1) shrink-0">
+      <div className="mt-auto pt-1.5 pb-1.5 px-1 border-t border-(--border) bg-(--surface-1) shrink-0 space-y-1">
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="w-full flex items-center gap-2 h-9 px-2.5 rounded-md text-sm font-medium text-red-700 bg-red-50/80 border border-red-200 hover:bg-red-100 transition-colors"
+        >
+          <LogOut className="size-4 shrink-0" />
+          Sign out
+        </button>
         <BottomOptionsTile />
       </div>
     </aside>

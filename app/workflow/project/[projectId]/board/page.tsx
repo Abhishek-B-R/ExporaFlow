@@ -10,6 +10,7 @@ import { WorkflowLayout } from "@/components/workflow/workflow-layout";
 import { RAW_ICONS } from "@/lib/icons";
 import { ProjectBody } from "@/utils/types";
 import { ProjectNavbar } from "@/components/workflow/project-navbar";
+import { useProjectRole } from "@/hooks/use-project-role";
 
 type DragPayload = {
   issueId: string;
@@ -18,6 +19,8 @@ type DragPayload = {
 export default function ProjectBoardPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params?.projectId;
+  const { can: canProject } = useProjectRole(projectId);
+  const canMoveIssues = canProject("updateTicket");
 
   const [issues, setIssues] = useState<IssueBody[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +74,7 @@ export default function ProjectBoardPage() {
   }, [projectId]);
 
   const onDropToStatus = async (toStatus: IssueStatus, payload: DragPayload) => {
+    if (!canMoveIssues) return;
     try {
       await axios.patch("/api/issues/updateissue", {
         issueId: payload.issueId,
@@ -93,7 +97,9 @@ export default function ProjectBoardPage() {
           <div>
             <p className="text-lg font-medium">Board</p>
             <p className="text-sm text-(--muted-2)">
-              Drag and drop issues between columns to change their status.
+              {canMoveIssues
+                ? "Drag and drop issues between columns to change their status."
+                : "View-only — you need Engineer access or higher to move issues."}
             </p>
           </div>
         </div>
@@ -123,6 +129,7 @@ export default function ProjectBoardPage() {
                 status={status}
                 issues={grouped[status]}
                 onDropToStatus={onDropToStatus}
+                canDrag={canMoveIssues}
               />
             ))}
           </div>
@@ -136,14 +143,16 @@ function BoardColumn(props: {
   status: IssueStatus;
   issues: IssueBody[];
   onDropToStatus: (toStatus: IssueStatus, payload: DragPayload) => Promise<void>;
+  canDrag: boolean;
 }) {
-  const { status, issues, onDropToStatus } = props;
+  const { status, issues, onDropToStatus, canDrag } = props;
 
   return (
     <div
       className="min-w-[85vw] md:min-w-0 snap-center rounded-lg border border-(--border) bg-(--surface-1) overflow-hidden shrink-0"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
+        if (!canDrag) return;
         e.preventDefault();
         const raw = e.dataTransfer.getData("application/json");
         if (!raw) return;
@@ -163,7 +172,7 @@ function BoardColumn(props: {
 
       <div className="p-2 flex flex-col gap-y-2 min-h-24">
         {issues.map((issue) => (
-          <BoardCard key={issue.id} issue={issue} />
+          <BoardCard key={issue.id} issue={issue} canDrag={canDrag} />
         ))}
         {issues.length === 0 && (
           <div className="text-xs text-(--muted-2) px-1 py-2">Drop issues here.</div>
@@ -175,21 +184,26 @@ function BoardColumn(props: {
 
 function BoardCard(props: {
   issue: IssueBody;
+  canDrag: boolean;
 }) {
-  const { issue } = props;
+  const { issue, canDrag } = props;
   const assignee = issue.User;
   const assigneeName = assignee?.name || assignee?.email || null;
   const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : null;
 
   return (
     <div
-      draggable
+      draggable={canDrag}
       onDragStart={(e) => {
+        if (!canDrag) {
+          e.preventDefault();
+          return;
+        }
         const payload: DragPayload = { issueId: issue.id };
         e.dataTransfer.setData("application/json", JSON.stringify(payload));
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors px-3 py-2 cursor-grab active:cursor-grabbing"
+      className={`rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors px-3 py-2 ${canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
     >
       <p className="text-sm font-medium leading-snug">{issue.title}</p>
       <div className="flex items-center justify-between mt-1.5">

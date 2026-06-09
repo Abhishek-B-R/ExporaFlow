@@ -3,7 +3,9 @@ import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import axios from "axios";
 import { useRef, useState, useEffect } from "react";
-import { TicketType } from "@prisma/client";
+import { TicketType, TicketUrgency } from "@prisma/client";
+import { useSession } from "next-auth/react";
+import { URGENCY_OPTIONS } from "@/lib/ticket-due-date-policy";
 import { statusesForTicketType } from "@/lib/issue-status-machine";
 import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 import { renderPrioritySvg, RenderStatusSvg } from "./issue-label";
@@ -72,6 +74,18 @@ export const CreateIssueWindow = ({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
+  const [urgency, setUrgency] = useState<TicketUrgency>(TicketUrgency.MEDIUM);
+  const [requesterName, setRequesterName] = useState("");
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    if (requesterName.trim()) return;
+    const label =
+      session?.user?.name?.trim() ||
+      session?.user?.email?.split("@")[0] ||
+      "";
+    if (label) setRequesterName(label);
+  }, [session, requesterName]);
 
   useEffect(() => {
     const allowed = statusesForTicketType(ticketType);
@@ -125,6 +139,8 @@ export const CreateIssueWindow = ({
           ? Number.parseInt(durationMinutes, 10)
           : undefined,
         assignedUser: assignedUserId || null,
+        urgency,
+        requesterName: requesterName.trim() || undefined,
       });
 
       if (response.data) {
@@ -266,6 +282,32 @@ export const CreateIssueWindow = ({
           name="description"
           value={issueDescription}
         />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-(--muted)">Requester</label>
+            <input
+              className="ef-field text-sm px-3 py-2 outline-none min-w-0"
+              placeholder="Who is reporting this?"
+              value={requesterName}
+              onChange={(e) => setRequesterName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-(--muted)">Urgency</label>
+            <select
+              className="ef-field text-sm px-3 py-2 outline-none min-w-0"
+              value={urgency}
+              onChange={(e) => setUrgency(e.target.value as TicketUrgency)}
+            >
+              {URGENCY_OPTIONS.map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         <div className="mt-4 space-y-3">
           <p className="text-xs text-(--muted) uppercase tracking-wide font-medium">Ticket type</p>

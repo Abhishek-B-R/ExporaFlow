@@ -489,7 +489,12 @@ const CreateProjectWindow = ({
   const [serviceLine, setServiceLine] = useState<ProjectServiceLineValue | null>(
     null,
   );
-  type CustomerRow = { id: string; name: string; organizationName: string };
+  type CustomerRow = {
+    id: string;
+    name: string;
+    organizationName: string;
+    isActive?: boolean;
+  };
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState("");
@@ -517,7 +522,7 @@ const CreateProjectWindow = ({
   const loadCustomers = async () => {
     try {
       const res = await axios.get<CustomerRow[]>("/api/customers");
-      setCustomers(res.data ?? []);
+      setCustomers((res.data ?? []).filter((c) => c.isActive !== false));
     } catch {
       setCustomers([]);
     }
@@ -615,13 +620,14 @@ const CreateProjectWindow = ({
 
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-(--muted) mb-2">
-            Customer <span className="font-normal normal-case text-(--muted-2)">(optional)</span>
+            Customer <span className="text-red-600">*</span>
           </p>
           <CustomerPicker
             customers={customers}
             value={customerId}
             onChange={setCustomerId}
             onReload={loadCustomers}
+            required
           />
         </div>
 
@@ -727,7 +733,12 @@ const CreateProjectWindow = ({
         <button
           type="button"
           onClick={createProject}
-          disabled={isCreating || !projTitle.trim() || serviceLine === null}
+          disabled={
+            isCreating ||
+            !projTitle.trim() ||
+            serviceLine === null ||
+            !customerId
+          }
           className="ef-btn-primary h-9 min-w-[5.5rem] flex items-center justify-center rounded-md text-sm font-medium disabled:opacity-40 disabled:pointer-events-none"
         >
           {isCreating ? <SVGIcon svgString={RAW_ICONS.WhiteLoader} /> : "Create"}

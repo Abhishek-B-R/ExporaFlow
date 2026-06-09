@@ -11,6 +11,7 @@ const patchSchema = z.object({
   address: z.string().nullable().optional(),
   email: z.string().trim().optional().nullable(),
   phoneNumber: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export async function PATCH(
