@@ -18,9 +18,10 @@ export const IssueStatus: { title: string; svg: string }[] = [
 ];
 
 export const PriorityOptionsArray: { name: string; svg: string }[] = [
-  { name: "Urgent", svg: RAW_ICONS.UrgentPriority },
-  { name: "No Priority", svg: RAW_ICONS.NoPriority },
+  { name: "Critical", svg: RAW_ICONS.UrgentPriority },
   { name: "High", svg: RAW_ICONS.HighPriority },
   { name: "Medium", svg: RAW_ICONS.MediumPriority },
   { name: "Low", svg: RAW_ICONS.LowPriority },
+  { name: "Urgent", svg: RAW_ICONS.UrgentPriority },
+  { name: "No Priority", svg: RAW_ICONS.NoPriority },
 ];

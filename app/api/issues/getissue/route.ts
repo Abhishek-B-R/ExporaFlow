@@ -22,6 +22,9 @@ export async function POST(request: NextRequest) {
       User: {
         select: { id: true, name: true, email: true, image: true },
       },
+      requesterUser: {
+        select: { id: true, name: true, email: true },
+      },
       parentIssue: {
         select: { id: true, title: true },
       },

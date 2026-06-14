@@ -6,6 +6,8 @@ import { useRef, useState, useEffect } from "react";
 import { TicketType, TicketUrgency } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import { URGENCY_OPTIONS } from "@/lib/ticket-due-date-policy";
+import { isChangeManagementType } from "@/lib/ticket-types";
+import { TICKET_TYPE_OPTIONS } from "@/lib/ticket-type-labels";
 import { statusesForTicketType } from "@/lib/issue-status-machine";
 import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 import { renderPrioritySvg, RenderStatusSvg } from "./issue-label";
@@ -312,25 +314,20 @@ export const CreateIssueWindow = ({
         <div className="mt-4 space-y-3">
           <p className="text-xs text-(--muted) uppercase tracking-wide font-medium">Ticket type</p>
           <div className="flex flex-wrap gap-2">
-            {(
-              [
-                { t: TicketType.INCIDENT, label: "Incident management" },
-                { t: TicketType.CHANGE, label: "Change management" },
-              ] as const
-            ).map(({ t, label }) => (
+            {TICKET_TYPE_OPTIONS.map(({ value, label }) => (
               <button
-                key={t}
+                key={value}
                 type="button"
-                onClick={() => setTicketType(t)}
+                onClick={() => setTicketType(value)}
                 className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                  ticketType === t ? "ef-chip-active" : "ef-chip"
+                  ticketType === value ? "ef-chip-active" : "ef-chip"
                 }`}
               >
                 {label}
               </button>
             ))}
           </div>
-          {ticketType === TicketType.CHANGE ? (
+          {isChangeManagementType(ticketType) ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <EnterpriseDatePicker
                 label="Start date *"

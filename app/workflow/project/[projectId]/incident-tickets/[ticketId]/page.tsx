@@ -13,6 +13,11 @@ import SVGIcon from "@/lib/svg-icon";
 import { TicketType, TicketUrgency } from "@prisma/client";
 import { formatTicketKey } from "@/lib/ticket-display";
 import { URGENCY_OPTIONS } from "@/lib/ticket-due-date-policy";
+import { isTicketOverdue, slaCountdownLabel } from "@/lib/sla-countdown";
+import {
+  ticketTypeBadgeClass,
+  ticketTypeLabel,
+} from "@/lib/ticket-type-labels";
 import { statusesForTicketType } from "@/lib/issue-status-machine";
 import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 import { MentionTextarea } from "@/components/workflow/mentions/mention-textarea";
@@ -54,6 +59,7 @@ type FullIssue = IssueBody & {
   ticketType?: TicketType;
   createdAt?: string;
   User?: { id: string; name?: string; email?: string; image?: string } | null;
+  requesterUser?: { id: string; name?: string | null; email?: string | null } | null;
   parentIssue?: { id: string; title: string } | null;
   subtasks?: Array<{ id: string; title: string; status?: string }>;
   blockersFrom?: Array<{
@@ -92,6 +98,7 @@ export default function Issue({
   const [dueDateInput, setDueDateInput] = useState("");
   const [urgencyInput, setUrgencyInput] = useState<TicketUrgency>(TicketUrgency.MEDIUM);
   const [requesterNameInput, setRequesterNameInput] = useState("");
+  const [requesterEmailInput, setRequesterEmailInput] = useState("");
   const [sprintInput, setSprintInput] = useState("");
   const [estimateInput, setEstimateInput] = useState<number | null>(null);
   const [commentInput, setCommentInput] = useState("");
@@ -124,6 +131,11 @@ export default function Issue({
     setEstimateInput(issueData.estimate ?? null);
     setUrgencyInput(issueData.urgency ?? TicketUrgency.MEDIUM);
     setRequesterNameInput(issueData.requesterName ?? "");
+    setRequesterEmailInput(
+      issueData.requesterEmail ??
+        issueData.requesterUser?.email ??
+        "",
+    );
   }, []);
 
   const fetchIssueData = useCallback(
@@ -135,7 +147,7 @@ export default function Issue({
         axios.post("/api/sprints/getsprints", { projectId }),
         axios.post("/api/issues/getissues", { project_id: projectId }),
         axios.get("/api/workflow/getmembers", { params: { projectId } }),
-        axios.get("/api/employees").catch(() => ({ data: [] })),
+        axios.get("/api/employees?status=active").catch(() => ({ data: [] })),
       ]);
 
       const issueData = issueRes.data as FullIssue;
@@ -198,8 +210,10 @@ export default function Issue({
         dueDate: dueDateInput || null,
         urgency: urgencyInput,
         requesterName: requesterNameInput.trim() || null,
+        requesterEmail: requesterEmailInput.trim() || null,
         labels,
         estimate: estimateInput,
+        manualDueDateOverride: Boolean(dueDateInput),
       });
 
       customToast.success({ title: "", description: "Issue details updated." });
@@ -344,10 +358,18 @@ export default function Issue({
           <span className="text-(--muted-2) text-xs">·</span>
           <p className="text-xs text-(--muted-2) font-mono font-semibold">
             {formatTicketKey({
+              globalTicketNumber: issue.globalTicketNumber,
               ticketType: issue.ticketType,
               ticketNumber: issue.ticketNumber,
             }) ?? issue.id.slice(0, 8)}
           </p>
+          {issue.ticketType ? (
+            <span
+              className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${ticketTypeBadgeClass(issue.ticketType)}`}
+            >
+              {ticketTypeLabel(issue.ticketType)}
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           {!roleLoading && canProject("deleteTicket") ? (
@@ -578,6 +600,14 @@ export default function Issue({
                 readOnly={!canEditTicket}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
               />
+              <input
+                value={requesterEmailInput}
+                onChange={(e) => setRequesterEmailInput(e.target.value)}
+                placeholder="Requester email"
+                readOnly={!canEditTicket}
+                type="email"
+                className="w-full mt-1.5 rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
+              />
             </SidebarField>
 
             {/* Urgency */}
@@ -635,6 +665,20 @@ export default function Issue({
                 onChange={setDueDateInput}
                 disabled={!canEditTicket}
               />
+              {issue.dueDate ? (
+                <p
+                  className={`mt-1 text-xs ${
+                    isTicketOverdue({
+                      dueDate: issue.dueDate,
+                      status: issue.status,
+                    })
+                      ? "text-red-700 font-medium"
+                      : "text-(--muted-2)"
+                  }`}
+                >
+                  {slaCountdownLabel({ dueDate: issue.dueDate })}
+                </p>
+              ) : null}
             </SidebarField>
 
             {/* Sprint */}

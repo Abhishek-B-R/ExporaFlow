@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   }
 
   const ticketFilter =
-    ticketType === "INCIDENT" || ticketType === "CHANGE"
+    ticketType && Object.values(TicketType).includes(ticketType as TicketType)
       ? { ticketType: ticketType as TicketType }
       : {};
 

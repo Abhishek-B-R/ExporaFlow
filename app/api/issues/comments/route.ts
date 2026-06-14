@@ -2,15 +2,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
-import { assertProjectRole } from "@/lib/authz";
-import { Role } from "@prisma/client";
+import { assertProjectPermission } from "@/lib/authz";
 import {
   logIssueActivity,
   notifyUsers,
   resolveMentionedUserIds,
 } from "@/lib/collaboration";
-import { getAccessibleEmployeesForUser } from "@/lib/store-access";
-import { sendMentionEmails } from "@/lib/mention-email";
+import { loadMentionCandidatesForProject } from "@/lib/mention-candidates";
+import { queueMentionEmails } from "@/lib/mention-email";
 
 export async function POST(request: NextRequest) {
   const { issueId, body } = await request.json();
@@ -35,65 +34,29 @@ export async function POST(request: NextRequest) {
       projectId: true,
       ticketType: true,
       ticketNumber: true,
+      globalTicketNumber: true,
     },
   });
   if (!issue) {
     return Response.json({ message: "Issue not found." }, { status: 404 });
   }
 
-  const access = await assertProjectRole({
+  const access = await assertProjectPermission({
     userId: session.user.id,
     projectId: issue.projectId,
-    minimum: Role.VIEWER,
+    permission: "comment",
   });
   if (!access.ok) {
-    return Response.json({ message: access.message }, { status: access.status });
+    return Response.json(
+      { message: access.message },
+      { status: access.status },
+    );
   }
 
-  const projectUsers = await prisma.project.findUnique({
-    where: { id: issue.projectId },
-    select: {
-      workspaceId: true,
-      creator: { select: { id: true, name: true, email: true, username: true } },
-      projectMembers: {
-        select: {
-          user: { select: { id: true, name: true, email: true, username: true } },
-        },
-      },
-    },
-  });
-
-  const mentionCandidates = [
-    ...(projectUsers?.creator ? [projectUsers.creator] : []),
-    ...(projectUsers?.projectMembers.map((member) => member.user) ?? []),
-  ];
-
-  const storeEmployees = await getAccessibleEmployeesForUser(session.user.id);
-  const emailsNeedingLookup = new Set<string>();
-  for (const emp of storeEmployees.filter((e) => e.isActive !== false)) {
-    if (emp.user) {
-      mentionCandidates.push({
-        ...emp.user,
-        username: emp.user.email?.includes("@") ? emp.user.email.split("@")[0] : null,
-      });
-      continue;
-    }
-    if (emp.email) emailsNeedingLookup.add(emp.email.toLowerCase());
-    mentionCandidates.push({
-      id: emp.userId ?? emp.email,
-      name: emp.fullName,
-      email: emp.email,
-      username: emp.email.includes("@") ? emp.email.split("@")[0] : null,
-    });
-  }
-
-  if (emailsNeedingLookup.size > 0) {
-    const usersByEmail = await prisma.user.findMany({
-      where: { email: { in: [...emailsNeedingLookup], mode: "insensitive" } },
-      select: { id: true, name: true, email: true, username: true },
-    });
-    for (const user of usersByEmail) mentionCandidates.push(user);
-  }
+  const mentionCandidates = await loadMentionCandidatesForProject(
+    issue.projectId,
+    session.user.id,
+  );
   const mentionedUserIds = resolveMentionedUserIds(body, mentionCandidates);
 
   const comment = await prisma.issueComment.create({
@@ -138,15 +101,18 @@ export async function POST(request: NextRequest) {
         projectId: issue.projectId,
       });
 
-      await sendMentionEmails({
+      queueMentionEmails({
         mentionedUserIds,
         actorId: session.user.id,
         issueId: issue.id,
         projectId: issue.projectId,
         issueTitle: issue.title,
-        commentBody: body.trim(),
+        excerpt: body.trim(),
         ticketType: issue.ticketType,
         ticketNumber: issue.ticketNumber,
+        globalTicketNumber: issue.globalTicketNumber,
+        sourceType: "comment",
+        sourceId: comment.id,
       });
     }
   } catch (sideEffectError) {

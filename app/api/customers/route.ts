@@ -2,7 +2,10 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/db";
-import { getAccessibleCustomersForUser, userIsWorkspaceElevated } from "@/lib/store-access";
+import {
+  getAccessibleCustomersForUser,
+  userIsWorkspaceElevated,
+} from "@/lib/store-access";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -13,12 +16,19 @@ const createSchema = z.object({
   phoneNumber: z.string().optional().nullable(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user.id) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const customers = await getAccessibleCustomersForUser(session.user.id);
+  const status = request.nextUrl.searchParams.get("status") as
+    | "active"
+    | "inactive"
+    | "all"
+    | null;
+  const customers = await getAccessibleCustomersForUser(session.user.id, {
+    status: status ?? "active",
+  });
   return Response.json(customers);
 }
 
@@ -33,7 +43,10 @@ export async function POST(request: NextRequest) {
   const json = await request.json();
   const parsed = createSchema.safeParse(json);
   if (!parsed.success) {
-    return Response.json({ message: "Invalid customer data." }, { status: 400 });
+    return Response.json(
+      { message: "Invalid customer data." },
+      { status: 400 },
+    );
   }
   const { name, organizationName, address, email, phoneNumber } = parsed.data;
   const row = await prisma.customer.create({

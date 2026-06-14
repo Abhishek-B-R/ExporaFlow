@@ -33,6 +33,10 @@ import {
 import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-picker";
 import { ServiceLineSelect } from "@/components/workflow/service-line-select";
 import { CustomerPicker } from "@/components/workflow/customer-picker";
+import {
+  EmployeeMultiPicker,
+  type EmployeeOption,
+} from "@/components/workflow/employee-multi-picker";
 
 function formatProjectDate(value: unknown): string {
   if (value == null || value === "") return "—";
@@ -49,10 +53,7 @@ function formatProjectDate(value: unknown): string {
   }
 }
 
-function formatProjectDateRange(
-  start: unknown,
-  target: unknown,
-): string {
+function formatProjectDateRange(start: unknown, target: unknown): string {
   const s = formatProjectDate(start);
   const t = formatProjectDate(target);
   if (s === "—" && t === "—") return "—";
@@ -72,11 +73,15 @@ function leadLabel(project: ProjectBody): string {
 
 function stateBadgeClass(name: string) {
   const n = name.toLowerCase();
-  if (n.includes("work")) return "bg-emerald-50 text-emerald-800 border-emerald-300";
+  if (n.includes("work"))
+    return "bg-emerald-50 text-emerald-800 border-emerald-300";
   if (n.includes("plan")) return "bg-sky-50 text-sky-800 border-sky-300";
-  if (n.includes("backlog")) return "bg-slate-100 text-slate-700 border-slate-300";
-  if (n.includes("complete")) return "bg-zinc-100 text-zinc-700 border-zinc-300";
-  if (n.includes("cancel")) return "bg-orange-50 text-orange-800 border-orange-300";
+  if (n.includes("backlog"))
+    return "bg-slate-100 text-slate-700 border-slate-300";
+  if (n.includes("complete"))
+    return "bg-zinc-100 text-zinc-700 border-zinc-300";
+  if (n.includes("cancel"))
+    return "bg-orange-50 text-orange-800 border-orange-300";
   return "bg-(--surface-3) text-(--muted) border-(--border)";
 }
 
@@ -143,7 +148,9 @@ export default function Projects() {
         <div className="flex flex-col flex-1 min-h-0">
           <div className="shrink-0 border-b border-(--border) bg-(--surface-1) px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-(--foreground)">All projects</h2>
+              <h2 className="text-sm font-semibold text-(--foreground)">
+                All projects
+              </h2>
               <p className="text-xs text-(--muted-2) mt-0.5">
                 {isLoading
                   ? "Loading…"
@@ -167,7 +174,10 @@ export default function Projects() {
                   </div>
                   <div className="divide-y divide-(--border)">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 px-3 py-3.5">
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 px-3 py-3.5"
+                      >
                         <div className="h-4 flex-1 max-w-[200px] rounded-md bg-(--surface-3) animate-pulse" />
                         <div className="h-4 w-16 rounded-md bg-(--surface-3) animate-pulse hidden lg:block" />
                         <div className="h-5 w-14 rounded-md bg-(--surface-3) animate-pulse" />
@@ -182,16 +192,36 @@ export default function Projects() {
                   <table className="w-full text-[13px] border-collapse table-fixed">
                     <thead>
                       <tr className="border-b border-(--border) bg-(--surface-2) text-left text-xs font-medium text-(--muted-2)">
-                        <th className="px-3 py-2 w-[22%] font-medium">Project</th>
-                        <th className="px-3 py-2 w-[14%] font-medium hidden lg:table-cell">Service</th>
-                        <th className="px-3 py-2 w-[12%] font-medium hidden lg:table-cell">Health</th>
-                        <th className="px-3 py-2 w-[12%] font-medium">Status</th>
-                        <th className="px-3 py-2 w-[8%] font-medium">Priority</th>
-                        <th className="px-3 py-2 w-[12%] font-medium hidden md:table-cell">Lead</th>
-                        <th className="px-3 py-2 w-[13%] font-medium hidden xl:table-cell">Timeline</th>
-                        <th className="px-3 py-2 w-[11%] font-medium hidden lg:table-cell">Tickets</th>
-                        <th className="px-3 py-2 w-[10%] font-medium hidden xl:table-cell">SLA</th>
-                        <th className="px-3 py-2 w-[10%] font-medium text-right">Actions</th>
+                        <th className="px-3 py-2 w-[22%] font-medium">
+                          Project
+                        </th>
+                        <th className="px-3 py-2 w-[14%] font-medium hidden lg:table-cell">
+                          Service
+                        </th>
+                        <th className="px-3 py-2 w-[12%] font-medium hidden lg:table-cell">
+                          Health
+                        </th>
+                        <th className="px-3 py-2 w-[12%] font-medium">
+                          Status
+                        </th>
+                        <th className="px-3 py-2 w-[8%] font-medium">
+                          Priority
+                        </th>
+                        <th className="px-3 py-2 w-[12%] font-medium hidden md:table-cell">
+                          Lead
+                        </th>
+                        <th className="px-3 py-2 w-[13%] font-medium hidden xl:table-cell">
+                          Timeline
+                        </th>
+                        <th className="px-3 py-2 w-[11%] font-medium hidden lg:table-cell">
+                          Tickets
+                        </th>
+                        <th className="px-3 py-2 w-[10%] font-medium hidden xl:table-cell">
+                          SLA
+                        </th>
+                        <th className="px-3 py-2 w-[10%] font-medium text-right">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -211,12 +241,17 @@ export default function Projects() {
               {!isLoading && (!projects || projects.length === 0) ? (
                 <div className="ef-card border-dashed flex flex-col items-center justify-center px-6 py-16 text-center">
                   <div className="h-12 w-12 rounded-xl bg-(--surface-3) flex items-center justify-center mb-4 text-(--accent)">
-                    <SVGIcon className="flex w-6 h-6" svgString={RAW_ICONS.RubiksCube} />
+                    <SVGIcon
+                      className="flex w-6 h-6"
+                      svgString={RAW_ICONS.RubiksCube}
+                    />
                   </div>
-                  <h3 className="text-base font-semibold text-(--foreground)">No projects yet</h3>
+                  <h3 className="text-base font-semibold text-(--foreground)">
+                    No projects yet
+                  </h3>
                   <p className="text-sm text-(--muted-2) mt-1.5 max-w-sm">
-                    Create a project to link a customer, assign a service line, and start tracking
-                    incidents and changes.
+                    Create a project to link a customer, assign a service line,
+                    and start tracking incidents and changes.
                   </p>
                   <button
                     type="button"
@@ -255,7 +290,9 @@ const ProjectLabel = ({
   setProjectIdToDelete: React.Dispatch<React.SetStateAction<string>>;
 }) => {
   const projectID = project.id;
-  const [selectedHealthOption, setSelectedHealthOption] = useState(project.status);
+  const [selectedHealthOption, setSelectedHealthOption] = useState(
+    project.status,
+  );
 
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
     "health" | "priority" | boolean
@@ -264,7 +301,9 @@ const ProjectLabel = ({
   const healthDropdownRef = useRef<HTMLDivElement>(null);
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [selectedPriorityOption, setSelectedPriorityOption] = useState(project.priority);
+  const [selectedPriorityOption, setSelectedPriorityOption] = useState(
+    project.priority,
+  );
 
   useEffect(() => {
     setSelectedHealthOption(project.status);
@@ -371,7 +410,9 @@ const ProjectLabel = ({
           {project.title}
         </Link>
         {project.description ? (
-          <p className="text-[11px] text-(--muted-2) line-clamp-1 mt-0.5">{project.description}</p>
+          <p className="text-[11px] text-(--muted-2) line-clamp-1 mt-0.5">
+            {project.description}
+          </p>
         ) : null}
       </td>
       <td className="px-3 py-2 align-middle hidden lg:table-cell">
@@ -395,7 +436,9 @@ const ProjectLabel = ({
           <button
             type="button"
             className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${stateBadgeClass(selectedHealthOption)}`}
-            onClick={() => setShowOptionsDropdown((v) => (v === "health" ? false : "health"))}
+            onClick={() =>
+              setShowOptionsDropdown((v) => (v === "health" ? false : "health"))
+            }
           >
             {selectedHealthOption}
           </button>
@@ -408,7 +451,10 @@ const ProjectLabel = ({
                   className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
                   onClick={() => handleHealthOptionClick(option.name)}
                 >
-                  <SVGIcon className="flex w-4 shrink-0" svgString={option.svg} />
+                  <SVGIcon
+                    className="flex w-4 shrink-0"
+                    svgString={option.svg}
+                  />
                   {option.name}
                 </button>
               ))}
@@ -421,7 +467,11 @@ const ProjectLabel = ({
           <button
             type="button"
             className="flex h-8 w-8 items-center justify-center rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors"
-            onClick={() => setShowOptionsDropdown((v) => (v === "priority" ? false : "priority"))}
+            onClick={() =>
+              setShowOptionsDropdown((v) =>
+                v === "priority" ? false : "priority",
+              )
+            }
             aria-label="Change priority"
           >
             {renderPrioritySvg(selectedPriorityOption)}
@@ -435,7 +485,10 @@ const ProjectLabel = ({
                   className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
                   onClick={() => handlePriorityOptionClick(option.name)}
                 >
-                  <SVGIcon className="flex w-4 shrink-0" svgString={option.svg} />
+                  <SVGIcon
+                    className="flex w-4 shrink-0"
+                    svgString={option.svg}
+                  />
                   {option.name}
                 </button>
               ))}
@@ -455,11 +508,16 @@ const ProjectLabel = ({
         {stats ? (
           <div className="flex flex-col gap-0.5 text-[11px]">
             <span className="text-(--muted) tabular-nums">
-              <span className="font-medium text-(--foreground)">{stats.incidentTickets}</span>{" "}
+              <span className="font-medium text-(--foreground)">
+                {stats.incidentTickets}
+              </span>{" "}
               inc
             </span>
             <span className="text-(--muted) tabular-nums">
-              <span className="font-medium text-(--foreground)">{stats.changeTickets}</span> chg
+              <span className="font-medium text-(--foreground)">
+                {stats.changeTickets}
+              </span>{" "}
+              chg
             </span>
             {ticketTotal > 0 ? (
               <div className="mt-1 h-1 w-full max-w-[72px] rounded-full bg-(--surface-3) overflow-hidden">
@@ -516,9 +574,8 @@ const CreateProjectWindow = ({
   const [projContent, setProjContent] = useState("");
   const [status, setStatus] = useState<ProjectStatusType>("Backlog");
   const [priority, setPriority] = useState<ProjectPriorityType>("No Priority");
-  const [serviceLine, setServiceLine] = useState<ProjectServiceLineValue | null>(
-    null,
-  );
+  const [serviceLine, setServiceLine] =
+    useState<ProjectServiceLineValue | null>(null);
   type CustomerRow = {
     id: string;
     name: string;
@@ -527,6 +584,8 @@ const CreateProjectWindow = ({
   };
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [memberUserIds, setMemberUserIds] = useState<string[]>([]);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [startDate, setStartDate] = useState("");
   const [targetDate, setTargetDate] = useState("");
 
@@ -551,15 +610,25 @@ const CreateProjectWindow = ({
 
   const loadCustomers = async () => {
     try {
-      const res = await axios.get<CustomerRow[]>("/api/customers");
-      setCustomers((res.data ?? []).filter((c) => c.isActive !== false));
+      const res = await axios.get<CustomerRow[]>("/api/customers?status=active");
+      setCustomers(res.data ?? []);
     } catch {
       setCustomers([]);
     }
   };
 
+  const loadEmployees = async () => {
+    try {
+      const res = await axios.get<EmployeeOption[]>("/api/employees?status=active");
+      setEmployees(res.data ?? []);
+    } catch {
+      setEmployees([]);
+    }
+  };
+
   useEffect(() => {
     void loadCustomers();
+    void loadEmployees();
   }, []);
 
   const createProject = async () => {
@@ -583,6 +652,7 @@ const CreateProjectWindow = ({
         status: status,
         serviceLine,
         customerId: customerId ?? undefined,
+        memberUserIds,
         startDate: startDate || undefined,
         targetDate: targetDate || undefined,
       });
@@ -593,13 +663,15 @@ const CreateProjectWindow = ({
       });
     } catch (error) {
       const description = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? "Could not create project."
+        ? (error.response?.data?.message ?? "Could not create project.")
         : "Could not create project.";
       customToast.error({
         title: "",
         description,
       });
-      shouldClose = !(axios.isAxiosError(error) && error.response?.status === 409);
+      shouldClose = !(
+        axios.isAxiosError(error) && error.response?.status === 409
+      );
     } finally {
       if (shouldClose) setClose(false);
       setIsCreating(false);
@@ -613,8 +685,13 @@ const CreateProjectWindow = ({
           <span className="shrink-0 rounded-md border border-(--border) bg-(--surface-2) px-2 py-1 text-xs font-semibold text-(--muted)">
             Team
           </span>
-          <SVGIcon className="flex shrink-0 w-3" svgString={RAW_ICONS.ArrowRight} />
-          <span className="font-semibold text-(--foreground) truncate">New project</span>
+          <SVGIcon
+            className="flex shrink-0 w-3"
+            svgString={RAW_ICONS.ArrowRight}
+          />
+          <span className="font-semibold text-(--foreground) truncate">
+            New project
+          </span>
         </div>
       </WorkflowModalHeader>
 
@@ -661,6 +738,18 @@ const CreateProjectWindow = ({
           />
         </div>
 
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--muted) mb-2">
+            Team members
+          </p>
+          <EmployeeMultiPicker
+            employees={employees}
+            value={memberUserIds}
+            onChange={setMemberUserIds}
+            onReload={loadEmployees}
+          />
+        </div>
+
         <div className="min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <EnterpriseDatePicker
             label="Start date"
@@ -682,7 +771,9 @@ const CreateProjectWindow = ({
             <button
               type="button"
               onClick={() =>
-                setShowOptionsDropdown(showOptionsDropdown === "health" ? false : "health")
+                setShowOptionsDropdown(
+                  showOptionsDropdown === "health" ? false : "health",
+                )
               }
               className="ef-pill"
             >
@@ -708,7 +799,9 @@ const CreateProjectWindow = ({
             <button
               type="button"
               onClick={() =>
-                setShowOptionsDropdown(showOptionsDropdown === "priority" ? false : "priority")
+                setShowOptionsDropdown(
+                  showOptionsDropdown === "priority" ? false : "priority",
+                )
               }
               className="ef-pill"
             >
@@ -731,15 +824,6 @@ const CreateProjectWindow = ({
                 ))}
               </div>
             )}
-            {(["lead", "members"] as const).map((label) => (
-              <span
-                key={label}
-                className="ef-pill opacity-60 cursor-not-allowed"
-                title="Coming soon"
-              >
-                {label}
-              </span>
-            ))}
           </div>
         </div>
 
@@ -757,7 +841,11 @@ const CreateProjectWindow = ({
       </WorkflowModalBody>
 
       <WorkflowModalFooter>
-        <button type="button" onClick={() => setClose(false)} className="ef-btn-outline h-9 px-4 rounded-md text-sm font-medium">
+        <button
+          type="button"
+          onClick={() => setClose(false)}
+          className="ef-btn-outline h-9 px-4 rounded-md text-sm font-medium"
+        >
           Cancel
         </button>
         <button
@@ -771,7 +859,11 @@ const CreateProjectWindow = ({
           }
           className="ef-btn-primary h-9 min-w-[5.5rem] flex items-center justify-center rounded-md text-sm font-medium disabled:opacity-40 disabled:pointer-events-none"
         >
-          {isCreating ? <SVGIcon svgString={RAW_ICONS.WhiteLoader} /> : "Create"}
+          {isCreating ? (
+            <SVGIcon svgString={RAW_ICONS.WhiteLoader} />
+          ) : (
+            "Create"
+          )}
         </button>
       </WorkflowModalFooter>
     </WorkflowModal>
@@ -812,12 +904,14 @@ const DeleteWindow = ({
   return (
     <WorkflowModal maxWidth="max-w-md" onClose={() => closeDeleteWindow(false)}>
       <WorkflowModalHeader onClose={() => closeDeleteWindow(false)}>
-        <p className="font-semibold text-lg text-(--foreground)">Delete project?</p>
+        <p className="font-semibold text-lg text-(--foreground)">
+          Delete project?
+        </p>
       </WorkflowModalHeader>
       <WorkflowModalBody>
         <p className="text-sm text-(--muted) leading-relaxed">
-          Deleting this project will permanently remove all tickets and related data under it.
-          This cannot be undone.
+          Deleting this project will permanently remove all tickets and related
+          data under it. This cannot be undone.
         </p>
       </WorkflowModalBody>
       <WorkflowModalFooter>
@@ -834,7 +928,11 @@ const DeleteWindow = ({
           disabled={isDeleting}
           className="h-9 min-w-[5rem] px-4 rounded-md border border-red-400 bg-red-50 text-red-700 font-medium hover:bg-red-100 transition-colors disabled:opacity-50 flex items-center justify-center"
         >
-          {isDeleting ? <SVGIcon svgString={RAW_ICONS.RedDeleteLoader} /> : "Delete"}
+          {isDeleting ? (
+            <SVGIcon svgString={RAW_ICONS.RedDeleteLoader} />
+          ) : (
+            "Delete"
+          )}
         </button>
       </WorkflowModalFooter>
     </WorkflowModal>

@@ -11,6 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 import { StoreStatusBadge } from "@/components/workflow/store-status-badge";
+import {
+  StoreDirectoryFilterBar,
+  type StoreDirectoryFilter,
+} from "@/components/workflow/store-directory-filter";
 
 type Employee = {
   id: string;
@@ -30,6 +34,7 @@ export default function EmployeesPage() {
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [designation, setDesignation] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StoreDirectoryFilter>("all");
 
   useEffect(() => {
     if (status === "loading") return;
@@ -37,13 +42,15 @@ export default function EmployeesPage() {
   }, [status, router]);
 
   const refresh = async () => {
-    const res = await axios.get<Employee[]>("/api/employees");
+    const res = await axios.get<Employee[]>(
+      `/api/employees?status=${statusFilter}`,
+    );
     setRows(res.data ?? []);
   };
 
   useEffect(() => {
     void refresh().catch(() => setRows([]));
-  }, []);
+  }, [statusFilter]);
 
   const toggleActive = async (id: string, isActive: boolean) => {
     try {
@@ -101,6 +108,8 @@ export default function EmployeesPage() {
           </Button>
         </div>
 
+        <StoreDirectoryFilterBar value={statusFilter} onChange={setStatusFilter} />
+
         <div className="linear-panel overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-(--surface-2) text-(--muted-2) text-left text-xs uppercase">
@@ -115,7 +124,12 @@ export default function EmployeesPage() {
             </thead>
             <tbody>
               {rows.map((e) => (
-                <tr key={e.id} className="border-t border-(--border) hover:bg-(--surface-2)">
+                <tr
+                  key={e.id}
+                  className={`border-t border-(--border) hover:bg-(--surface-2) ${
+                    e.isActive === false ? "opacity-70 bg-zinc-50/50" : ""
+                  }`}
+                >
                   <td className="px-3 py-2">{e.fullName}</td>
                   <td className="px-3 py-2 text-(--muted)">{e.email}</td>
                   <td className="px-3 py-2">{e.role}</td>

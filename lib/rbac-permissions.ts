@@ -15,15 +15,40 @@ export const PROJECT_PERMISSIONS = {
   updateProject: Role.MANAGER,
   deleteProject: Role.ADMIN,
   inviteMembers: Role.ADMIN,
+  overrideDueDate: Role.MANAGER,
+  manageUsers: Role.ADMIN,
+  exportAllTickets: Role.ADMIN,
 } as const;
 
 export type ProjectPermission = keyof typeof PROJECT_PERMISSIONS;
+
+/** Customer portal users — scoped to their linked customer projects. */
+export const CUSTOMER_PERMISSIONS: Record<ProjectPermission, boolean> = {
+  viewTickets: true,
+  exportTickets: false,
+  comment: true,
+  createTicket: true,
+  updateTicket: false,
+  uploadAttachment: true,
+  deleteTicket: false,
+  deleteAttachment: false,
+  manageSprints: false,
+  updateProject: false,
+  deleteProject: false,
+  inviteMembers: false,
+  overrideDueDate: false,
+  manageUsers: false,
+  exportAllTickets: false,
+};
 
 export function canPerformProjectAction(
   role: Role | null | undefined,
   permission: ProjectPermission,
 ): boolean {
   if (!role) return false;
+  if (role === Role.CUSTOMER) {
+    return CUSTOMER_PERMISSIONS[permission];
+  }
   return hasMinimumRole({ role, minimum: PROJECT_PERMISSIONS[permission] });
 }
 

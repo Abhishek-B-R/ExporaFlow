@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TicketType, TicketUrgency } from "@prisma/client";
+import { isChangeManagementType } from "@/lib/ticket-types";
 
 /** ISO date `YYYY-MM-DD` or full ISO datetime string. */
 const dateString = z
@@ -15,7 +16,7 @@ const optionalDate = z.union([dateString, z.literal(""), z.null()]).optional();
 
 export const createIssueBodySchema = z
   .object({
-    ticketType: z.nativeEnum(TicketType).optional().default(TicketType.INCIDENT),
+    ticketType: z.nativeEnum(TicketType),
     issueTitle: z.string().trim().min(1, "Title is required"),
     issueDescription: z.string().optional(),
     issueStatus: z.string().optional(),
@@ -27,13 +28,13 @@ export const createIssueBodySchema = z
     assignedUser: z.union([z.string(), z.null()]).optional(),
     urgency: z.nativeEnum(TicketUrgency).optional(),
     requesterName: z.string().trim().min(1).optional(),
+    requesterEmail: z.string().email().optional().or(z.literal("")),
     startDate: optionalDate,
     endDate: optionalDate,
     durationMinutes: z.number().int().positive().nullable().optional(),
   })
   .superRefine((data, ctx) => {
-    const t = data.ticketType ?? TicketType.INCIDENT;
-    if (t !== TicketType.CHANGE) return;
+    if (!isChangeManagementType(data.ticketType)) return;
     const start = data.startDate;
     const hasStart =
       typeof start === "string" && start.length > 0 && start !== "";
@@ -45,14 +46,14 @@ export const createIssueBodySchema = z
       });
     }
     const end = data.endDate;
-    const hasEnd =
-      typeof end === "string" && end.length > 0 && end !== "";
+    const hasEnd = typeof end === "string" && end.length > 0 && end !== "";
     const hasDuration =
       typeof data.durationMinutes === "number" && data.durationMinutes > 0;
     if (!hasEnd && !hasDuration) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Provide an end date or a duration for change management tickets.",
+        message:
+          "Provide an end date or a duration for change management tickets.",
         path: ["endDate"],
       });
     }
@@ -78,4 +79,6 @@ export const updateIssueBodySchema = z.object({
   ticketType: z.nativeEnum(TicketType).optional(),
   urgency: z.nativeEnum(TicketUrgency).optional(),
   requesterName: z.union([z.string(), z.null()]).optional(),
+  requesterEmail: z.union([z.string().email(), z.literal(""), z.null()]).optional(),
+  manualDueDateOverride: z.boolean().optional(),
 });

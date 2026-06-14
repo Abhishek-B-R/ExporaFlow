@@ -15,6 +15,9 @@ import { WorkflowLayout } from "@/components/workflow/workflow-layout";
 import { customToast } from "@/lib/custom-toast";
 import { ProjectNavbar } from "@/components/workflow/project-navbar";
 import { useProjectRole } from "@/hooks/use-project-role";
+import { useSession } from "next-auth/react";
+import { TICKET_TYPE_OPTIONS } from "@/lib/ticket-type-labels";
+import { TicketType, Role } from "@prisma/client";
 
 
 
@@ -53,9 +56,7 @@ export default function Issue() {
   const [priorityFilter, setPriorityFilter] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [ticketTypeFilter, setTicketTypeFilter] = useState<"" | "INCIDENT" | "CHANGE">(
-    "",
-  );
+  const [ticketTypeFilter, setTicketTypeFilter] = useState<"" | TicketType>("");
   const [matchingIssueIds, setMatchingIssueIds] = useState<string[] | null>(null);
   const [isSavingView, setIsSavingView] = useState(false);
   const [selectedIssueIndex, setSelectedIssueIndex] = useState(0);
@@ -72,7 +73,13 @@ export default function Issue() {
   const [aiLoading, setAiLoading] = useState(false);
   const searchParams = useSearchParams();
   const latestSearchRequest = useRef(0);
-  const { can: canProject, loading: roleLoading } = useProjectRole(project_id);
+  const { can: canProject, loading: roleLoading, role } = useProjectRole(project_id);
+  const { status: sessionStatus } = useSession();
+  const actionsReady = sessionStatus === "authenticated" && !roleLoading;
+  const showExport =
+    actionsReady && (canProject("exportTickets") || role === Role.ADMIN);
+  const showCreate =
+    actionsReady && (canProject("createTicket") || role === Role.ADMIN);
 
   const filteredIssues = useMemo(
     () =>
@@ -153,8 +160,8 @@ export default function Issue() {
     setStatusFilter(searchParams.get("status") ?? "");
     setSearchQuery(searchParams.get("q") ?? "");
     const tt = searchParams.get("ticketType");
-    if (tt === "CHANGE" || tt === "INCIDENT") {
-      setTicketTypeFilter(tt);
+    if (tt && Object.values(TicketType).includes(tt as TicketType)) {
+      setTicketTypeFilter(tt as TicketType);
     } else {
       setTicketTypeFilter("");
     }
@@ -366,21 +373,46 @@ export default function Issue() {
           >
             {isSavingView ? "Saving…" : "Save view"}
           </button>
-          {canProject("exportTickets") ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (!project_id) return;
-                const params = new URLSearchParams({ projectId: project_id });
-                if (ticketTypeFilter) params.set("ticketType", ticketTypeFilter);
-                window.location.href = `/api/issues/export?${params.toString()}`;
-              }}
-              className="ef-btn-outline h-7 px-3 rounded-md text-xs font-medium text-(--foreground)"
-            >
-              Export CSV
-            </button>
+          {roleLoading && sessionStatus === "authenticated" ? (
+            <span className="text-xs text-(--muted-2) px-2">Loading permissions…</span>
           ) : null}
-          {!roleLoading && canProject("createTicket") ? (
+          {showExport ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!project_id) return;
+                  const params = new URLSearchParams({
+                    projectId: project_id,
+                    format: "csv",
+                  });
+                  if (ticketTypeFilter) params.set("ticketType", ticketTypeFilter);
+                  if (searchQuery.trim()) params.set("search", searchQuery.trim());
+                  window.location.href = `/api/issues/export?${params.toString()}`;
+                }}
+                className="ef-btn-outline h-7 px-3 rounded-md text-xs font-medium text-(--foreground)"
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!project_id) return;
+                  const params = new URLSearchParams({
+                    projectId: project_id,
+                    format: "xlsx",
+                  });
+                  if (ticketTypeFilter) params.set("ticketType", ticketTypeFilter);
+                  if (searchQuery.trim()) params.set("search", searchQuery.trim());
+                  window.location.href = `/api/issues/export?${params.toString()}`;
+                }}
+                className="ef-btn-outline h-7 px-3 rounded-md text-xs font-medium text-(--foreground)"
+              >
+                Export Excel
+              </button>
+            </>
+          ) : null}
+          {showCreate ? (
             <button
               type="button"
               onClick={() => setCreateIssueWindowOpen(true)}
@@ -425,6 +457,7 @@ export default function Issue() {
             className="h-7 rounded-md border border-(--border-strong) bg-(--surface-1) px-2 text-xs text-(--foreground) outline-none cursor-pointer"
           >
             <option value="">All priorities</option>
+            <option value="Critical">Critical</option>
             <option value="Urgent">Urgent</option>
             <option value="High">High</option>
             <option value="Medium">Medium</option>
@@ -474,8 +507,10 @@ export default function Issue() {
           {(
             [
               { id: "" as const, label: "All types" },
-              { id: "INCIDENT" as const, label: "Incident" },
-              { id: "CHANGE" as const, label: "Change" },
+              ...TICKET_TYPE_OPTIONS.map((opt) => ({
+                id: opt.value,
+                label: opt.label,
+              })),
             ] as const
           ).map((opt) => (
             <button
@@ -633,6 +668,9 @@ export default function Issue() {
                     status={elem.status}
                     ticketType={elem.ticketType}
                     ticketNumber={elem.ticketNumber}
+                    globalTicketNumber={elem.globalTicketNumber}
+                    dueDate={elem.dueDate}
+                    issueStatus={elem.status}
                     updatedAt={elem.updatedAt}
                     assigneeInfo={elem.User}
                     selected={selectedIssueIndex === key}

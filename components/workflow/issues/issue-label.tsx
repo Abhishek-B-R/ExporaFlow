@@ -5,6 +5,9 @@ import { IssueStatus } from "@/utils/issues-view-options";
 import { HOLD_STATUS, statusesForTicketType } from "@/lib/issue-status-machine";
 import { TicketType } from "@prisma/client";
 import { formatTicketKey } from "@/lib/ticket-display";
+import { isChangeManagementType } from "@/lib/ticket-types";
+import { ticketTypeBadgeClass, ticketTypeLabel } from "@/lib/ticket-type-labels";
+import { isTicketOverdue, slaCountdownLabel } from "@/lib/sla-countdown";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,7 +17,8 @@ import { toast } from "sonner";
 function statusMenuEntry(title: string): { title: string; svg: string } {
   const known = IssueStatus.find((i) => i.title === title);
   if (known) return known;
-  if (title === HOLD_STATUS) return { title: HOLD_STATUS, svg: RAW_ICONS.Label };
+  if (title === HOLD_STATUS)
+    return { title: HOLD_STATUS, svg: RAW_ICONS.Label };
   return { title, svg: RAW_ICONS.Todo };
 }
 
@@ -34,6 +38,9 @@ export default function IssueLabel({
   selected,
   ticketType,
   ticketNumber,
+  globalTicketNumber,
+  dueDate,
+  issueStatus,
 }: {
   title: string;
   description?: string;
@@ -43,13 +50,22 @@ export default function IssueLabel({
   status?: string;
   update?: string;
   assigedUser?: string;
-  assigneeInfo?: { id: string; name?: string | null; email?: string | null; image?: string | null } | null;
+  assigneeInfo?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
   projectID: string | null;
   issueID: string;
   updatedAt?: string;
   selected?: boolean;
   ticketType?: TicketType | string | null;
   ticketNumber?: number | null;
+  globalTicketNumber?: number | null;
+  dueDate?: string | null;
+  /** Ticket status for overdue calculation (avoids shadowing `status` prop). */
+  issueStatus?: string | null;
 }) {
   const date = new Date(updatedAt ? updatedAt : "");
   const router = useRouter();
@@ -76,10 +92,9 @@ export default function IssueLabel({
     setSelectedStatusOption(status);
   }, [status]);
 
-  const ticketTypeEnum =
-    ticketType === TicketType.CHANGE || ticketType === "CHANGE"
-      ? TicketType.CHANGE
-      : TicketType.INCIDENT;
+  const ticketTypeEnum = isChangeManagementType(ticketType)
+    ? TicketType.CHANGE
+    : TicketType.INCIDENT;
 
   const statusMenu = statusesForTicketType(ticketTypeEnum).map(statusMenuEntry);
 
@@ -95,7 +110,7 @@ export default function IssueLabel({
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
 
   const [selectedPriorityOption, setSelectedPriorityOption] = useState(
-    priority ? priority : "No Priority"
+    priority ? priority : "No Priority",
   );
 
   const priorityOptionsArray = [
@@ -156,7 +171,7 @@ export default function IssueLabel({
       setSelectedStatusOption(previousStatus);
       console.error("Error updating project:", error);
       const description = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? "Failed to update issue."
+        ? (error.response?.data?.message ?? "Failed to update issue.")
         : "Failed to update issue.";
       customToast.error({
         title: "",
@@ -194,19 +209,27 @@ export default function IssueLabel({
   };
 
   const assigneeName = assigneeInfo?.name || assigneeInfo?.email || null;
-  const assigneeInitial = assigneeName ? assigneeName.charAt(0).toUpperCase() : null;
-  const ticketKey = formatTicketKey({ ticketType, ticketNumber });
+  const assigneeInitial = assigneeName
+    ? assigneeName.charAt(0).toUpperCase()
+    : null;
+  const ticketKey = formatTicketKey({ ticketType, ticketNumber, globalTicketNumber });
+  const overdue = isTicketOverdue({ dueDate, status: issueStatus ?? status });
+  const slaLabel = slaCountdownLabel({ dueDate });
 
   return (
     <div
       className={`h-12 rounded-md border transition-colors duration-150 px-3 grid grid-cols-12 items-center text-xs md:text-sm xl:text-[15px] cursor-pointer ${
         selected
           ? "bg-(--surface-3) border-(--border-strong)"
-          : "border-transparent hover:bg-(--surface-2) hover:border-(--border)"
+          : overdue
+            ? "border-red-200 bg-red-50/40 hover:bg-red-50/70"
+            : "border-transparent hover:bg-(--surface-2) hover:border-(--border)"
       }`}
       onClick={() => {
         if (projectID) {
-          router.push(`/workflow/project/${projectID}/incident-tickets/${issueID}`);
+          router.push(
+            `/workflow/project/${projectID}/incident-tickets/${issueID}`,
+          );
         }
       }}
     >
@@ -218,7 +241,26 @@ export default function IssueLabel({
         )}
         <div className="min-w-0 flex items-center gap-2 flex-1">
           {ticketKey ? (
-            <span className="shrink-0 font-mono text-[10px] text-(--muted-2)">{ticketKey}</span>
+            <span className="shrink-0 font-mono text-[10px] text-(--muted-2)">
+              {ticketKey}
+            </span>
+          ) : null}
+          {ticketType ? (
+            <span
+              className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ticketTypeBadgeClass(ticketType)}`}
+            >
+              {ticketTypeLabel(ticketType)}
+            </span>
+          ) : null}
+          {slaLabel ? (
+            <span
+              className={`shrink-0 text-[10px] font-medium ${
+                overdue ? "text-red-700" : "text-(--muted-2)"
+              }`}
+              title={dueDate ? new Date(dueDate).toLocaleString() : undefined}
+            >
+              {slaLabel}
+            </span>
           ) : null}
           {onHoldChange ? (
             <span className="shrink-0 rounded border border-amber-400 bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
@@ -234,7 +276,9 @@ export default function IssueLabel({
               {title}
             </Link>
           ) : (
-            <p className="text-sm xl:text-[15px] truncate text-(--foreground)">{title}</p>
+            <p className="text-sm xl:text-[15px] truncate text-(--foreground)">
+              {title}
+            </p>
           )}
         </div>
       </div>
@@ -250,7 +294,7 @@ export default function IssueLabel({
           onClick={(e) => {
             e.stopPropagation();
             setShowOptionsDropdown(
-              showOptionsDropdown == "status" ? false : "status"
+              showOptionsDropdown == "status" ? false : "status",
             );
           }}
         >
@@ -283,7 +327,7 @@ export default function IssueLabel({
           onClick={(e) => {
             e.stopPropagation();
             setShowOptionsDropdown(
-              showOptionsDropdown == "priority" ? false : "priority"
+              showOptionsDropdown == "priority" ? false : "priority",
             );
           }}
         >
@@ -314,10 +358,7 @@ export default function IssueLabel({
       <div title={fullDate} className="col-span-1 cursor-pointer ">
         {shortDate}
       </div>
-      <div
-        className="col-span-1"
-        title={assigneeName ?? "Unassigned"}
-      >
+      <div className="col-span-1" title={assigneeName ?? "Unassigned"}>
         {assigneeInfo?.image ? (
           <img
             src={assigneeInfo.image}
@@ -334,7 +375,9 @@ export default function IssueLabel({
           </div>
         )}
       </div>
-      <p className="col-span-3 truncate text-xs text-(--muted-2)">{assigneeName ? `Assigned to ${assigneeName.split(" ")[0]}` : ""}</p>
+      <p className="col-span-3 truncate text-xs text-(--muted-2)">
+        {assigneeName ? `Assigned to ${assigneeName.split(" ")[0]}` : ""}
+      </p>
     </div>
   );
 }
@@ -377,9 +420,7 @@ export const RenderStatusSvg = ({ status }: { status: string }) => {
         <SVGIcon className="flex w-5" svgString={RAW_ICONS.CancelledIssue} />
       );
     case "hold":
-      return (
-        <SVGIcon className="flex w-5" svgString={RAW_ICONS.Label} />
-      );
+      return <SVGIcon className="flex w-5" svgString={RAW_ICONS.Label} />;
     case "planned":
       return (
         <SVGIcon className="flex w-5" svgString={RAW_ICONS.PlannedIssue} />

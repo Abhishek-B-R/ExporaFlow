@@ -11,6 +11,9 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "test:policy": "tsx scripts/test-ticket-policy.ts",
+    "test:integration": "tsx scripts/test-integration-logic.ts",
+    "test": "npm run test:policy && npm run test:integration",
     "postinstall": "prisma generate"
   },
   "packageManager": "pnpm@9.15.9",

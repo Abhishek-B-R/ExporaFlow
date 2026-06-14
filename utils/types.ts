@@ -30,16 +30,23 @@ export type IssueBody = {
   dueDate?: string | null;
   labels?: string[];
   assignedUser?: string | null;
-  User?: { id: string; name?: string | null; email?: string | null; image?: string | null } | null;
+  User?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
   sprintId?: string | null;
   parentIssueId?: string | null;
   projectId: string;
   updatedAt: string | undefined;
   estimate?: number | null;
-  ticketType?: "INCIDENT" | "CHANGE";
+  ticketType?: string;
   ticketNumber?: number;
+  globalTicketNumber?: number | null;
   urgency?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   requesterName?: string | null;
+  requesterEmail?: string | null;
   requesterUserId?: string | null;
   startDate?: string | null;
   endDate?: string | null;

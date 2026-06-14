@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { assertProjectRole } from "@/lib/authz";
+import { assertProjectRole, assertProjectPermission } from "@/lib/authz";
 import { Role, TicketType, TicketUrgency } from "@prisma/client";
 import { computeDueDateFromPolicy } from "@/lib/ticket-due-date-policy";
 import { canTransitionIssueStatus } from "@/lib/issue-status-machine";
@@ -13,6 +13,12 @@ import {
   computeInitialSlaDueAt,
   parseStoredDate,
 } from "@/lib/ticket-sla";
+import { isChangeManagementType } from "@/lib/ticket-types";
+import {
+  diffNewMentionIds,
+  loadMentionCandidatesForProject,
+} from "@/lib/mention-candidates";
+import { queueMentionEmails } from "@/lib/mention-email";
 
 export async function PATCH(request: NextRequest) {
   const raw = await request.json();
@@ -45,6 +51,8 @@ export async function PATCH(request: NextRequest) {
     ticketType,
     urgency,
     requesterName,
+    requesterEmail,
+    manualDueDateOverride,
   } = parsed.data;
 
   const session = await getServerSession(authOptions);
@@ -80,6 +88,9 @@ export async function PATCH(request: NextRequest) {
         slaDueAt: true,
         urgency: true,
         requesterName: true,
+        requesterEmail: true,
+        ticketNumber: true,
+        globalTicketNumber: true,
         createdAt: true,
       },
     });
@@ -113,10 +124,13 @@ export async function PATCH(request: NextRequest) {
         ticketType: effectiveType,
       })
     ) {
-      return new Response(JSON.stringify({ message: "Invalid status transition." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ message: "Invalid status transition." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     const nextStart =
@@ -128,9 +142,11 @@ export async function PATCH(request: NextRequest) {
         ? parseStoredDate(typeof endDate === "string" ? endDate : undefined)
         : existing.endDate;
     const nextDuration =
-      durationMinutes !== undefined ? durationMinutes : existing.durationMinutes;
+      durationMinutes !== undefined
+        ? durationMinutes
+        : existing.durationMinutes;
 
-    if (effectiveType === TicketType.CHANGE) {
+    if (isChangeManagementType(effectiveType)) {
       if (!nextStart) {
         return new Response(
           JSON.stringify({
@@ -142,7 +158,8 @@ export async function PATCH(request: NextRequest) {
       if (!nextEnd && !nextDuration) {
         return new Response(
           JSON.stringify({
-            message: "End date or duration is required for change management tickets.",
+            message:
+              "End date or duration is required for change management tickets.",
           }),
           { status: 400, headers: { "Content-Type": "application/json" } },
         );
@@ -155,10 +172,13 @@ export async function PATCH(request: NextRequest) {
         select: { projectId: true },
       });
       if (!sprint || sprint.projectId !== existing.projectId) {
-        return new Response(JSON.stringify({ message: "Invalid sprint for this project." }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ message: "Invalid sprint for this project." }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
       }
     }
 
@@ -175,8 +195,10 @@ export async function PATCH(request: NextRequest) {
 
     let nextSlaDueAt: Date | null | undefined = undefined;
     if (
-      effectiveType === TicketType.CHANGE &&
-      (startDate !== undefined || endDate !== undefined || durationMinutes !== undefined)
+      isChangeManagementType(effectiveType) &&
+      (startDate !== undefined ||
+        endDate !== undefined ||
+        durationMinutes !== undefined)
     ) {
       nextSlaDueAt = computeInitialSlaDueAt({
         startDate: nextStart,
@@ -186,7 +208,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     const nextUrgency =
-      urgency !== undefined ? urgency : existing.urgency ?? TicketUrgency.MEDIUM;
+      urgency !== undefined
+        ? urgency
+        : (existing.urgency ?? TicketUrgency.MEDIUM);
     const nextPriority =
       issuePriority !== undefined ? issuePriority : existing.priority;
 
@@ -196,8 +220,30 @@ export async function PATCH(request: NextRequest) {
       urgency !== undefined && urgency !== existing.urgency;
 
     let resolvedDueDate: Date | null | undefined = undefined;
-    if (
-      effectiveType === TicketType.INCIDENT &&
+    const wantsManualDue =
+      typeof dueDate !== "undefined" || manualDueDateOverride === true;
+
+    if (wantsManualDue) {
+      const overrideAccess = await assertProjectPermission({
+        userId: session.user.id,
+        projectId: existing.projectId,
+        permission: "overrideDueDate",
+      });
+      if (!overrideAccess.ok) {
+        return new Response(
+          JSON.stringify({
+            message: "Only managers can manually override due dates.",
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (typeof dueDate === "string") {
+        resolvedDueDate = dueDate ? parseStoredDate(dueDate) : null;
+      } else if (dueDate === null) {
+        resolvedDueDate = null;
+      }
+    } else if (
+      !isChangeManagementType(effectiveType) &&
       (priorityChanged || urgencyChanged)
     ) {
       resolvedDueDate = computeDueDateFromPolicy({
@@ -206,10 +252,6 @@ export async function PATCH(request: NextRequest) {
         baseDate: existing.createdAt,
         ticketType: effectiveType,
       });
-    } else if (typeof dueDate === "string") {
-      resolvedDueDate = dueDate ? parseStoredDate(dueDate) : null;
-    } else if (dueDate === null) {
-      resolvedDueDate = null;
     }
 
     const updatedIssue = await prisma.issue.update({
@@ -222,6 +264,10 @@ export async function PATCH(request: NextRequest) {
         requesterName:
           requesterName !== undefined
             ? requesterName?.trim() || null
+            : undefined,
+        requesterEmail:
+          requesterEmail !== undefined
+            ? requesterEmail?.trim() || null
             : undefined,
         status: issueStatus,
         ticketType,
@@ -276,7 +322,10 @@ export async function PATCH(request: NextRequest) {
           to: issueDescription,
         });
       }
-      if (typeof issueStatus === "string" && issueStatus !== (existing.status ?? "")) {
+      if (
+        typeof issueStatus === "string" &&
+        issueStatus !== (existing.status ?? "")
+      ) {
         changes.push({
           field: "status",
           from: existing.status ?? "",
@@ -335,8 +384,12 @@ export async function PATCH(request: NextRequest) {
         }
       }
       if (typeof dueDate !== "undefined") {
-        const prev = existing.dueDate ? existing.dueDate.toISOString().slice(0, 10) : "";
-        const next = dueDate ? new Date(dueDate).toISOString().slice(0, 10) : "";
+        const prev = existing.dueDate
+          ? existing.dueDate.toISOString().slice(0, 10)
+          : "";
+        const next = dueDate
+          ? new Date(dueDate).toISOString().slice(0, 10)
+          : "";
         if (prev !== next) {
           changes.push({ field: "dueDate", from: prev, to: next });
         }
@@ -371,8 +424,41 @@ export async function PATCH(request: NextRequest) {
             projectId: updatedIssue.projectId,
           });
         }
+
+        if (
+          typeof issueDescription === "string" &&
+          issueDescription !== (existing.description ?? "")
+        ) {
+          const candidates = await loadMentionCandidatesForProject(
+            existing.projectId,
+            session.user.id,
+          );
+          const mentionedUserIds = diffNewMentionIds({
+            previousText: existing.description,
+            nextText: issueDescription,
+            candidates,
+          });
+          if (mentionedUserIds.length > 0) {
+            queueMentionEmails({
+              mentionedUserIds,
+              actorId: session.user.id,
+              issueId: updatedIssue.id,
+              projectId: updatedIssue.projectId,
+              issueTitle: updatedIssue.title,
+              excerpt: issueDescription,
+              ticketType: updatedIssue.ticketType,
+              ticketNumber: existing.ticketNumber,
+              globalTicketNumber: existing.globalTicketNumber,
+              sourceType: "description_update",
+              sourceId: updatedIssue.id,
+            });
+          }
+        }
       } catch (sideEffectError) {
-        console.error("Non-fatal issue update side-effect failure:", sideEffectError);
+        console.error(
+          "Non-fatal issue update side-effect failure:",
+          sideEffectError,
+        );
       }
 
       return new Response(JSON.stringify({ message: "Ticket updated!" }));

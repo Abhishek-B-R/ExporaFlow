@@ -1,6 +1,10 @@
 import { prisma } from "@/db";
 import { Role } from "@prisma/client";
 import { userPassesServiceLineForProject } from "@/lib/project-access";
+import {
+  canPerformProjectAction,
+  type ProjectPermission,
+} from "@/lib/rbac-permissions";
 
 const ROLE_ORDER: Record<Role, number> = {
   ADMIN: 4,
@@ -8,6 +12,7 @@ const ROLE_ORDER: Record<Role, number> = {
   ENGINEER: 2,
   QA: 1,
   VIEWER: 0,
+  CUSTOMER: 0,
 };
 
 export function hasMinimumRole(params: { role: Role; minimum: Role }) {
@@ -71,10 +76,42 @@ export async function assertProjectRole(params: {
   const { userId, projectId, minimum } = params;
   const role = await getUserProjectRole({ userId, projectId });
   if (!role) {
-    return { ok: false as const, status: 403 as const, message: "Access denied." };
+    return {
+      ok: false as const,
+      status: 403 as const,
+      message: "Access denied.",
+    };
   }
   if (!hasMinimumRole({ role, minimum })) {
-    return { ok: false as const, status: 403 as const, message: "Insufficient permissions." };
+    return {
+      ok: false as const,
+      status: 403 as const,
+      message: "Insufficient permissions.",
+    };
+  }
+  return { ok: true as const, role };
+}
+
+export async function assertProjectPermission(params: {
+  userId: string;
+  projectId: string;
+  permission: ProjectPermission;
+}) {
+  const { userId, projectId, permission } = params;
+  const role = await getUserProjectRole({ userId, projectId });
+  if (!role) {
+    return {
+      ok: false as const,
+      status: 403 as const,
+      message: "Access denied.",
+    };
+  }
+  if (!canPerformProjectAction(role, permission)) {
+    return {
+      ok: false as const,
+      status: 403 as const,
+      message: "Insufficient permissions.",
+    };
   }
   return { ok: true as const, role };
 }

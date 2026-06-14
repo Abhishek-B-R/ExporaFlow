@@ -31,8 +31,9 @@ export async function accessibleProjectsWhere(
   for (const m of memberships) {
     const prev = workspaceById.get(m.workspaceId);
     const rank = (r: Role) =>
-      ({ ADMIN: 4, MANAGER: 3, ENGINEER: 2, QA: 1, VIEWER: 0 } as const)[r];
-    if (!prev || rank(m.role) > rank(prev)) workspaceById.set(m.workspaceId, m.role);
+      (({ ADMIN: 4, MANAGER: 3, ENGINEER: 2, QA: 1, VIEWER: 0, CUSTOMER: 0 }) as const)[r];
+    if (!prev || rank(m.role) > rank(prev))
+      workspaceById.set(m.workspaceId, m.role);
   }
 
   const grants = await prisma.userServiceLineGrant.findMany({

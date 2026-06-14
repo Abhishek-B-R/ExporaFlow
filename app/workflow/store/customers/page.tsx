@@ -11,6 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 import { StoreStatusBadge } from "@/components/workflow/store-status-badge";
+import {
+  StoreDirectoryFilterBar,
+  type StoreDirectoryFilter,
+} from "@/components/workflow/store-directory-filter";
 
 type Customer = {
   id: string;
@@ -30,6 +34,7 @@ export default function CustomersPage() {
   const [organizationName, setOrganizationName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StoreDirectoryFilter>("all");
 
   useEffect(() => {
     if (status === "loading") return;
@@ -37,13 +42,15 @@ export default function CustomersPage() {
   }, [status, router]);
 
   const refresh = async () => {
-    const res = await axios.get<Customer[]>("/api/customers");
+    const res = await axios.get<Customer[]>(
+      `/api/customers?status=${statusFilter}`,
+    );
     setRows(res.data ?? []);
   };
 
   useEffect(() => {
     void refresh().catch(() => setRows([]));
-  }, []);
+  }, [statusFilter]);
 
   const toggleActive = async (id: string, isActive: boolean) => {
     try {
@@ -105,6 +112,8 @@ export default function CustomersPage() {
           </Button>
         </div>
 
+        <StoreDirectoryFilterBar value={statusFilter} onChange={setStatusFilter} />
+
         <div className="linear-panel overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-(--surface-2) text-(--muted-2) text-left text-xs uppercase">
@@ -119,7 +128,12 @@ export default function CustomersPage() {
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.id} className="border-t border-(--border) hover:bg-(--surface-2)">
+                <tr
+                  key={c.id}
+                  className={`border-t border-(--border) hover:bg-(--surface-2) ${
+                    c.isActive === false ? "opacity-70 bg-zinc-50/50" : ""
+                  }`}
+                >
                   <td className="px-3 py-2">{c.organizationName}</td>
                   <td className="px-3 py-2">{c.name}</td>
                   <td className="px-3 py-2 text-(--muted)">{c.email ?? "—"}</td>

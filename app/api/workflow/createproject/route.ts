@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     customerId,
     startDate,
     targetDate,
+    memberUserIds,
   } = await request.json();
 
   const session = await getServerSession(authOptions);
@@ -35,7 +36,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!projTitle || typeof projTitle !== "string" || !projTitle.trim()) {
-    return Response.json({ message: "Project title is required." }, { status: 400 });
+    return Response.json(
+      { message: "Project title is required." },
+      { status: 400 },
+    );
   }
 
   if (!isProjectServiceLineValue(serviceLine)) {
@@ -47,7 +51,10 @@ export async function POST(request: NextRequest) {
 
   const workspaceAccess = await assertWorkspaceMember(session.user.id);
   if (!workspaceAccess.ok) {
-    return Response.json({ message: workspaceAccess.message }, { status: workspaceAccess.status });
+    return Response.json(
+      { message: workspaceAccess.message },
+      { status: workspaceAccess.status },
+    );
   }
 
   if (!customerId || typeof customerId !== "string") {
@@ -116,6 +123,26 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      const extraMemberIds = Array.isArray(memberUserIds)
+        ? memberUserIds.filter(
+            (id: unknown): id is string =>
+              typeof id === "string" && id.length > 0 && id !== session.user.id,
+          )
+        : [];
+
+      if (extraMemberIds.length > 0) {
+        const inactive = await prisma.employee.findMany({
+          where: { userId: { in: extraMemberIds }, isActive: false },
+          select: { userId: true },
+        });
+        if (inactive.length > 0) {
+          return Response.json(
+            { message: "Inactive employees cannot be assigned to projects." },
+            { status: 400 },
+          );
+        }
+      }
+
       const response = await prisma.project.create({
         data: {
           title: projTitle.trim(),
@@ -130,10 +157,13 @@ export async function POST(request: NextRequest) {
           targetDate: parsedTarget,
           workspaceId: workspaceMember.workspaceId,
           projectMembers: {
-            create: {
-              userId: session.user.id,
-              role: Role.ADMIN,
-            },
+            create: [
+              { userId: session.user.id, role: Role.ADMIN },
+              ...extraMemberIds.map((userId: string) => ({
+                userId,
+                role: Role.ENGINEER,
+              })),
+            ],
           },
         },
       });
@@ -143,7 +173,10 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
         return Response.json(
           { message: "A project with this name already exists." },
           { status: 409 },

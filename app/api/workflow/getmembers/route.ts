@@ -11,6 +11,7 @@ const ROLE_RANK: Record<Role, number> = {
   [Role.ENGINEER]: 3,
   [Role.QA]: 2,
   [Role.VIEWER]: 1,
+  [Role.CUSTOMER]: 0,
 };
 
 export async function GET(request: NextRequest) {

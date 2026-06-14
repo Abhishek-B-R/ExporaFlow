@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
       minimum: Role.VIEWER,
     });
     if (!access.ok) {
-      return Response.json({ message: access.message }, { status: access.status });
+      return Response.json(
+        { message: access.message },
+        { status: access.status },
+      );
     }
     allowedProjectIds = [projectId];
   } else {
@@ -49,6 +52,9 @@ export async function POST(request: NextRequest) {
   const tsQuery = Prisma.sql`plainto_tsquery('simple', ${searchQuery})`;
   const ids = Prisma.sql`ARRAY[${Prisma.join(allowedProjectIds)}]::text[]`;
   const likeQuery = `%${searchQuery}%`;
+  const numericQuery = searchQuery.replace(/^exp-?/i, "");
+  const globalNumber =
+    /^\d+$/.test(numericQuery) ? Number(numericQuery) : null;
 
   const issues = await prisma.$queryRaw<
     Array<{
@@ -76,6 +82,10 @@ export async function POST(request: NextRequest) {
         to_tsvector('simple', COALESCE(i."title", '') || ' ' || COALESCE(i."description", '')) @@ ${tsQuery}
         OR i."title" ILIKE ${likeQuery}
         OR COALESCE(i."description", '') ILIKE ${likeQuery}
+        OR i."id" ILIKE ${likeQuery}
+        OR CAST(i."globalTicketNumber" AS TEXT) ILIKE ${likeQuery}
+        OR CAST(i."ticketNumber" AS TEXT) ILIKE ${likeQuery}
+        ${globalNumber !== null ? Prisma.sql`OR i."globalTicketNumber" = ${globalNumber}` : Prisma.empty}
       )
     ORDER BY
       CASE WHEN i."title" ILIKE ${likeQuery} THEN 0 ELSE 1 END,

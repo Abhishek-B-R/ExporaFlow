@@ -1,4 +1,5 @@
 import { TicketType } from "@prisma/client";
+import { isChangeManagementType } from "@/lib/ticket-types";
 
 export const HOLD_STATUS = "Hold";
 
@@ -16,7 +17,7 @@ const BASE_LIST = ISSUE_STATUSES as readonly string[];
 const CHANGE_LIST = [...BASE_LIST, HOLD_STATUS] as readonly string[];
 
 export function statusesForTicketType(ticketType: TicketType): readonly string[] {
-  return ticketType === TicketType.CHANGE ? CHANGE_LIST : BASE_LIST;
+  return isChangeManagementType(ticketType) ? CHANGE_LIST : BASE_LIST;
 }
 
 export function isValidIssueStatusForType(

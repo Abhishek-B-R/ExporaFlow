@@ -19,13 +19,29 @@ export function parseOrganizationAccess(value: unknown): string[] {
   return [];
 }
 
+export type DirectoryFilter = "active" | "inactive" | "all";
+
+function activeFilterWhere(filter: DirectoryFilter | undefined) {
+  if (filter === "inactive") return { isActive: false };
+  if (filter === "all") return {};
+  return { isActive: true };
+}
+
 /**
  * Customers tied to at least one project the user can access.
  * Elevated workspace members see all customers.
  */
-export async function getAccessibleCustomersForUser(userId: string) {
+export async function getAccessibleCustomersForUser(
+  userId: string,
+  options?: { activeOnly?: boolean; status?: DirectoryFilter },
+) {
+  const status =
+    options?.status ?? (options?.activeOnly === false ? "all" : "active");
+  const activeWhere = activeFilterWhere(status);
+
   if (await userIsWorkspaceElevated(userId)) {
     return prisma.customer.findMany({
+      where: activeWhere,
       orderBy: { organizationName: "asc" },
     });
   }
@@ -43,7 +59,7 @@ export async function getAccessibleCustomersForUser(userId: string) {
   if (ids.length === 0) return [];
 
   return prisma.customer.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, ...activeWhere },
     orderBy: { organizationName: "asc" },
   });
 }
@@ -52,7 +68,13 @@ export async function getAccessibleCustomersForUser(userId: string) {
  * Employees scoped by organizationAccess JSON (workspace ids) or linked user.
  * Elevated workspace members see all employees.
  */
-export async function getAccessibleEmployeesForUser(userId: string) {
+export async function getAccessibleEmployeesForUser(
+  userId: string,
+  options?: { activeOnly?: boolean; status?: DirectoryFilter; assignableOnly?: boolean },
+) {
+  const status =
+    options?.status ?? (options?.activeOnly === false ? "all" : "active");
+  const activeWhere = activeFilterWhere(status);
   const include = {
     user: { select: { id: true, name: true, email: true } },
     team: { select: { id: true, name: true } },
@@ -60,6 +82,7 @@ export async function getAccessibleEmployeesForUser(userId: string) {
 
   if (await userIsWorkspaceElevated(userId)) {
     return prisma.employee.findMany({
+      where: activeWhere,
       orderBy: { fullName: "asc" },
       include,
     });
@@ -72,13 +95,14 @@ export async function getAccessibleEmployeesForUser(userId: string) {
   const workspaceIds = memberships.map((m) => m.workspaceId);
   if (workspaceIds.length === 0) {
     return prisma.employee.findMany({
-      where: { userId },
+      where: { userId, ...activeWhere },
       orderBy: { fullName: "asc" },
       include,
     });
   }
 
   const all = await prisma.employee.findMany({
+    where: activeWhere,
     orderBy: { fullName: "asc" },
     include,
   });

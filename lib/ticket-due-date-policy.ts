@@ -1,92 +1,119 @@
-import { TicketUrgency, TicketType } from "@prisma/client";
+import { TicketUrgency } from "@prisma/client";
+import {
+  addBusinessDays,
+  addCalendarHours,
+  DEFAULT_BUSINESS_HOLIDAYS,
+} from "@/lib/business-days";
+import { isChangeManagementType } from "@/lib/ticket-types";
+import { TicketType } from "@prisma/client";
 
-/**
- * Edit this file to tune how due dates are calculated from urgency + priority.
- * Values are hours from ticket creation (or from `baseDate` when recomputing).
- */
-export const TICKET_DUE_DATE_POLICY = {
-  /** Incident tickets use this matrix. Change tickets keep start/end SLA logic. */
-  incident: {
-    CRITICAL: {
-      Urgent: 2,
-      High: 4,
-      Medium: 8,
-      Low: 12,
-      "No Priority": 24,
-    },
-    HIGH: {
-      Urgent: 4,
-      High: 8,
-      Medium: 24,
-      Low: 48,
-      "No Priority": 72,
-    },
-    MEDIUM: {
-      Urgent: 8,
-      High: 24,
-      Medium: 48,
-      Low: 72,
-      "No Priority": 120,
-    },
-    LOW: {
-      Urgent: 24,
-      High: 48,
-      Medium: 72,
-      Low: 120,
-      "No Priority": 168,
-    },
-  } satisfies Record<
-    TicketUrgency,
-    Record<string, number>
-  >,
-} as const;
+type PriorityLevel = "Low" | "Medium" | "High" | "Critical";
+type UrgencyLevel = "Low" | "Medium" | "High";
 
-const PRIORITY_ALIASES: Record<string, string> = {
-  urgent: "Urgent",
+type SlaRule =
+  | { kind: "hours"; value: number }
+  | { kind: "businessDays"; value: number };
+
+/** Industry SLA matrix from product spec (priority × urgency). */
+const SLA_MATRIX: Record<PriorityLevel, Record<UrgencyLevel, SlaRule>> = {
+  Critical: {
+    High: { kind: "hours", value: 4 },
+    Medium: { kind: "hours", value: 8 },
+    Low: { kind: "businessDays", value: 1 },
+  },
+  High: {
+    High: { kind: "businessDays", value: 1 },
+    Medium: { kind: "businessDays", value: 2 },
+    Low: { kind: "businessDays", value: 3 },
+  },
+  Medium: {
+    High: { kind: "businessDays", value: 3 },
+    Medium: { kind: "businessDays", value: 5 },
+    Low: { kind: "businessDays", value: 7 },
+  },
+  Low: {
+    High: { kind: "businessDays", value: 7 },
+    Medium: { kind: "businessDays", value: 10 },
+    Low: { kind: "businessDays", value: 14 },
+  },
+};
+
+const PRIORITY_ALIASES: Record<string, PriorityLevel> = {
+  critical: "Critical",
+  urgent: "Critical",
   high: "High",
   medium: "Medium",
   low: "Low",
-  "no priority": "No Priority",
-  nopriority: "No Priority",
+  "no priority": "Medium",
+  nopriority: "Medium",
 };
 
-export function normalizePriorityLabel(priority: string | null | undefined): string {
-  if (!priority?.trim()) return "No Priority";
+export function normalizePriorityLabel(
+  priority: string | null | undefined,
+): PriorityLevel {
+  if (!priority?.trim()) return "Medium";
   const key = priority.trim().toLowerCase();
-  return PRIORITY_ALIASES[key] ?? priority.trim();
+  return PRIORITY_ALIASES[key] ?? ("Medium" as PriorityLevel);
 }
 
-export function hoursUntilDue(params: {
+export function normalizeUrgencyLevel(
+  urgency: TicketUrgency,
+): UrgencyLevel {
+  if (urgency === TicketUrgency.LOW) return "Low";
+  if (urgency === TicketUrgency.HIGH || urgency === TicketUrgency.CRITICAL) {
+    return "High";
+  }
+  return "Medium";
+}
+
+export function resolveSlaRule(params: {
   urgency: TicketUrgency;
   priority: string | null | undefined;
-}): number {
-  const matrix = TICKET_DUE_DATE_POLICY.incident[params.urgency] as Record<
-    string,
-    number
-  >;
-  const label = normalizePriorityLabel(params.priority);
-  return matrix[label] ?? matrix["No Priority"] ?? 72;
+}): SlaRule {
+  const priority = normalizePriorityLabel(params.priority);
+  const urgency = normalizeUrgencyLevel(params.urgency);
+  return SLA_MATRIX[priority][urgency];
 }
 
-/** Compute due date for incident tickets from urgency + priority. */
 export function computeDueDateFromPolicy(params: {
   urgency: TicketUrgency;
   priority: string | null | undefined;
   baseDate?: Date;
   ticketType?: TicketType;
+  holidays?: readonly string[];
 }): Date | null {
-  if (params.ticketType === TicketType.CHANGE) return null;
-  const hours = hoursUntilDue({
+  if (isChangeManagementType(params.ticketType)) return null;
+  const rule = resolveSlaRule({
     urgency: params.urgency,
     priority: params.priority,
   });
   const base = params.baseDate ?? new Date();
-  return new Date(base.getTime() + hours * 60 * 60 * 1000);
+  const holidays = params.holidays ?? DEFAULT_BUSINESS_HOLIDAYS;
+  if (rule.kind === "hours") {
+    return addCalendarHours(base, rule.value);
+  }
+  return addBusinessDays(base, rule.value, holidays);
 }
 
 export const URGENCY_OPTIONS: { value: TicketUrgency; label: string }[] = [
   { value: TicketUrgency.LOW, label: "Low" },
   { value: TicketUrgency.MEDIUM, label: "Medium" },
   { value: TicketUrgency.HIGH, label: "High" },
-  { value: TicketUrgency.CRITICAL, label: "Critical" },
 ];
+
+export const PRIORITY_OPTIONS: { value: string; label: string }[] = [
+  { value: "Low", label: "Low" },
+  { value: "Medium", label: "Medium" },
+  { value: "High", label: "High" },
+  { value: "Critical", label: "Critical" },
+];
+
+/** @deprecated Use resolveSlaRule — kept for callers expecting hour counts. */
+export function hoursUntilDue(params: {
+  urgency: TicketUrgency;
+  priority: string | null | undefined;
+}): number {
+  const rule = resolveSlaRule(params);
+  if (rule.kind === "hours") return rule.value;
+  return rule.value * 24;
+}

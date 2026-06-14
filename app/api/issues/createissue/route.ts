@@ -8,8 +8,17 @@ import { findDuplicateIssueCandidates } from "@/lib/ai/duplicates";
 import { Role, TicketType, TicketUrgency } from "@prisma/client";
 import { createIssueBodySchema } from "@/lib/ticket-schemas";
 import { computeDueDateFromPolicy } from "@/lib/ticket-due-date-policy";
-import { allocateTicketNumber } from "@/lib/ticket-numbers";
+import {
+  allocateGlobalTicketNumber,
+  allocateTicketNumber,
+} from "@/lib/ticket-numbers";
 import { computeInitialSlaDueAt, parseStoredDate } from "@/lib/ticket-sla";
+import { isChangeManagementType } from "@/lib/ticket-types";
+import {
+  diffNewMentionIds,
+  loadMentionCandidatesForProject,
+} from "@/lib/mention-candidates";
+import { queueMentionEmails } from "@/lib/mention-email";
 
 function normalizeIdentity(value: string) {
   return value
@@ -29,7 +38,10 @@ export async function POST(request: NextRequest) {
       Object.values(first).flat()[0] ??
       parsed.error.errors[0]?.message ??
       "Invalid request.";
-    return Response.json({ message: msg, issues: parsed.error.flatten() }, { status: 400 });
+    return Response.json(
+      { message: msg, issues: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const {
@@ -48,6 +60,7 @@ export async function POST(request: NextRequest) {
     assignedUser,
     urgency,
     requesterName,
+    requesterEmail,
   } = parsed.data;
 
   const session = await getServerSession(authOptions);
@@ -62,7 +75,10 @@ export async function POST(request: NextRequest) {
     minimum: Role.ENGINEER,
   });
   if (!access.ok) {
-    return Response.json({ message: access.message }, { status: access.status });
+    return Response.json(
+      { message: access.message },
+      { status: access.status },
+    );
   }
 
   const normalizedTitle = normalizeIdentity(issueTitle);
@@ -97,28 +113,35 @@ export async function POST(request: NextRequest) {
     description: issueDescription,
     take: 3,
   });
-  const strongDuplicate = duplicateCandidates.find((candidate) => candidate.score >= 0.86);
+  const strongDuplicate = duplicateCandidates.find(
+    (candidate) => candidate.score >= 0.86,
+  );
   if (strongDuplicate) {
     return Response.json(
       {
-        message: "This looks like an existing ticket. Open the existing ticket instead.",
+        message:
+          "This looks like an existing ticket. Open the existing ticket instead.",
         duplicate: strongDuplicate,
       },
       { status: 409 },
     );
   }
 
-  const tType = ticketType ?? TicketType.INCIDENT;
+  const tType = ticketType;
   const start = parseStoredDate(
     typeof startDate === "string" ? startDate : undefined,
   );
-  const end = parseStoredDate(typeof endDate === "string" ? endDate : undefined);
-  const parsedDue = parseStoredDate(typeof dueDate === "string" ? dueDate : undefined);
+  const end = parseStoredDate(
+    typeof endDate === "string" ? endDate : undefined,
+  );
+  const parsedDue = parseStoredDate(
+    typeof dueDate === "string" ? dueDate : undefined,
+  );
   const effectiveUrgency = urgency ?? TicketUrgency.MEDIUM;
-  const effectivePriority = issuePriority ?? "No Priority";
+  const effectivePriority = issuePriority ?? "Medium";
   const due =
     parsedDue ??
-    (tType === TicketType.INCIDENT
+    (!isChangeManagementType(tType)
       ? computeDueDateFromPolicy({
           urgency: effectiveUrgency,
           priority: effectivePriority,
@@ -126,7 +149,10 @@ export async function POST(request: NextRequest) {
         })
       : null);
 
-  const ticketNumber = await allocateTicketNumber(projectId);
+  const [ticketNumber, globalTicketNumber] = await Promise.all([
+    allocateTicketNumber(projectId),
+    allocateGlobalTicketNumber(),
+  ]);
   const sessionUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { name: true, email: true },
@@ -136,25 +162,33 @@ export async function POST(request: NextRequest) {
     sessionUser?.name?.trim() ||
     sessionUser?.email?.split("@")[0] ||
     "Unknown";
+  const resolvedRequesterEmail =
+    (typeof requesterEmail === "string" && requesterEmail.trim()) ||
+    sessionUser?.email?.trim() ||
+    null;
 
-  const slaDueAt =
-    tType === TicketType.CHANGE
-      ? computeInitialSlaDueAt({
-          startDate: start,
-          endDate: end,
-          durationMinutes: durationMinutes ?? null,
-        })
-      : null;
+  const slaDueAt = isChangeManagementType(tType)
+    ? computeInitialSlaDueAt({
+        startDate: start,
+        endDate: end,
+        durationMinutes: durationMinutes ?? null,
+      })
+    : null;
+
+  const descriptionText =
+    typeof issueDescription === "string" ? issueDescription : "";
 
   const response = await prisma.issue.create({
     data: {
       title: issueTitle.trim(),
-      description: typeof issueDescription === "string" ? issueDescription : "",
+      description: descriptionText,
       status: issueStatus ?? "Backlog",
       priority: effectivePriority,
       urgency: effectiveUrgency,
       ticketNumber,
+      globalTicketNumber,
       requesterName: resolvedRequesterName,
+      requesterEmail: resolvedRequesterEmail,
       requesterUserId: session.user.id,
       projectId,
       dueDate: due,
@@ -205,7 +239,41 @@ export async function POST(request: NextRequest) {
       projectId,
     });
   } catch (sideEffectError) {
-    console.error("Non-fatal issue creation side-effect failure:", sideEffectError);
+    console.error(
+      "Non-fatal issue creation side-effect failure:",
+      sideEffectError,
+    );
+  }
+
+  if (descriptionText.trim()) {
+    try {
+      const candidates = await loadMentionCandidatesForProject(
+        projectId,
+        session.user.id,
+      );
+      const mentionedUserIds = diffNewMentionIds({
+        previousText: "",
+        nextText: descriptionText,
+        candidates,
+      });
+      if (mentionedUserIds.length > 0) {
+        queueMentionEmails({
+          mentionedUserIds,
+          actorId: session.user.id,
+          issueId: response.id,
+          projectId,
+          issueTitle: response.title,
+          excerpt: descriptionText,
+          ticketType: tType,
+          ticketNumber,
+          globalTicketNumber,
+          sourceType: "description_create",
+          sourceId: response.id,
+        });
+      }
+    } catch (mentionError) {
+      console.error("Mention email on create failed:", mentionError);
+    }
   }
 
   return Response.json({
