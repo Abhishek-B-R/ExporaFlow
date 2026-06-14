@@ -2,390 +2,170 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSession, signIn, signOut } from "@/utils/auth";
+import { useSession, signOut } from "@/utils/auth";
 import { usePathname } from "next/navigation";
-import {
-  BottomOptionLabel,
-  LogoutBtn,
-} from "../workflow/sidebar/bottom-options-tile";
-import { RAW_ICONS } from "@/lib/icons";
-import { customToast } from "@/lib/custom-toast";
-import SVGIcon from "@/lib/svg-icon";
 
-const optionsArr: {
-  title: string;
-  svg: string;
-  redirectHref: string;
-  openToNewPage: boolean;
-}[] = [
-  {
-    title: "Profile",
-    svg: RAW_ICONS.User,
-    redirectHref: "/profile",
-    openToNewPage: false,
-  },
-  {
-    title: "Search for help…",
-    svg: RAW_ICONS.Search,
-    redirectHref: "",
-    openToNewPage: false,
-  },
-  {
-    title: "Shortcuts",
-    svg: RAW_ICONS.Keyboard,
-    redirectHref: "",
-    openToNewPage: false,
-  },
-  { title: "Docs", svg: RAW_ICONS.Docs, redirectHref: "", openToNewPage: true },
-  {
-    title: "Contact us",
-    svg: RAW_ICONS.ContactUs,
-    redirectHref: "",
-    openToNewPage: false,
-  },
-  {
-    title: "Community",
-    svg: RAW_ICONS.Community,
-    redirectHref: "",
-    openToNewPage: true,
-  },
+const NAV_LINKS = [
+  { label: "Dashboard", href: "/workflow/dashboard" },
+  { label: "Projects", href: "/workflow/project" },
 ];
-
-const navListArr: {
-  title: string;
-  redirectHref: string;
-  onClickHandler?: () => void;
-}[] = [
-  { title: "Dashboard", redirectHref: "/workflow/dashboard" },
-  { title: "Projects", redirectHref: "/workflow/project" },
-  { title: "Contact", redirectHref: "" },
-];
-
-const itemVariants = {
-  open: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      when: "beforeChildren",
-    },
-  },
-  closed: {
-    opacity: 0,
-    y: -15,
-    transition: {
-      when: "afterChildren",
-    },
-  },
-};
-
-const wrapperVariants = {
-  open: {
-    scaleY: 1,
-    opacity: 1,
-    transition: {
-      when: "beforeChildren",
-      staggerChildren: 0.1,
-    },
-  },
-  closed: {
-    scaleY: 0,
-    opacity: 0,
-    transition: {
-      when: "afterChildren",
-      staggerChildren: 0.1,
-    },
-  },
-};
 
 export default function Navbar() {
-  const { data: session, status } = useSession();
-  const [signupLoading, setSignupLoading] = useState(false);
+  const { data: session } = useSession();
   const pathname = usePathname();
-
-  const [isOpen, setIsOpen] = useState(false);
-
-  // options when user logged in
-  const [profileTabOpen, setProfileTabOpen] = useState(false);
-
-  const [showNavbar, setShowNavbar] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  const handleSignout = () => {
-    try {
-      setSignupLoading(true);
-      signOut();
-    } catch (error) {
-      customToast.error({
-        title: "Error occured",
-        description: "Got an error while signing up.",
-      });
-    } finally {
-      setSignupLoading(false);
-      customToast.success({
-        title: "Welcome back",
-        description: "Logged in successfully!",
-      });
-    }
-  };
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const currentY = window.scrollY;
+    setMobileOpen(false);
+  }, [pathname]);
 
-      if (currentY > lastScrollY && currentY > 50) {
-        setShowNavbar(false); // Scroll down
-      } else {
-        setShowNavbar(true); // Scroll up
-      }
-
-      setLastScrollY(currentY);
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
     };
+  }, [mobileOpen]);
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  const isLoggedIn = Boolean(session?.user?.id);
 
   return (
-    <>
-      <div
-        className={`top-0 fixed w-full py-2 flex px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28 2xl:px-40 z-50 transition-transform duration-300 ${showNavbar ? "translate-y-0" : "-translate-y-full"}`}
-      >
-        <div className="h-[55px] border border-(--border) w-full rounded-lg flex items-center justify-between pl-3 pr-2 bg-(--surface-1) shadow-[var(--shell-shadow)] backdrop-blur-md bg-(--surface-1)/95">
-          <Link href="/">
-            <Image
-              className="w-8"
-              src="/logo.png"
-              alt=""
-              width={200}
-              height={200}
-            />
-          </Link>
-          <div className="hidden md:flex gap-x-4 lg:gap-x-5 xl:gap-x-6 z-10">
-            {navListArr.map((elem, key) => {
-              return (
-                <NavListElement
-                  title={elem.title}
-                  key={key}
-                  redirectHref={elem.redirectHref}
-                  onClickHandler={elem.onClickHandler}
-                />
-              );
-            })}
-          </div>
-          <div className="hidden md:flex items-center md:relative gap-x-[5px]">
-            <AnimatePresence>
-              {profileTabOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute top-13 -right-2 w-44 h-fit border border-(--border) rounded-lg bg-(--surface-1) shadow-lg p-1"
-                >
-                  {optionsArr.map((elem, key) => (
-                    <BottomOptionLabel
-                      key={key}
-                      svg={elem.svg}
-                      title={elem.title}
-                      redirectHref={elem.redirectHref}
-                      openToNewPage={elem.openToNewPage}
-                    />
-                  ))}
-                  <LogoutBtn />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {!session?.user?.id &&
-              pathname !== "/login" &&
-              pathname !== "/signup" && (
+    <header className="fixed top-0 inset-x-0 z-50 border-b border-(--border) bg-(--surface-1)/90 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+        {/* Brand */}
+        <Link href="/" className="flex items-center gap-2.5 shrink-0 mr-2">
+          <Image
+            src="/logo.png"
+            alt="ExporaFlow"
+            width={32}
+            height={32}
+            className="size-8"
+          />
+          <span className="text-[15px] font-semibold tracking-tight text-(--foreground)">
+            ExporaFlow
+          </span>
+        </Link>
+
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-0.5 flex-1">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                pathname === link.href || pathname.startsWith(`${link.href}/`)
+                  ? "text-(--foreground) font-medium bg-(--surface-3)"
+                  : "text-(--muted) hover:text-(--foreground) hover:bg-(--surface-3)/70"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Desktop actions */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
+          {isLoggedIn ? (
+            <>
+              <Link
+                href="/profile"
+                className="px-3 py-1.5 text-sm text-(--muted) hover:text-(--foreground) rounded-lg hover:bg-(--surface-3)/70 transition-colors"
+              >
+                Profile
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="px-3 py-1.5 text-sm text-(--muted) hover:text-(--foreground) rounded-lg hover:bg-(--surface-3)/70 transition-colors"
+              >
+                Sign out
+              </button>
+              <Link href="/workflow/dashboard" className="ef-btn-primary h-9 rounded-lg px-4 text-sm">
+                Open app
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/signup"
+                className="px-3 py-1.5 text-sm text-(--muted) hover:text-(--foreground) rounded-lg hover:bg-(--surface-3)/70 transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link href="/signup" className="ef-btn-primary h-9 rounded-lg px-4 text-sm">
+                Get started
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* Mobile menu toggle — only on small screens */}
+        <button
+          type="button"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((v) => !v)}
+          className="md:hidden ml-auto inline-flex size-9 items-center justify-center rounded-lg border border-(--border) bg-(--surface-1) text-(--muted) hover:bg-(--surface-3) hover:text-(--foreground) transition-colors"
+        >
+          {mobileOpen ? <X className="size-[18px]" strokeWidth={2} /> : <Menu className="size-[18px]" strokeWidth={2} />}
+        </button>
+      </div>
+
+      {/* Mobile drawer */}
+      {mobileOpen ? (
+        <div className="md:hidden border-t border-(--border) bg-(--surface-1) px-4 py-3 space-y-1">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block rounded-lg px-3 py-2.5 text-sm font-medium text-(--foreground) hover:bg-(--surface-3) transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+          <div className="pt-2 mt-2 border-t border-(--border) flex flex-col gap-1">
+            {isLoggedIn ? (
+              <>
                 <Link
-                  href={"/signup"}
-                  className="flex items-center px-4 h-9 rounded-md text-sm font-medium border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] text-(--foreground) hover:bg-(--surface-3) transition-colors"
+                  href="/profile"
+                  className="block rounded-lg px-3 py-2.5 text-sm text-(--foreground) hover:bg-(--surface-3)"
+                >
+                  Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-(--foreground) hover:bg-(--surface-3)"
+                >
+                  Sign out
+                </button>
+                <Link
+                  href="/workflow/dashboard"
+                  className="ef-btn-primary mt-1 h-10 rounded-lg text-sm text-center flex items-center justify-center"
+                >
+                  Open app
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/signup"
+                  className="block rounded-lg px-3 py-2.5 text-sm text-(--foreground) hover:bg-(--surface-3)"
                 >
                   Sign in
                 </Link>
-              )}
-
-            {session?.user.email && (
-              <button
-                aria-label="Toggle menu"
-                aria-expanded={profileTabOpen}
-                onClick={() => setProfileTabOpen(!profileTabOpen)}
-                className="flex flex-col justify-center items-center w-9 h-9 focus:outline-none group border border-(--border) rounded-md bg-(--surface-2) cursor-pointer"
-                type="button"
-              >
-                <span
-                  className={`
-          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
-          ${profileTabOpen ? "rotate-45 translate-y-2" : ""}
-        `}
-                />
-                <span
-                  className={`
-          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300 my-1
-          ${profileTabOpen ? "opacity-0" : ""}
-        `}
-                />
-                <span
-                  className={`
-          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
-          ${profileTabOpen ? "-rotate-45 -translate-y-2" : ""}
-        `}
-                />
-              </button>
+                <Link
+                  href="/signup"
+                  className="ef-btn-primary mt-1 h-10 rounded-lg text-sm text-center flex items-center justify-center"
+                >
+                  Get started
+                </Link>
+              </>
             )}
           </div>
-
-          {/* Phone Screen Nav Hamburger Tab */}
-          <div className="md:hidden flex gap-x-[5px]">
-            <button
-              aria-label="Toggle menu"
-              aria-expanded={profileTabOpen}
-              onClick={() => {
-                setIsOpen(!isOpen);
-              }}
-              className="flex flex-col justify-center items-center w-9 h-9 focus:outline-none group border border-(--border) rounded-md bg-(--surface-2) cursor-pointer"
-              type="button"
-            >
-              <span
-                className={`
-          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
-          ${isOpen ? "rotate-45 translate-y-2" : ""}
-        `}
-              />
-              <span
-                className={`
-          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300 my-1
-          ${isOpen ? "opacity-0" : ""}
-        `}
-              />
-              <span
-                className={`
-          block h-0.5 w-6 bg-(--muted-2) rounded transition-all duration-300
-          ${isOpen ? "-rotate-45 -translate-y-2" : ""}
-        `}
-              />
-            </button>
-          </div>
         </div>
-      </div>
-
-      {isOpen && (
-        <div className="fixed mt-[70px] rounded px-4 w-full z-50">
-          <motion.div
-            className="z-50 relative w-full border border-(--border) bg-(--surface-1) shadow-lg rounded-lg"
-            initial="closed"
-            animate={isOpen ? "open" : "closed"}
-            variants={wrapperVariants}
-          >
-            <div className="text-(--foreground) font-medium flex flex-col">
-              {navListArr.map((elem, key) => {
-                return (
-                  <NavLink
-                    key={key}
-                    href={elem.redirectHref}
-                    text={elem.title}
-                    onClickHandler={elem.onClickHandler}
-                    isOpen={isOpen}
-                    setIsOpen={setIsOpen}
-                  />
-                );
-              })}
-              <motion.div variants={itemVariants}>
-                {session?.user.email ? (
-                  <div
-                    className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2"
-                    onClick={() => {
-                      handleSignout();
-                      setIsOpen(!isOpen);
-                    }}
-                  >
-                    Log out
-                  </div>
-                ) : (
-                  <Link
-                    href={session?.user.email ? "" : "/signup"}
-                    className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2"
-                    onClick={() => {
-                      setIsOpen(!isOpen);
-                    }}
-                  >
-                    Sign in
-                  </Link>
-                )}
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </>
+      ) : null}
+    </header>
   );
 }
-
-const NavListElement = ({
-  title,
-  className,
-  redirectHref,
-  onClickHandler,
-}: {
-  title: string;
-  className?: string;
-  redirectHref: string;
-  onClickHandler?: () => void;
-}) => {
-  return onClickHandler ? (
-    <p
-      onClick={onClickHandler}
-      className={`${className} text-[14px] lg:text-[16px] rounded text-(--muted) hover:text-(--accent) transition-colors cursor-pointer`}
-    >
-      {title}
-    </p>
-  ) : (
-    <Link
-      href={redirectHref}
-      className={`${className} text-[14px] lg:text-[16px] rounded text-(--muted) hover:text-(--accent) transition-colors cursor-pointer`}
-    >
-      {title}
-    </Link>
-  );
-};
-
-const NavLink = ({
-  href,
-  text,
-  isOpen,
-  setIsOpen,
-  onClickHandler,
-}: {
-  href: string;
-  text: string;
-  isOpen: boolean;
-  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  onClickHandler?: () => void;
-}) => (
-  <motion.div variants={itemVariants}>
-    {onClickHandler ? (
-      <div
-        className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2 border-b border-(--border)"
-        onClick={() => {
-          onClickHandler();
-          setIsOpen(!isOpen);
-        }}
-      >
-        {text}
-      </div>
-    ) : (
-      <Link
-        href={href}
-        className="h-16 flex items-center hover:bg-(--surface-3) transition-colors px-5 py-2 border-b border-(--border)"
-        onClick={() => {
-          setIsOpen(!isOpen);
-        }}
-      >
-        {text}
-      </Link>
-    )}
-  </motion.div>
-);

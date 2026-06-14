@@ -133,7 +133,7 @@ export default function Projects() {
           <button
             type="button"
             onClick={() => setCreateWindowOpen(true)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-(--border) bg-(--surface-2) px-2.5 text-xs font-medium text-(--foreground) hover:bg-(--surface-3) transition-colors"
+            className="ef-icon-btn-primary h-8 gap-1.5 px-3 text-xs font-medium"
           >
             <SVGIcon className="flex w-3.5 h-3.5" svgString={RAW_ICONS.Add} />
             New project
@@ -141,31 +141,47 @@ export default function Projects() {
         }
       >
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="shrink-0 border-b border-(--border) bg-(--surface-2) px-3 md:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="shrink-0 border-b border-(--border) bg-(--surface-1) px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-(--muted-2)">
-                Portfolio
+              <h2 className="text-sm font-semibold text-(--foreground)">All projects</h2>
+              <p className="text-xs text-(--muted-2) mt-0.5">
+                {isLoading
+                  ? "Loading…"
+                  : `${projects?.length ?? 0} project${projects?.length === 1 ? "" : "s"} in your workspace`}
               </p>
-              <p className="text-sm font-semibold text-(--foreground)">All projects</p>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-(--muted-2)">
-              <span className="hidden sm:inline">Operational view</span>
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-auto scrollbar-hide">
-            <div className="ef-workspace-inner py-3">
+          <div className="flex-1 min-h-0 overflow-auto scrollbar-hide bg-(--surface-2)/30">
+            <div className="ef-workspace-inner py-4">
               {isLoading ? (
-                <div className="h-32 flex items-center justify-center text-(--muted-2)">
-                  <SVGIcon className="flex w-8 h-8 animate-pulse" svgString={RAW_ICONS.Loader} />
+                <div className="ef-card overflow-hidden">
+                  <div className="border-b border-(--border) bg-(--surface-2) px-3 py-2.5 flex gap-6">
+                    {[88, 56, 48, 48, 32].map((w) => (
+                      <div
+                        key={w}
+                        className="h-3 rounded-md bg-(--surface-3) animate-pulse"
+                        style={{ width: `${w}px` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="divide-y divide-(--border)">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-3 py-3.5">
+                        <div className="h-4 flex-1 max-w-[200px] rounded-md bg-(--surface-3) animate-pulse" />
+                        <div className="h-4 w-16 rounded-md bg-(--surface-3) animate-pulse hidden lg:block" />
+                        <div className="h-5 w-14 rounded-md bg-(--surface-3) animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : null}
 
               {!isLoading && projects && projects.length > 0 ? (
-                <div className="rounded-md border border-(--border) bg-(--surface-1) overflow-hidden shadow-sm">
+                <div className="ef-card overflow-hidden">
                   <table className="w-full text-[13px] border-collapse table-fixed">
                     <thead>
-                      <tr className="border-b border-(--border) bg-(--surface-2) text-left text-[11px] font-semibold uppercase tracking-wide text-(--muted-2)">
+                      <tr className="border-b border-(--border) bg-(--surface-2) text-left text-xs font-medium text-(--muted-2)">
                         <th className="px-3 py-2 w-[22%] font-medium">Project</th>
                         <th className="px-3 py-2 w-[14%] font-medium hidden lg:table-cell">Service</th>
                         <th className="px-3 py-2 w-[12%] font-medium hidden lg:table-cell">Health</th>
@@ -193,8 +209,22 @@ export default function Projects() {
               ) : null}
 
               {!isLoading && (!projects || projects.length === 0) ? (
-                <div className="rounded-md border border-dashed border-(--border) bg-(--surface-2)/40 px-4 py-12 text-center text-sm text-(--muted-2)">
-                  No projects yet. Create one to get started.
+                <div className="ef-card border-dashed flex flex-col items-center justify-center px-6 py-16 text-center">
+                  <div className="h-12 w-12 rounded-xl bg-(--surface-3) flex items-center justify-center mb-4 text-(--accent)">
+                    <SVGIcon className="flex w-6 h-6" svgString={RAW_ICONS.RubiksCube} />
+                  </div>
+                  <h3 className="text-base font-semibold text-(--foreground)">No projects yet</h3>
+                  <p className="text-sm text-(--muted-2) mt-1.5 max-w-sm">
+                    Create a project to link a customer, assign a service line, and start tracking
+                    incidents and changes.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCreateWindowOpen(true)}
+                    className="ef-btn-primary mt-6 h-10 rounded-lg px-4 text-sm"
+                  >
+                    Create your first project
+                  </button>
                 </div>
               ) : null}
             </div>

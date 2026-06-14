@@ -1,24 +1,30 @@
-import plan from "@/public/assets/illustrations/plan.png";
-import stack from "@/public/assets/illustrations/stack.png";
-import realtimeupdates from "@/public/assets/illustrations/iphonenoti.png";
+export type FeatureItem = {
+  heading: string;
+  description: string;
+  highlights: string[];
+  icon: "tickets" | "store" | "delivery";
+};
 
-export const FeaturesArray = [
+export const FeaturesArray: FeatureItem[] = [
   {
-    img: stack,
-    heading: "Collaborate seamlessly",
+    heading: "Incident & change tickets",
     description:
-      "Connect your GitHub, invite your team, manage multiple projects, assign tasks, issues tracking, maintain in real-time.",
+      "Dedicated incident and change flows with ticket numbers, urgency-based due dates, SLA pause on hold, and CSV export.",
+    highlights: ["INC / CHG numbering", "SLA-aware hold", "Role-gated actions"],
+    icon: "tickets",
   },
   {
-    img: realtimeupdates,
-    heading: "Real-time updates",
+    heading: "Store directory",
     description:
-      "Designed for efficiency, get real-time updates, sync across platforms",
+      "Customers and employees in one place — link projects to active customers and keep your delivery roster current.",
+    highlights: ["Active / inactive status", "Project customer link", "Team visibility"],
+    icon: "store",
   },
   {
-    img: plan,
-    heading: "Roadmaps",
+    heading: "Delivery workspace",
     description:
-      "Craft your roadmaps and visualize the overall production processes, showcasing progress insights and potential delays to facilitate better decisions.",
+      "Projects, sprints, board, backlog, and timeline views so leads can see portfolio health without switching tools.",
+    highlights: ["Sprint planning", "Kanban board", "Saved views"],
+    icon: "delivery",
   },
 ];

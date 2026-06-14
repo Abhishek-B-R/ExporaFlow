@@ -23,7 +23,11 @@ export default function AuthButton({
 }) {
   return (
     <div className="relative">
-      {lastUsed == true && <span className="absolute -right-2 md:-right-3 -top-2 border border-(--border) text-xs py-px px-2 rounded-lg bg-(--surface-2) text-(--muted-2) font-medium">last used</span>}
+      {lastUsed ? (
+        <span className="absolute -right-1 -top-2 text-[10px] py-0.5 px-1.5 rounded-md border border-(--border) bg-(--surface-2) text-(--muted-2) font-medium">
+          Last used
+        </span>
+      ) : null}
       <button
         onClick={
           working
@@ -34,7 +38,7 @@ export default function AuthButton({
                 description: `Auth option is unavailable right now, try others.`,
               })
         }
-        className="w-full border border-(--border) h-14 rounded-lg bg-(--surface-1) text-(--foreground) hover:border-(--border-strong) hover:bg-(--surface-3) transition-all duration-200"
+        className="w-full border border-(--border) h-11 rounded-lg bg-(--surface-1) text-sm font-medium text-(--foreground) hover:border-(--border-strong) hover:bg-(--surface-2) transition-colors"
       >
         {btnTitle}
       </button>

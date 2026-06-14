@@ -32,8 +32,8 @@ export default function OptionLabel({
   );
 
   const base =
-    "group w-full min-h-[32px] h-8 flex px-2.5 gap-2.5 rounded-md items-center transition-colors duration-150 " +
-    "text-(--foreground) hover:bg-(--surface-3)/80 active:bg-(--surface-3)";
+    "group w-full min-h-[32px] h-8 flex px-2.5 gap-2 rounded-lg items-center transition-colors duration-150 " +
+    "text-(--foreground) hover:bg-(--surface-3) active:bg-(--surface-3)";
 
   const cls = `${base} ${className ?? ""}`.trim();
 

@@ -81,24 +81,24 @@ export function ProjectNavbar({
 
   const tabClass = (active: boolean) =>
     [
-      "shrink-0 inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors duration-150",
+      "shrink-0 inline-flex h-9 items-center gap-1.5 px-2.5 text-[13px] transition-colors duration-150 rounded-md",
       active
-        ? "border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] text-(--foreground) shadow-sm"
-        : "border-transparent text-(--muted) hover:text-(--foreground) hover:bg-(--surface-3)/70 hover:border-(--border)",
+        ? "ef-tab-active text-(--foreground)"
+        : "text-(--muted) hover:text-(--foreground) hover:bg-(--surface-3)/60",
     ].join(" ");
 
   return (
-    <div className="shrink-0 border-b border-(--border) bg-(--surface-2)">
-      <div className="ef-workspace-inner flex h-11 items-stretch gap-2 pr-1">
-        <div className="flex items-center gap-2 shrink-0 border-r border-(--border) pr-2 mr-1">
+    <div className="shrink-0 border-b border-(--border) bg-(--surface-1)">
+      <div className="ef-workspace-inner flex h-11 items-stretch gap-1 pr-1">
+        <div className="flex items-center gap-2 shrink-0 border-r border-(--border) pr-3 mr-1">
           <Link
             href="/workflow/project"
-            className="text-[11px] font-semibold uppercase tracking-wide text-(--muted-2) hover:text-(--muted) transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-(--muted-2) hover:text-(--foreground) transition-colors whitespace-nowrap"
           >
             Projects
           </Link>
-          <span className="text-(--muted-2) text-xs">/</span>
-          <div className="flex h-8 max-w-[200px] lg:max-w-[280px] items-center gap-1.5 rounded-md border border-(--border) bg-(--surface-1) px-2">
+          <span className="text-(--muted-2) text-xs opacity-50">/</span>
+          <div className="flex h-8 max-w-[200px] lg:max-w-[260px] items-center gap-1.5 rounded-lg bg-(--surface-2) px-2">
             <SVGIcon className="flex w-3.5 h-3.5 shrink-0 text-(--muted-2)" svgString={RAW_ICONS.Cube} />
             <span className="text-[12px] font-medium text-(--foreground) truncate">
               {projectTitle ?? "…"}

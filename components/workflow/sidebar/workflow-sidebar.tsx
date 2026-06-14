@@ -3,7 +3,6 @@
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
 import OptionLabel from "./option-label";
-import { BottomOptionsTile } from "./bottom-options-tile";
 import { WorkflowTab } from "./workflow-tab";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -25,8 +24,7 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
-const navActive =
-  "bg-[var(--sidebar-active-bg)] border border-[var(--sidebar-active-border)] shadow-sm text-(--foreground)";
+const navActive = "ef-nav-active";
 
 function SectionHeader({
   title,
@@ -43,7 +41,7 @@ function SectionHeader({
       onClick={onToggle}
       className="flex w-full px-2 py-1 mb-0.5 items-center justify-between cursor-pointer text-(--muted-2) hover:text-(--muted) transition-colors rounded-md hover:bg-(--surface-2)/60"
     >
-      <span className="text-[10px] font-semibold uppercase tracking-[0.06em]">{title}</span>
+      <span className="text-xs font-medium text-(--muted-2)">{title}</span>
       <SVGIcon
         className={`flex w-3.5 h-3.5 shrink-0 text-(--muted-2) transition-transform duration-200 ${
           collapsed ? "-rotate-90" : "rotate-0"
@@ -87,7 +85,7 @@ export default function WorkflowSidebar() {
     pathname === "/workflow/project" || pathname.startsWith("/workflow/project/");
 
   return (
-    <aside className="w-[220px] lg:w-60 min-h-0 h-full hidden md:flex flex-col border-r border-(--border) bg-(--surface-1) shadow-[var(--shell-shadow)]">
+    <aside className="w-[220px] lg:w-56 min-h-0 h-full hidden md:flex flex-col border-r border-(--border) bg-(--surface-1)">
       <WorkflowTab />
 
       <nav className="px-1.5 pt-2 pb-1.5 space-y-px shrink-0 border-b border-(--border)/80">
@@ -211,16 +209,15 @@ export default function WorkflowSidebar() {
         </Collapsible>
       </div>
 
-      <div className="mt-auto pt-1.5 pb-1.5 px-1 border-t border-(--border) bg-(--surface-1) shrink-0 space-y-1">
+      <div className="mt-auto pt-1.5 pb-2 px-1.5 border-t border-(--border) bg-(--surface-1) shrink-0">
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="w-full flex items-center gap-2 h-9 px-2.5 rounded-md text-sm font-medium text-red-700 bg-red-50/80 border border-red-200 hover:bg-red-100 transition-colors"
+          className="w-full flex items-center gap-2 h-9 px-2.5 rounded-lg text-sm font-medium text-(--muted) hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors"
         >
           <LogOut className="size-4 shrink-0" />
           Sign out
         </button>
-        <BottomOptionsTile />
       </div>
     </aside>
   );

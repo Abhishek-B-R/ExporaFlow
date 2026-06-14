@@ -16,72 +16,59 @@ export default function Features() {
       const cardWidth = cardRef.current.offsetWidth;
       const computedStyle = window.getComputedStyle(cardRef.current);
       const marginRight = parseInt(computedStyle.marginRight, 10) || 0;
-      const scrollAmount = cardWidth + marginRight;
-
       scrollRef.current.scrollBy({
-        left: direction === "right" ? scrollAmount : -scrollAmount,
+        left: direction === "right" ? cardWidth + marginRight : -(cardWidth + marginRight),
         behavior: "smooth",
       });
     }
   };
 
   return (
-    <section className="relative flex flex-col justify-center border-t border-(--border) bg-(--background) px-4 sm:px-6 md:px-10 lg:px-14 xl:px-28 2xl:px-40 gap-y-3 sm:gap-y-4 md:gap-y-5 pt-14 pb-20 xl:pb-24">
-      <div className="relative">
-        <p className="text-xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-(--foreground) pb-2">
-          Everything you need
-        </p>
-        <p className="text-sm md:text-base text-(--muted-2) max-w-3xl">
-          Workspace delivery, incident and change management, store directory, and team
-          structure — aligned with how your dashboard is organized.
-        </p>
-        <div className="mt-8 relative">
-          <ScrollingButton
-            onClickFn={() => scrollByCard("left")}
-            svg={RAW_ICONS.ArrowLeft}
-            className="left-[6px]"
-          />
+    <section className="border-t border-(--border) bg-(--background) ef-page-gutter pt-16 pb-20">
+      <p className="ef-kicker">Platform</p>
+      <h2 className="ef-section-title mt-2">Everything in one place</h2>
+      <p className="ef-section-lead mt-3">
+        Tickets, store directory, and delivery views — organized the same way inside the product.
+      </p>
 
-          <div
-            ref={scrollRef}
-            className="flex space-x-4 overflow-x-auto scrollbar-hidden snap-x snap-mandatory sm:hidden pb-2 h-[430px] scroll-smooth"
-          >
-            {FeaturesArray.map((feature, index) => (
-              <div
-                key={index}
-                ref={index === 0 ? cardRef : null}
-                className="snap-center shrink-0 w-full"
-              >
-                <MobileFeatureCard
-                  heading={feature.heading}
-                  description={feature.description}
-                />
-              </div>
-            ))}
-          </div>
+      <div className="mt-10 relative">
+        <ScrollingButton
+          onClickFn={() => scrollByCard("left")}
+          svg={RAW_ICONS.ArrowLeft}
+          className="left-0"
+        />
+        <ScrollingButton
+          onClickFn={() => scrollByCard("right")}
+          svg={RAW_ICONS.ArrowRight}
+          className="right-0"
+        />
 
-          <ScrollingButton
-            onClickFn={() => scrollByCard("right")}
-            svg={RAW_ICONS.ArrowRight}
-            className="right-[6px]"
-          />
+        <div
+          ref={scrollRef}
+          className="flex gap-3 overflow-x-auto scrollbar-hidden snap-x snap-mandatory sm:hidden pb-1"
+        >
+          {FeaturesArray.map((feature, index) => (
+            <div
+              key={feature.heading}
+              ref={index === 0 ? cardRef : null}
+              className="snap-center shrink-0 w-[88vw] max-w-sm"
+            >
+              <MobileFeatureCard feature={feature} />
+            </div>
+          ))}
+        </div>
 
-          <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-4 h-[430px]">
-            {FeaturesArray.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                heading={feature.heading}
-                description={feature.description}
-              />
-            ))}
-          </div>
+        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {FeaturesArray.map((feature) => (
+            <FeatureCard key={feature.heading} feature={feature} />
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-const ScrollingButton = ({
+function ScrollingButton({
   onClickFn,
   svg,
   className,
@@ -89,15 +76,15 @@ const ScrollingButton = ({
   onClickFn: () => void;
   svg: string;
   className: string;
-}) => {
+}) {
   return (
     <button
       type="button"
-      className={`${className} absolute h-10 w-10 flex justify-center items-center top-1/2 -translate-y-1/2 z-20 rounded-full border border-(--border) bg-(--surface-2) text-(--muted) shadow-sm sm:hidden hover:bg-(--surface-3) transition-colors`}
+      className={`${className} absolute top-1/2 -translate-y-1/2 z-10 h-9 w-9 flex justify-center items-center rounded-full border border-(--border) bg-(--surface-1) text-(--muted) shadow-sm sm:hidden hover:bg-(--surface-3) transition-colors`}
       onClick={onClickFn}
       aria-label="Scroll features"
     >
-      <SVGIcon className="flex w-5" svgString={svg} />
+      <SVGIcon className="flex w-4" svgString={svg} />
     </button>
   );
-};
+}

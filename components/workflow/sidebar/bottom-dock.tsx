@@ -7,9 +7,9 @@ import { useState } from "react";
 type activePopupProp = "profile" | "workflow" | "features" | "teams" | "none";
 
 const dockOptionActive =
-  "flex items-center justify-center gap-x-1 bg-(--surface-3) h-10 rounded-full cursor-pointer";
+  "flex items-center justify-center gap-x-1 bg-(--sidebar-active-bg) h-10 rounded-full cursor-pointer text-(--foreground)";
 const dockOptionInactive =
-  "flex items-center justify-center gap-x-1  h-10 rounded-full cursor-pointer hover:bg-sky-100 transition-all duration-200";
+  "flex items-center justify-center gap-x-1 h-10 rounded-full cursor-pointer text-(--muted) hover:bg-(--surface-3) transition-colors";
 
 export default function BottomDock() {
   const [windowActive, setWindowActive] = useState(false);
@@ -19,7 +19,7 @@ export default function BottomDock() {
     <>
       {/* Bottom Dock */}
       <div className="fixed bottom-2 w-full h-12 px-2 md:hidden md:pointer-events-none flex justify-center">
-        <div className="border border-(--border) relative h-12 rounded-full gap-x-1 items-center px-1 w-[350px] grid grid-cols-4 bg-black">
+        <div className="border border-(--border) relative h-12 rounded-full gap-x-1 items-center px-1 w-[350px] grid grid-cols-4 bg-(--surface-1) shadow-[var(--elevated-shadow)]">
           {/* Profile Option */}
           <div
             className={

@@ -1,54 +1,63 @@
 @import "tailwindcss";
 
 :root {
-  /* Sky blue enterprise — light, clean, professional */
-  --background: #f0f9ff;
-  --foreground: #0c4a6e;
+  /* Slate foundation — accent used sparingly */
+  --background: #f8fafc;
+  --foreground: #0f172a;
 
   --surface-1: #ffffff;
   --surface-2: #f8fafc;
-  --surface-3: #e0f2fe;
-  --surface-4: #bae6fd;
+  --surface-3: #f1f5f9;
+  --surface-4: #e2e8f0;
 
-  --border: rgba(14, 165, 233, 0.18);
-  --border-strong: rgba(2, 132, 199, 0.28);
+  --border: rgba(15, 23, 42, 0.07);
+  --border-strong: rgba(15, 23, 42, 0.12);
 
-  --muted: #0369a1;
+  --muted: #475569;
   --muted-2: #64748b;
 
-  --accent: #0ea5e9;
-  --accent-2: #38bdf8;
-  --accent-hover: #0284c7;
-  --accent-soft: rgba(14, 165, 233, 0.14);
+  --accent: #0284c7;
+  --accent-2: #0ea5e9;
+  --accent-hover: #0369a1;
+  --accent-soft: rgba(2, 132, 199, 0.1);
   --accent-muted: #e0f2fe;
   --success: #059669;
   --danger: #dc2626;
+
+  --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 10px;
+  --radius-lg: 12px;
 
-  --shell-shadow: 0 1px 3px rgba(14, 165, 233, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --sidebar-active-bg: rgba(14, 165, 233, 0.22);
-  --sidebar-active-border: #0284c7;
+  --shell-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 0 0 1px rgba(15, 23, 42, 0.03);
+  --elevated-shadow:
+    0 4px 16px rgba(15, 23, 42, 0.06),
+    0 0 0 1px rgba(15, 23, 42, 0.04);
+
+  --sidebar-active-bg: rgba(2, 132, 199, 0.07);
+  --sidebar-active-border: rgba(2, 132, 199, 0.2);
+  --sidebar-active-indicator: #0284c7;
   --text-on-accent: #ffffff;
-  --text-on-surface: #0c4a6e;
+  --text-on-surface: #0f172a;
 
-  /* shadcn — sky primary */
+  /* shadcn */
   --card: 0 0% 100%;
-  --card-foreground: 204 80% 16%;
+  --card-foreground: 222 47% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 204 80% 16%;
+  --popover-foreground: 222 47% 11%;
   --primary: 199 89% 48%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 204 94% 94%;
-  --secondary-foreground: 204 80% 22%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
   --muted-shadcn: 210 40% 96%;
   --muted-foreground: 215 16% 47%;
   --accent-shadcn: 199 89% 48%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border-hsl: 199 89% 90%;
-  --input: 199 89% 90%;
+  --border-hsl: 214 32% 91%;
+  --input: 214 32% 91%;
   --ring: 199 89% 48%;
   --radius: 0.5rem;
 }
@@ -56,8 +65,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 @layer utilities {
@@ -74,8 +83,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: inherit;
-  letter-spacing: -0.01em;
-  line-height: 1.5;
+  letter-spacing: -0.011em;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -94,10 +104,72 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent-soft);
-  border-radius: 6px;
+  box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--accent-soft);
+  border-radius: var(--radius-sm);
 }
 
+/* Layout */
+.ef-page-gutter {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .ef-page-gutter {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .ef-page-gutter {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+@media (min-width: 1280px) {
+  .ef-page-gutter {
+    padding-left: 3.5rem;
+    padding-right: 3.5rem;
+  }
+}
+
+.ef-workspace-inner {
+  width: 100%;
+  max-width: 1360px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 768px) {
+  .ef-workspace-inner {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}
+
+.ef-kicker {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.ef-section-title {
+  font-size: clamp(1.375rem, 2.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--foreground);
+}
+
+.ef-section-lead {
+  font-size: 0.9375rem;
+  color: var(--muted-2);
+  line-height: 1.6;
+  max-width: 42rem;
+}
+
+/* Surfaces */
 .linear-panel {
   background: var(--surface-1);
   border: 1px solid var(--border);
@@ -111,22 +183,39 @@ a:focus-visible {
   border-radius: var(--radius-md);
 }
 
-.ef-workspace-inner {
-  width: 100%;
-  max-width: 1440px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+.ef-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shell-shadow);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ef-card:hover {
+  border-color: var(--border-strong);
 }
 
-@media (min-width: 768px) {
-  .ef-workspace-inner {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-  }
+.ef-metric {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.125rem;
+}
+.ef-metric-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted-2);
+  line-height: 1.35;
+}
+.ef-metric-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  margin-top: 0.375rem;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Landing */
 .ef-landing-page {
   background: var(--background);
   color: var(--foreground);
@@ -134,35 +223,60 @@ a:focus-visible {
 
 .ef-landing-glow {
   background: radial-gradient(
-    ellipse 90% 60% at 50% -10%,
-    rgba(56, 189, 248, 0.35),
-    rgba(224, 242, 254, 0.5) 45%,
-    transparent 72%
+    ellipse 80% 50% at 50% -20%,
+    rgba(186, 230, 253, 0.45),
+    transparent 70%
   );
 }
 
+/* Controls */
 .ef-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--accent);
-  color: #ffffff;
-  border: 1px solid var(--accent-hover);
+  color: var(--text-on-accent);
+  border: 1px solid transparent;
+  font-weight: 500;
+  transition: background 0.15s ease;
 }
 .ef-btn-primary:hover {
   background: var(--accent-hover);
 }
 
 .ef-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--surface-1);
   color: var(--foreground);
   border: 1px solid var(--border-strong);
+  font-weight: 500;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .ef-btn-outline:hover {
+  background: var(--surface-3);
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.ef-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.ef-btn-ghost:hover {
+  color: var(--foreground);
   background: var(--surface-3);
 }
 
 .ef-field {
   width: 100%;
   border: 1px solid var(--border-strong);
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: var(--text-on-surface);
   border-radius: var(--radius-md);
 }
@@ -180,7 +294,7 @@ a:focus-visible {
   font-weight: 500;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: var(--text-on-surface);
   white-space: nowrap;
 }
@@ -188,15 +302,15 @@ a:focus-visible {
   background: var(--surface-3);
 }
 .ef-pill-active {
-  border-color: var(--accent);
-  background: var(--accent-muted);
-  color: #075985;
+  border-color: var(--sidebar-active-border);
+  background: var(--sidebar-active-bg);
+  color: var(--accent-hover);
   font-weight: 600;
 }
 
-/* Light UI controls — use on chips, toolbar buttons, modal fields */
 .ef-modal-overlay {
-  background: rgba(12, 74, 110, 0.28);
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(2px);
 }
 
 .ef-chip {
@@ -208,15 +322,15 @@ a:focus-visible {
   background: var(--surface-3);
 }
 .ef-chip-active {
-  border-color: var(--accent);
-  background: var(--accent-muted);
-  color: #075985;
+  border-color: var(--sidebar-active-border);
+  background: var(--sidebar-active-bg);
+  color: var(--accent-hover);
   font-weight: 600;
 }
 
 .ef-control {
   border: 1px solid var(--border-strong);
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: var(--text-on-surface);
 }
 .ef-control:hover {
@@ -226,7 +340,8 @@ a:focus-visible {
 .ef-dropdown-panel {
   background: var(--surface-1);
   border: 1px solid var(--border-strong);
-  box-shadow: var(--shell-shadow);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevated-shadow);
 }
 .ef-dropdown-item {
   color: var(--text-on-surface);
@@ -250,17 +365,29 @@ a:focus-visible {
 }
 .ef-icon-btn:hover {
   background: var(--surface-3);
-  border-color: var(--accent);
-  color: var(--accent-hover);
 }
 .ef-icon-btn-primary {
-  background: var(--accent-muted);
-  border-color: var(--accent);
+  background: var(--sidebar-active-bg);
+  border-color: var(--sidebar-active-border);
   color: var(--accent-hover);
 }
 .ef-icon-btn-primary:hover {
-  background: var(--accent);
-  color: var(--text-on-accent);
+  background: var(--accent-muted);
+  color: var(--accent-hover);
+}
+
+/* Nav active — left accent bar */
+.ef-nav-active {
+  background: var(--sidebar-active-bg);
+  color: var(--foreground);
+  font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--sidebar-active-indicator);
+}
+
+.ef-tab-active {
+  color: var(--foreground);
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--sidebar-active-indicator);
 }
 
 input::placeholder,

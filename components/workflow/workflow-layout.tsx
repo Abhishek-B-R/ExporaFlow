@@ -20,7 +20,7 @@ export const WorkflowLayout: React.FC<WrapperProps> = ({
 }) => {
   return (
     <div className="w-full flex-1 min-h-0 min-w-0 flex flex-col bg-(--background) text-(--foreground)">
-      <header className="h-11 shrink-0 flex items-center justify-between gap-4 px-3 md:px-4 border-b border-(--border) bg-(--surface-1)">
+      <header className="h-11 shrink-0 flex items-center justify-between gap-4 px-4 border-b border-(--border) bg-(--surface-1)">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {breadcrumb ? (
             <div className="hidden sm:flex items-center gap-2 text-xs text-(--muted-2) min-w-0 shrink">
@@ -40,15 +40,14 @@ export const WorkflowLayout: React.FC<WrapperProps> = ({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {actions}
-          <span className="hidden md:inline text-[11px] text-(--muted-2) tabular-nums">
-            <kbd className="px-1.5 py-0.5 rounded border border-(--border) bg-(--surface-2) text-(--muted) font-mono text-[10px]">
+          <span className="hidden lg:inline text-xs text-(--muted-2)">
+            <kbd className="px-1.5 py-0.5 rounded-md border border-(--border) bg-(--surface-2) text-[10px] font-mono text-(--muted)">
               ⌘K
             </kbd>
-            <span className="ml-1.5">Commands</span>
           </span>
         </div>
       </header>
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden p-2 md:pl-0 md:pr-2 md:pb-2 pb-16 md:pt-1.5">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden p-2 md:p-2 md:pl-0 pb-16 md:pb-2">
         <div className="linear-panel flex-1 min-h-0 flex flex-col overflow-hidden">
           {children}
         </div>

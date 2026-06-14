@@ -39,12 +39,12 @@ export default function WorkflowDashboardPage() {
     void run();
   }, []);
 
-  const cards: { label: string; value: number; hint?: string }[] = m
+  const cards: { label: string; value: number }[] = m
     ? [
-        { label: "Open incident tickets", value: m.incidentOpen },
-        { label: "Open change tickets", value: m.changeOpen },
-        { label: "Change tickets on hold", value: m.onHoldChange },
-        { label: "SLA breaches (change)", value: m.slaBreaches },
+        { label: "Open incidents", value: m.incidentOpen },
+        { label: "Open changes", value: m.changeOpen },
+        { label: "Changes on hold", value: m.onHoldChange },
+        { label: "SLA breaches", value: m.slaBreaches },
         { label: "Active customers", value: m.activeCustomers },
         { label: "Employees", value: m.employees },
         { label: "Your projects", value: m.projects },
@@ -53,23 +53,18 @@ export default function WorkflowDashboardPage() {
 
   return (
     <WorkflowLayout windowSvg={RAW_ICONS.Docs} windowTitle="Dashboard">
-      <div className="p-4 md:p-6 lg:p-8 overflow-y-auto h-full">
-        <h1 className="text-lg md:text-xl font-medium text-(--foreground)">
+      <div className="p-5 md:p-6 lg:p-8 overflow-y-auto h-full">
+        <h1 className="text-lg font-semibold tracking-tight text-(--foreground)">
           Operations overview
         </h1>
-        <p className="text-sm text-(--muted-2) mt-1 mb-6">
-          Incident management tickets, change management, SLA signals, and directory counts.
+        <p className="text-sm text-(--muted-2) mt-1 mb-6 max-w-lg">
+          Incident and change tickets, SLA signals, and directory counts for your workspace.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {cards.map((c) => (
-            <div
-              key={c.label}
-              className="rounded-lg border border-(--border) bg-(--surface-2) px-4 py-5 shadow-sm"
-            >
-              <p className="text-xs uppercase tracking-wide text-(--muted-2)">{c.label}</p>
-              <p className="text-2xl font-semibold text-(--foreground) mt-2 tabular-nums">
-                {c.value}
-              </p>
+            <div key={c.label} className="ef-metric">
+              <p className="ef-metric-label">{c.label}</p>
+              <p className="ef-metric-value">{c.value}</p>
             </div>
           ))}
         </div>

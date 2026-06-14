@@ -149,7 +149,7 @@ export default function InvitePage() {
             <button
               onClick={sendInvite}
               disabled={isSending || !email.trim()}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity shrink-0"
+              className="h-10 px-5 rounded-lg ef-btn-primary text-sm disabled:opacity-50 shrink-0"
             >
               {isSending ? "Sending…" : "Send Invite"}
             </button>

@@ -6,6 +6,7 @@ import { Role } from "@prisma/client";
 import { NextAuthOptions } from "next-auth";
 import { customToast } from "./custom-toast";
 import { prisma } from "@/db";
+import { defaultUsername } from "@/lib/default-username";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -44,6 +45,23 @@ export const authOptions: NextAuthOptions = {
       if (!user?.id) return;
 
       try {
+        const existing = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { username: true },
+        });
+        if (!existing?.username?.trim()) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              username: defaultUsername({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+              }),
+            },
+          });
+        }
+
         const workspaceName =
           (user.name?.split(" ")[0] ? `${user.name.split(" ")[0]}'s Workspace` : null) ??
           "My Workspace";

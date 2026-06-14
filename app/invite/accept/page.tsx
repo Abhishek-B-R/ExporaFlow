@@ -91,7 +91,7 @@ function AcceptInviteContent() {
               )}
               <button
                 onClick={() => router.push("/workflow/inbox")}
-                className="h-10 px-6 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                className="h-10 px-6 rounded-lg ef-btn-primary text-sm disabled:opacity-50 shrink-0"
               >
                 Go to Workspace
               </button>

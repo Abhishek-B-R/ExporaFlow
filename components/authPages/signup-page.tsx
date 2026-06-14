@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { signIn, useSession } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import AuthButton from "./auth-button";
@@ -34,38 +34,52 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="grid grid-cols-1 items-center justify-center pt-[70px] min-h-screen px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28 shadow-[inset_-270px_-250px_160px_rgba(190,210,211,0.03)]">
-      <div className="h-full rounded-2xl flex items-center justify-center">
-        <div className="w-80 rounded flex flex-col items-center justify-center">
-          <Image
-            className="border border-white p-1 h-20 w-20 rounded-3xl mb-10"
-            src="/logo.png"
-            alt="Logo"
-            width={100}
-            height={100}
-          />
+    <div className="relative min-h-screen ef-landing-page flex items-center justify-center px-4 py-16">
+      <div className="ef-landing-glow pointer-events-none fixed inset-x-0 top-0 h-[320px] z-0" />
+      <div className="relative z-10 w-full max-w-[400px]">
+        <div className="ef-card p-8 sm:p-10">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="h-14 w-14 rounded-xl bg-(--surface-2) flex items-center justify-center mb-4">
+              <Image className="h-9 w-9 object-contain" src="/logo.png" alt="" width={36} height={36} />
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight text-(--foreground)">
+              Sign in to ExporaFlow
+            </h1>
+            <p className="text-sm text-(--muted-2) mt-1.5 leading-relaxed">
+              Use your work account to access projects, tickets, and the store directory.
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 gap-y-2 w-full">
+          <div className="space-y-2.5">
             <AuthButton
               btnTitle="Continue with Google"
-              working={true}
+              working
               lastUsed={lastLoginPreference === "google"}
-              handleOnClickFunction={() => signUp("google")}
+              handleOnClickFunction={() => void signUp("google")}
             />
             <AuthButton
               btnTitle="Continue with GitHub"
-              working={true}
+              working
               lastUsed={lastLoginPreference === "github"}
-              handleOnClickFunction={() => signUp("github")}
+              handleOnClickFunction={() => void signUp("github")}
             />
             <AuthButton btnTitle="Continue with SAML SSO" working={false} />
           </div>
 
-          <div className="text-sm mt-5 w-[80%] flex items-center flex-col">
-            <p className="text-[#838384]">By signing up, you agree to our</p>
-            <Link href="/terms">terms and conditions.</Link>
-          </div>
+          <p className="text-xs text-center text-(--muted-2) mt-6 leading-relaxed">
+            By signing up, you agree to our{" "}
+            <Link href="/terms" className="text-(--accent) hover:underline">
+              terms and conditions
+            </Link>
+            .
+          </p>
         </div>
+
+        <p className="text-center text-xs text-(--muted-2) mt-4">
+          <Link href="/" className="hover:text-(--foreground) transition-colors">
+            ← Back to home
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -277,7 +277,7 @@ export default function ImportIssuesPage() {
             <button
               onClick={importCsv}
               disabled={isImporting || !csvContent.trim() || !projectId}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="h-10 px-5 rounded-lg ef-btn-primary text-sm disabled:opacity-50"
             >
               {isImporting ? "Importing…" : "Import CSV"}
             </button>
@@ -313,7 +313,7 @@ export default function ImportIssuesPage() {
             <button
               onClick={importJira}
               disabled={isImporting || !jiraJson.trim() || !projectId}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="h-10 px-5 rounded-lg ef-btn-primary text-sm disabled:opacity-50"
             >
               {isImporting ? "Importing…" : "Import Jira Issues"}
             </button>
@@ -364,7 +364,7 @@ export default function ImportIssuesPage() {
             <button
               onClick={importGitHub}
               disabled={isImporting || !githubRepo.trim() || !projectId}
-              className="h-10 px-5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 text-white text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="h-10 px-5 rounded-lg ef-btn-primary text-sm disabled:opacity-50"
             >
               {isImporting ? "Importing…" : "Import GitHub Issues"}
             </button>

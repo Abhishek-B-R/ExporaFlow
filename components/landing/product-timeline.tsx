@@ -13,29 +13,22 @@ export default function ProductTimeline() {
   ];
 
   return (
-    <div className="border-t border-(--border) bg-(--background) px-4 sm:px-6 md:px-10 lg:px-14 xl:px-28 2xl:px-40 py-14 xl:pb-20">
-      <div className="mb-8 md:mb-10">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-(--accent)">
-          Delivery intelligence
-        </p>
-        <p className="text-xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-(--foreground) pt-2">
-          Lead your product trajectory
-        </p>
-        <p className="text-sm text-(--muted-2) max-w-3xl mt-3">
-          Track delivery health, execution updates, and SLA signals from the same card-based
-          layout you see on the operations dashboard.
-        </p>
-      </div>
+    <div className="border-t border-(--border) bg-(--background) ef-page-gutter py-16 xl:pb-20">
+      <p className="ef-kicker">Delivery intelligence</p>
+      <h2 className="ef-section-title mt-2">Portfolio at a glance</h2>
+      <p className="ef-section-lead mt-3">
+        Track delivery health, execution updates, and SLA signals from the same layout as your dashboard.
+      </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-10 mb-6">
         <MetricCard title="Active projects" value="12" subtitle="+3 this month" />
         <MetricCard title="Open incidents" value="48" subtitle="12 high priority" />
         <MetricCard title="Change on hold" value="5" subtitle="SLA paused" />
         <MetricCard title="On-time delivery" value="91%" subtitle="last 30 days" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-(--border) bg-(--surface-2) p-5 shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="ef-card p-5">
           <p className="text-base font-semibold text-(--foreground)">Roadmap health</p>
           <p className="text-sm text-(--muted-2) mt-1">Progress by discipline.</p>
           <div className="mt-5 space-y-4">
@@ -60,7 +53,7 @@ export default function ProductTimeline() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-(--border) bg-(--surface-2) p-5 shadow-sm">
+        <div className="ef-card p-5">
           <p className="text-base font-semibold text-(--foreground)">Execution updates</p>
           <p className="text-sm text-(--muted-2) mt-1">Latest events across teams.</p>
           <div className="mt-4 space-y-3">
@@ -84,8 +77,8 @@ export default function ProductTimeline() {
             ))}
           </div>
 
-          <div className="mt-4 rounded-md border border-(--border) bg-(--surface-1) px-3 py-3">
-            <p className="text-[10px] uppercase tracking-wide text-(--muted-2)">Next milestone</p>
+          <div className="mt-4 rounded-lg border border-(--border) bg-(--surface-2) px-3 py-3">
+            <p className="text-xs font-medium text-(--muted-2)">Next milestone</p>
             <p className="text-sm mt-2 text-(--foreground)">
               Pilot onboarding for engineering and QA teams.
             </p>
@@ -107,12 +100,10 @@ const MetricCard = ({
   subtitle: string;
 }) => {
   return (
-    <div className="rounded-lg border border-(--border) bg-(--surface-2) px-4 py-5 shadow-sm">
-      <p className="text-[10px] uppercase tracking-wide text-(--muted-2)">{title}</p>
-      <p className="text-2xl md:text-3xl mt-2 font-semibold text-(--foreground) tabular-nums">
-        {value}
-      </p>
-      <p className="text-xs mt-2 text-(--muted)">{subtitle}</p>
+    <div className="ef-metric">
+      <p className="ef-metric-label">{title}</p>
+      <p className="ef-metric-value text-2xl md:text-3xl">{value}</p>
+      <p className="text-xs mt-1.5 text-(--muted)">{subtitle}</p>
     </div>
   );
 };

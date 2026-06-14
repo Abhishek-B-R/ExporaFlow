@@ -39,7 +39,7 @@ export function WorkflowModal({
       }}
     >
       <div
-        className={`relative flex flex-col w-full min-w-0 ${maxWidth} max-h-[min(90dvh,720px)] overflow-hidden rounded-xl border border-(--border-strong) bg-(--surface-1) shadow-2xl text-(--foreground) ${panelClassName}`}
+        className={`relative flex flex-col w-full min-w-0 ${maxWidth} max-h-[min(90dvh,720px)] overflow-hidden rounded-xl border border-(--border) bg-(--surface-1) shadow-[var(--elevated-shadow)] text-(--foreground) ${panelClassName}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {children}
