@@ -283,12 +283,16 @@ model ExportAuditLog {
 }
 
 model IssueAttachment {
-  id           String   @id @default(uuid())
-  fileName     String
-  mimeType     String
-  sizeBytes    Int
-  storageKey   String   @unique
-  createdAt    DateTime @default(now())
+  id                 String   @id @default(uuid())
+  fileName           String
+  mimeType           String
+  sizeBytes          Int
+  storageKey         String   @unique
+  provider           String   @default("local")
+  cloudinaryPublicId String?  @unique
+  deliveryUrl        String?
+  resourceType       String?
+  createdAt          DateTime @default(now())
 
   issue        Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
   issueId      String

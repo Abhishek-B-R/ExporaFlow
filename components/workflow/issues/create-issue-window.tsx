@@ -19,6 +19,11 @@ import {
   WorkflowModalFooter,
   WorkflowModalHeader,
 } from "@/components/workflow/workflow-modal";
+import {
+  TicketMediaUploader,
+  cloudinaryMediaPayload,
+  type PendingTicketMedia,
+} from "@/components/workflow/issues/ticket-media-uploader";
 
 type DuplicateCandidate = {
   id: string;
@@ -78,6 +83,7 @@ export const CreateIssueWindow = ({
   const [durationMinutes, setDurationMinutes] = useState("");
   const [urgency, setUrgency] = useState<TicketUrgency>(TicketUrgency.MEDIUM);
   const [requesterName, setRequesterName] = useState("");
+  const [pendingMedia, setPendingMedia] = useState<PendingTicketMedia[]>([]);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -143,6 +149,8 @@ export const CreateIssueWindow = ({
         assignedUser: assignedUserId || null,
         urgency,
         requesterName: requesterName.trim() || undefined,
+        cloudinaryMedia:
+          pendingMedia.length > 0 ? cloudinaryMediaPayload(pendingMedia) : undefined,
       });
 
       if (response.data) {
@@ -151,6 +159,7 @@ export const CreateIssueWindow = ({
           description: "Ticket created successfully",
         });
         await onCreated?.();
+        setPendingMedia([]);
         setClose(false);
       }
     } catch (error) {
@@ -284,6 +293,8 @@ export const CreateIssueWindow = ({
           name="description"
           value={issueDescription}
         />
+
+        <TicketMediaUploader value={pendingMedia} onChange={setPendingMedia} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">

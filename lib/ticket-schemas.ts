@@ -14,6 +14,15 @@ const dateString = z
 
 const optionalDate = z.union([dateString, z.literal(""), z.null()]).optional();
 
+export const cloudinaryMediaSchema = z.object({
+  publicId: z.string().trim().min(1),
+  secureUrl: z.string().url(),
+  resourceType: z.string().trim().min(1),
+  bytes: z.number().int().nonnegative().optional(),
+  originalFilename: z.string().optional(),
+  format: z.string().optional(),
+});
+
 export const createIssueBodySchema = z
   .object({
     ticketType: z.nativeEnum(TicketType),
@@ -32,6 +41,7 @@ export const createIssueBodySchema = z
     startDate: optionalDate,
     endDate: optionalDate,
     durationMinutes: z.number().int().positive().nullable().optional(),
+    cloudinaryMedia: z.array(cloudinaryMediaSchema).max(8).optional(),
   })
   .superRefine((data, ctx) => {
     if (!isChangeManagementType(data.ticketType)) return;

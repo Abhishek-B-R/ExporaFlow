@@ -2,6 +2,7 @@ import { authOptions } from "@/lib/auth";
 import { assertProjectRole } from "@/lib/authz";
 import { prisma } from "@/db";
 import { readIssueAttachmentFile } from "@/lib/issue-attachments";
+import { isCloudinaryAttachment } from "@/lib/cloudinary-config";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
@@ -31,6 +32,10 @@ export async function GET(
   });
   if (!access.ok) {
     return Response.json({ message: access.message }, { status: 403 });
+  }
+
+  if (isCloudinaryAttachment(attachment) && attachment.deliveryUrl) {
+    return Response.redirect(attachment.deliveryUrl);
   }
 
   const bytes = await readIssueAttachmentFile(attachment.storageKey);

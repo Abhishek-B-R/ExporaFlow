@@ -19,6 +19,7 @@ import {
   loadMentionCandidatesForProject,
 } from "@/lib/mention-candidates";
 import { queueMentionEmails } from "@/lib/mention-email";
+import { saveCloudinaryAttachments } from "@/lib/save-cloudinary-attachments";
 
 function normalizeIdentity(value: string) {
   return value
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     urgency,
     requesterName,
     requesterEmail,
+    cloudinaryMedia,
   } = parsed.data;
 
   const session = await getServerSession(authOptions);
@@ -273,6 +275,18 @@ export async function POST(request: NextRequest) {
       }
     } catch (mentionError) {
       console.error("Mention email on create failed:", mentionError);
+    }
+  }
+
+  if (cloudinaryMedia?.length) {
+    try {
+      await saveCloudinaryAttachments({
+        issueId: response.id,
+        uploadedById: session.user.id,
+        media: cloudinaryMedia,
+      });
+    } catch (attachmentError) {
+      console.error("Cloudinary attachment save failed:", attachmentError);
     }
   }
 

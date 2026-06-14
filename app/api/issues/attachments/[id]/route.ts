@@ -2,6 +2,10 @@ import { authOptions } from "@/lib/auth";
 import { assertProjectRole } from "@/lib/authz";
 import { prisma } from "@/db";
 import { deleteIssueAttachmentFile } from "@/lib/issue-attachments";
+import {
+  configureCloudinary,
+  isCloudinaryAttachment,
+} from "@/lib/cloudinary-config";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
@@ -33,7 +37,24 @@ export async function DELETE(
     return Response.json({ message: access.message }, { status: access.status });
   }
 
-  await deleteIssueAttachmentFile(attachment.storageKey);
+  if (
+    isCloudinaryAttachment(attachment) &&
+    attachment.cloudinaryPublicId
+  ) {
+    try {
+      const cloudinary = configureCloudinary();
+      const resourceType =
+        attachment.resourceType === "video" ? "video" : "image";
+      await cloudinary.uploader.destroy(attachment.cloudinaryPublicId, {
+        resource_type: resourceType,
+      });
+    } catch (error) {
+      console.error("Cloudinary delete failed:", error);
+    }
+  } else {
+    await deleteIssueAttachmentFile(attachment.storageKey);
+  }
+
   await prisma.issueAttachment.delete({ where: { id } });
 
   return Response.json({ ok: true });
