@@ -1,40 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import SVGIcon from "@/lib/svg-icon";
 import { RAW_ICONS } from "@/lib/icons";
-import { Calendar } from "lucide-react";
 
 type TabDef = {
   label: string;
   segment: string;
   /** Query string including leading ? */
   query?: string;
-  icon: "svg" | "calendar";
-  svg?: string;
+  icon: "svg";
+  svg: string;
 };
 
 const TABS: TabDef[] = [
   { label: "Overview", segment: "", icon: "svg", svg: RAW_ICONS.Docs },
   {
-    label: "Incident management",
+    label: "Tickets",
     segment: "incident-tickets",
-    query: "?ticketType=INCIDENT",
     icon: "svg",
     svg: RAW_ICONS.Issue,
   },
-  {
-    label: "Change management",
-    segment: "incident-tickets",
-    query: "?ticketType=CHANGE",
-    icon: "svg",
-    svg: RAW_ICONS.PlannedIssue,
-  },
   { label: "Team", segment: "team", icon: "svg", svg: RAW_ICONS.Members },
-  { label: "Timeline", segment: "timeline", icon: "calendar" },
-  { label: "SLA", segment: "sla", icon: "svg", svg: RAW_ICONS.DashedCircle },
-  { label: "Activity", segment: "activity", icon: "svg", svg: RAW_ICONS.Docs },
+  // Timeline — placeholder page only; enable when milestone view ships
+  // { label: "Timeline", segment: "timeline", icon: "calendar" },
+  // SLA — placeholder page only; enable when project SLA dashboard ships
+  // { label: "SLA", segment: "sla", icon: "svg", svg: RAW_ICONS.DashedCircle },
+  // Activity — placeholder page only; enable when project audit feed ships
+  // { label: "Activity", segment: "activity", icon: "svg", svg: RAW_ICONS.Docs },
   { label: "Sprints", segment: "sprints", icon: "svg", svg: RAW_ICONS.PlannedIssue },
   { label: "Backlog", segment: "backlog", icon: "svg", svg: RAW_ICONS.DashedCircle },
   { label: "Board", segment: "board", icon: "svg", svg: RAW_ICONS.Stack },
@@ -46,18 +40,12 @@ function tabHref(projectId: string, tab: TabDef) {
   return `${base}/${tab.segment}${tab.query ?? ""}`;
 }
 
-function isTabActive(path: string, search: URLSearchParams, projectId: string, tab: TabDef) {
+function isTabActive(path: string, projectId: string, tab: TabDef) {
   const base = `/workflow/project/${projectId}`;
   if (!tab.segment) {
     return path === base || path === `${base}/`;
   }
   if (!path.startsWith(`${base}/${tab.segment}`)) return false;
-  if (tab.segment === "incident-tickets") {
-    const isChangeTab = tab.query?.includes("ticketType=CHANGE");
-    const tt = search.get("ticketType");
-    if (isChangeTab) return tt === "CHANGE";
-    return tt !== "CHANGE";
-  }
   return true;
 }
 
@@ -69,7 +57,6 @@ export function ProjectNavbar({
   projectTitle?: string;
 }) {
   const path = usePathname();
-  const search = useSearchParams();
 
   if (!projectId) {
     return (
@@ -110,18 +97,14 @@ export function ProjectNavbar({
           aria-label="Project areas"
         >
           {TABS.map((tab) => {
-            const active = isTabActive(path, search, projectId, tab);
+            const active = isTabActive(path, projectId, tab);
             return (
               <Link
                 key={`${tab.segment}-${tab.query ?? tab.label}`}
                 href={tabHref(projectId, tab)}
                 className={tabClass(active)}
               >
-                {tab.icon === "calendar" ? (
-                  <Calendar className="size-3.5 shrink-0 opacity-80" strokeWidth={2} />
-                ) : (
-                  <SVGIcon className="flex w-3.5 h-3.5 shrink-0 opacity-80" svgString={tab.svg!} />
-                )}
+                <SVGIcon className="flex w-3.5 h-3.5 shrink-0 opacity-80" svgString={tab.svg} />
                 <span className="whitespace-nowrap">{tab.label}</span>
               </Link>
             );

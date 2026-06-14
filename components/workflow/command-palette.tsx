@@ -128,8 +128,8 @@ export default function CommandPalette() {
     const currentProject = projectId;
     return [
       { id: "projects", label: "Go to Projects", section: "Navigate", hint: "G P", run: () => router.push("/workflow/project") },
+      { id: "all-tickets", label: "Go to All tickets", section: "Navigate", hint: "G T", run: () => router.push("/workflow/tickets") },
       { id: "inbox", label: "Go to Inbox", section: "Navigate", hint: "G I", run: () => router.push("/workflow/inbox") },
-      { id: "views", label: "Go to Views", section: "Navigate", hint: "G V", run: () => router.push("/workflow/views") },
       { id: "import", label: "Open Import", section: "Navigate", hint: "CSV/Jira", run: () => router.push("/workflow/import") },
       {
         id: "project-issues",

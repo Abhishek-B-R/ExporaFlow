@@ -2,6 +2,7 @@ import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
   const { token } = await request.json();
@@ -93,6 +94,37 @@ export async function POST(request: NextRequest) {
       data: { status: "accepted" },
     }),
   ]);
+
+  const existingEmployee = await prisma.employee.findUnique({
+    where: { email: invitation.email.toLowerCase() },
+  });
+  if (existingEmployee) {
+    await prisma.employee.update({
+      where: { id: existingEmployee.id },
+      data: {
+        userId: user.id,
+        role: invitation.role,
+        organizationAccess: Array.isArray(existingEmployee.organizationAccess)
+          ? ([
+              ...new Set([
+                ...(existingEmployee.organizationAccess as string[]),
+                invitation.workspaceId,
+              ]),
+            ] as Prisma.InputJsonValue)
+          : ([invitation.workspaceId] as Prisma.InputJsonValue),
+      },
+    });
+  } else {
+    await prisma.employee.create({
+      data: {
+        fullName: session.user.name?.trim() || invitation.email.split("@")[0] || invitation.email,
+        email: invitation.email.toLowerCase(),
+        role: invitation.role,
+        userId: user.id,
+        organizationAccess: [invitation.workspaceId] as Prisma.InputJsonValue,
+      },
+    });
+  }
 
   return Response.json({
     message: `You've joined "${invitation.workspace.name}" as ${invitation.role}.`,

@@ -12,11 +12,7 @@ import {
   Inbox,
   ListTodo,
   Boxes,
-  Eye,
-  Tag,
-  UsersRound,
-  Users,
-  UserCircle2,
+  Ticket,
   Github,
   Download,
   UserPlus,
@@ -76,7 +72,6 @@ export default function WorkflowSidebar() {
   const pathname = usePathname();
 
   const [workspaceOpen, setWorkspaceOpen] = useState(true);
-  const [peopleOpen, setPeopleOpen] = useState(true);
   const [storeOpen, setStoreOpen] = useState(true);
   const [featuresOpen, setFeaturesOpen] = useState(true);
 
@@ -123,38 +118,10 @@ export default function WorkflowSidebar() {
             href="/workflow/project"
           />
           <OptionLabel
-            className={pathname === "/workflow/views" ? navActive : ""}
-            Lucide={Eye}
-            optName="Views"
-            href="/workflow/views"
-          />
-          <OptionLabel
-            className={pathname === "/workflow/labels" ? navActive : ""}
-            Lucide={Tag}
-            optName="Labels"
-            href="/workflow/labels"
-          />
-        </Collapsible>
-
-        <div className="my-2 h-px bg-(--border) mx-1" />
-
-        <SectionHeader
-          title="People"
-          collapsed={!peopleOpen}
-          onToggle={() => setPeopleOpen((v) => !v)}
-        />
-        <Collapsible collapsed={!peopleOpen}>
-          <OptionLabel
-            className={pathname === "/workflow/members" ? navActive : ""}
-            Lucide={UsersRound}
-            optName="Members"
-            href="/workflow/members"
-          />
-          <OptionLabel
-            className={pathname === "/workflow/teams" ? navActive : ""}
-            Lucide={Users}
-            optName="Teams"
-            href="/workflow/teams"
+            className={pathname === "/workflow/tickets" ? navActive : ""}
+            Lucide={Ticket}
+            optName="All tickets"
+            href="/workflow/tickets"
           />
         </Collapsible>
 
@@ -173,10 +140,10 @@ export default function WorkflowSidebar() {
             href="/workflow/store/customers"
           />
           <OptionLabel
-            className={inStore && pathname.includes("/employees") ? navActive : ""}
-            Lucide={UserCircle2}
-            optName="Employees"
-            href="/workflow/store/employees"
+            className={pathname === "/workflow/invite" ? navActive : ""}
+            Lucide={UserPlus}
+            optName="People"
+            href="/workflow/invite"
           />
         </Collapsible>
 
@@ -199,12 +166,6 @@ export default function WorkflowSidebar() {
             Lucide={Download}
             optName="Import tickets"
             href="/workflow/import"
-          />
-          <OptionLabel
-            className={pathname === "/workflow/invite" ? navActive : ""}
-            Lucide={UserPlus}
-            optName="Invite people"
-            href="/workflow/invite"
           />
         </Collapsible>
       </div>

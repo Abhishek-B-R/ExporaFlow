@@ -58,7 +58,6 @@ export default function Issue() {
   const [searchQuery, setSearchQuery] = useState("");
   const [ticketTypeFilter, setTicketTypeFilter] = useState<"" | TicketType>("");
   const [matchingIssueIds, setMatchingIssueIds] = useState<string[] | null>(null);
-  const [isSavingView, setIsSavingView] = useState(false);
   const [selectedIssueIndex, setSelectedIssueIndex] = useState(0);
   const [aiInput, setAiInput] = useState("");
   const [aiDraft, setAiDraft] = useState<AiDraftPayload>(null);
@@ -287,35 +286,6 @@ export default function Issue() {
     }
   };
 
-  const saveCurrentView = async () => {
-    if (!project_id) return;
-    const viewName = window.prompt("Name this view");
-    if (!viewName?.trim()) return;
-
-    try {
-      setIsSavingView(true);
-      await axios.post("/api/views", {
-        name: viewName,
-        projectId: project_id,
-        filters: {
-          statusFilter: statusFilter || undefined,
-          searchText: searchQuery || undefined,
-        },
-      });
-      customToast.success({
-        title: "View saved",
-        description: "Saved to Views for quick reuse.",
-      });
-    } catch {
-      customToast.error({
-        title: "Action failed",
-        description: "Unable to save current view.",
-      });
-    } finally {
-      setIsSavingView(false);
-    }
-  };
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!filteredIssues.length) return;
@@ -365,14 +335,6 @@ export default function Issue() {
         <div className="flex flex-col flex-1 min-h-0">
         <ProjectNavbar projectId={project_id} projectTitle={project?.title} />
         <div className="border-b border-(--border) h-10 flex items-center justify-end px-4 bg-(--surface-2) gap-2">
-          <button
-            type="button"
-            onClick={saveCurrentView}
-            disabled={isSavingView}
-            className="ef-btn-outline h-7 px-3 rounded-md text-xs font-medium text-(--foreground) disabled:opacity-50"
-          >
-            {isSavingView ? "Saving…" : "Save view"}
-          </button>
           {roleLoading && sessionStatus === "authenticated" ? (
             <span className="text-xs text-(--muted-2) px-2">Loading permissions…</span>
           ) : null}

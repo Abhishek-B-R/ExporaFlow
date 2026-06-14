@@ -2,7 +2,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/db";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { Resend } from "resend";
 import crypto from "crypto";
 
@@ -32,6 +32,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const email = (body.email ?? "").trim().toLowerCase();
   const role = (body.role ?? "ENGINEER") as Role;
+  const isActive = body.isActive !== false;
+  const fullName =
+    typeof body.fullName === "string" && body.fullName.trim()
+      ? body.fullName.trim()
+      : email.split("@")[0] ?? email;
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ message: "A valid email address is required." }, { status: 400 });
@@ -93,6 +98,39 @@ export async function POST(request: NextRequest) {
       invitedById: session.user.id,
     },
   });
+
+  const existingEmployee = await prisma.employee.findUnique({
+    where: { email },
+  });
+  if (existingEmployee) {
+    await prisma.employee.update({
+      where: { id: existingEmployee.id },
+      data: {
+        role,
+        isActive,
+        userId: existingUser?.id ?? existingEmployee.userId,
+        organizationAccess: Array.isArray(existingEmployee.organizationAccess)
+          ? ([
+              ...new Set([
+                ...(existingEmployee.organizationAccess as string[]),
+                membership.workspaceId,
+              ]),
+            ] as Prisma.InputJsonValue)
+          : ([membership.workspaceId] as Prisma.InputJsonValue),
+      },
+    });
+  } else {
+    await prisma.employee.create({
+      data: {
+        fullName,
+        email,
+        role,
+        isActive,
+        userId: existingUser?.id ?? null,
+        organizationAccess: [membership.workspaceId] as Prisma.InputJsonValue,
+      },
+    });
+  }
 
   // Send the email via Resend
   const resend = getResend();

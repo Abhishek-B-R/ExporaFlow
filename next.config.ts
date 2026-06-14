@@ -20,7 +20,22 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/workflow/employees",
-        destination: "/workflow/store/employees",
+        destination: "/workflow/invite",
+        permanent: false,
+      },
+      {
+        source: "/workflow/store/employees",
+        destination: "/workflow/invite",
+        permanent: false,
+      },
+      {
+        source: "/workflow/members",
+        destination: "/workflow/invite",
+        permanent: false,
+      },
+      {
+        source: "/workflow/teams",
+        destination: "/workflow/invite",
         permanent: false,
       },
     ];

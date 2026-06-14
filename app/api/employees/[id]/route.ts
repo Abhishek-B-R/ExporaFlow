@@ -51,10 +51,31 @@ export async function PATCH(
   }
   if (d.isActive !== undefined) data.isActive = d.isActive;
 
+  const existing = await prisma.employee.findUnique({
+    where: { id },
+    select: { userId: true, organizationAccess: true },
+  });
+
   const row = await prisma.employee.update({
     where: { id },
     data,
   });
+
+  if (d.role !== undefined && existing?.userId) {
+    const workspaceIds = Array.isArray(existing.organizationAccess)
+      ? (existing.organizationAccess as string[])
+      : [];
+    if (workspaceIds.length > 0) {
+      await prisma.workspaceMember.updateMany({
+        where: {
+          userId: existing.userId,
+          workspaceId: { in: workspaceIds },
+        },
+        data: { role: d.role },
+      });
+    }
+  }
+
   return Response.json(row);
 }
 

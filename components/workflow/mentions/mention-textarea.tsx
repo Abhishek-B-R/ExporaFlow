@@ -129,7 +129,7 @@ export function MentionTextarea({
         >
           {showNoPeople ? (
             <li className="px-3 py-2 text-xs text-(--muted-2)">
-              No people to mention. Add project members or employees in Store.
+              No people to mention. Add people under Store → People.
             </li>
           ) : showNoMatches ? (
             <li className="px-3 py-2 text-xs text-(--muted-2)">

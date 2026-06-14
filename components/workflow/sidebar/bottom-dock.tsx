@@ -189,7 +189,6 @@ const TeamsWindow = ({
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-2">
         <DockOptions svg={RAW_ICONS.Target} optName="Issues" />
         <DockOptions svg={RAW_ICONS.RubiksCube} optName="Project" />
-        <DockOptions svg={RAW_ICONS.Eye} optName="Views" />
       </div>
       {/* Close Button */}
       <button

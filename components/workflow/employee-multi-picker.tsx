@@ -7,8 +7,13 @@ export type EmployeeOption = {
   fullName: string;
   email: string;
   userId?: string | null;
+  assignableUserId?: string | null;
   isActive?: boolean;
 };
+
+function resolveAssignableId(employee: EmployeeOption): string | null {
+  return employee.assignableUserId ?? employee.userId ?? null;
+}
 
 type EmployeeMultiPickerProps = {
   employees: EmployeeOption[];
@@ -26,12 +31,21 @@ export function EmployeeMultiPicker({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
+  const activeEmployees = useMemo(
+    () => employees.filter((e) => e.isActive !== false),
+    [employees],
+  );
+
   const assignable = useMemo(
     () =>
-      employees.filter(
-        (e) => e.isActive !== false && typeof e.userId === "string" && e.userId,
-      ),
-    [employees],
+      activeEmployees.filter((e) => Boolean(resolveAssignableId(e))),
+    [activeEmployees],
+  );
+
+  const unlinked = useMemo(
+    () =>
+      activeEmployees.filter((e) => !resolveAssignableId(e)),
+    [activeEmployees],
   );
 
   const filtered = useMemo(() => {
@@ -44,11 +58,22 @@ export function EmployeeMultiPicker({
     );
   }, [assignable, search]);
 
+  const filteredUnlinked = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return unlinked;
+    return unlinked.filter(
+      (e) =>
+        e.fullName.toLowerCase().includes(q) ||
+        e.email.toLowerCase().includes(q),
+    );
+  }, [unlinked, search]);
+
   const selectedEmployees = useMemo(
     () =>
-      assignable.filter(
-        (e) => e.userId && value.includes(e.userId),
-      ),
+      assignable.filter((e) => {
+        const id = resolveAssignableId(e);
+        return id && value.includes(id);
+      }),
     [assignable, value],
   );
 
@@ -59,6 +84,19 @@ export function EmployeeMultiPicker({
       onChange([...value, userId]);
     }
   };
+
+  const emptyMessage = (() => {
+    if (activeEmployees.length === 0) {
+      return "No employees in the directory yet. Add people under Store → Employees.";
+    }
+    if (assignable.length === 0) {
+      return "Employees need a matching login email before they can be assigned to projects.";
+    }
+    if (search.trim()) {
+      return "No assignable employees match your search.";
+    }
+    return "No assignable employees found.";
+  })();
 
   return (
     <div className="min-w-0 space-y-2">
@@ -83,7 +121,10 @@ export function EmployeeMultiPicker({
                       {e.fullName}
                       <button
                         type="button"
-                        onClick={() => e.userId && toggle(e.userId)}
+                        onClick={() => {
+                          const id = resolveAssignableId(e);
+                          if (id) toggle(id);
+                        }}
                         className="text-(--muted-2) hover:text-(--foreground)"
                         aria-label={`Remove ${e.fullName}`}
                       >
@@ -139,25 +180,45 @@ export function EmployeeMultiPicker({
             ) : null}
           </div>
           <div className="max-h-48 overflow-y-auto border-t border-(--border)">
-            {filtered.length === 0 ? (
+            {filtered.length === 0 && filteredUnlinked.length === 0 ? (
               <p className="px-3 py-4 text-sm text-(--muted-2) text-center">
-                No active employees match your search.
+                {emptyMessage}
               </p>
             ) : (
-              filtered.slice(0, 80).map((e) => {
-                const uid = e.userId!;
-                const checked = value.includes(uid);
-                return (
-                  <label
-                    key={e.id}
-                    className={`flex items-center gap-3 px-3 py-2 border-b border-(--border)/60 last:border-0 cursor-pointer ${
-                      checked ? "bg-sky-50" : "hover:bg-(--surface-2)"
-                    }`}
+              <>
+                {filtered.slice(0, 80).map((e) => {
+                  const uid = resolveAssignableId(e)!;
+                  const checked = value.includes(uid);
+                  return (
+                    <label
+                      key={e.id}
+                      className={`flex items-center gap-3 px-3 py-2 border-b border-(--border)/60 last:border-0 cursor-pointer ${
+                        checked ? "bg-sky-50" : "hover:bg-(--surface-2)"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggle(uid)}
+                        className="rounded border-(--border-strong)"
+                      />
+                      <div className="min-w-0 text-sm">
+                        <span className="font-medium text-(--foreground)">
+                          {e.fullName}
+                        </span>
+                        <span className="text-(--muted-2)"> · {e.email}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+                {filteredUnlinked.slice(0, 20).map((e) => (
+                  <div
+                    key={`unlinked-${e.id}`}
+                    className="flex items-center gap-3 px-3 py-2 border-b border-(--border)/60 bg-zinc-50/80 opacity-80"
                   >
                     <input
                       type="checkbox"
-                      checked={checked}
-                      onChange={() => toggle(uid)}
+                      disabled
                       className="rounded border-(--border-strong)"
                     />
                     <div className="min-w-0 text-sm">
@@ -165,10 +226,14 @@ export function EmployeeMultiPicker({
                         {e.fullName}
                       </span>
                       <span className="text-(--muted-2)"> · {e.email}</span>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        No login for this email — use the same email as their
+                        ExporaFlow account, or invite them first.
+                      </p>
                     </div>
-                  </label>
-                );
-              })
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>

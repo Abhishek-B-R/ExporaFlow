@@ -6,6 +6,10 @@ import {
   getAccessibleEmployeesForUser,
   userIsWorkspaceElevated,
 } from "@/lib/store-access";
+import {
+  enrichEmployeesForAssignment,
+  resolveEmployeeUserId,
+} from "@/lib/employee-assignability";
 import { Prisma, Role } from "@prisma/client";
 import { z } from "zod";
 
@@ -32,7 +36,8 @@ export async function GET(request: NextRequest) {
   const employees = await getAccessibleEmployeesForUser(session.user.id, {
     status: status ?? "active",
   });
-  return Response.json(employees);
+  const enriched = await enrichEmployeesForAssignment(employees);
+  return Response.json(enriched);
 }
 
 export async function POST(request: NextRequest) {
@@ -60,6 +65,28 @@ export async function POST(request: NextRequest) {
     organizationAccess,
     userId,
   } = parsed.data;
+
+  let resolvedOrgAccess = organizationAccess;
+  if (!resolvedOrgAccess || resolvedOrgAccess.length === 0) {
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId: session.user.id },
+      select: { workspaceId: true },
+    });
+    if (membership) {
+      resolvedOrgAccess = [membership.workspaceId];
+    }
+  }
+
+  let resolvedUserId =
+    userId && userId.length > 0 ? userId : null;
+  if (!resolvedUserId) {
+    const matchedUser = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true },
+    });
+    resolvedUserId = matchedUser?.id ?? null;
+  }
+
   const row = await prisma.employee.create({
     data: {
       fullName,
@@ -68,11 +95,10 @@ export async function POST(request: NextRequest) {
       designation: designation ?? null,
       role: role ?? Role.ENGINEER,
       organizationAccess:
-        organizationAccess && organizationAccess.length > 0
-          ? (organizationAccess as Prisma.InputJsonValue)
+        resolvedOrgAccess && resolvedOrgAccess.length > 0
+          ? (resolvedOrgAccess as Prisma.InputJsonValue)
           : undefined,
-      user:
-        userId && userId.length > 0 ? { connect: { id: userId } } : undefined,
+      userId: resolvedUserId,
     },
   });
   return Response.json(row);
