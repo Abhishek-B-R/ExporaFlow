@@ -8,6 +8,7 @@ import { computeDueDateFromPolicy } from "@/lib/ticket-due-date-policy";
 import { canTransitionIssueStatus } from "@/lib/issue-status-machine";
 import { logIssueActivity, notifyUsers } from "@/lib/collaboration";
 import { updateIssueBodySchema } from "@/lib/ticket-schemas";
+import { canPerformProjectAction } from "@/lib/rbac-permissions";
 import {
   buildHoldAndSlaPatch,
   computeInitialSlaDueAt,
@@ -105,13 +106,85 @@ export async function PATCH(request: NextRequest) {
     const access = await assertProjectRole({
       userId: session.user.id,
       projectId: existing.projectId,
-      minimum: Role.ENGINEER,
+      minimum: Role.VIEWER,
     });
     if (!access.ok) {
       return new Response(JSON.stringify({ message: access.message }), {
         status: access.status,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    const role = access.role;
+
+    const forbidden = () =>
+      new Response(
+        JSON.stringify({ message: "Insufficient permissions for this change." }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+    if (
+      typeof issueStatus === "string" &&
+      issueStatus !== (existing.status ?? "") &&
+      !canPerformProjectAction(role, "updateTicketStatus")
+    ) {
+      return forbidden();
+    }
+    if (
+      typeof issuePriority === "string" &&
+      issuePriority !== (existing.priority ?? "") &&
+      !canPerformProjectAction(role, "updateTicketPriority")
+    ) {
+      return forbidden();
+    }
+    if (
+      urgency !== undefined &&
+      urgency !== (existing.urgency ?? TicketUrgency.MEDIUM) &&
+      !canPerformProjectAction(role, "updateTicketPriority")
+    ) {
+      return forbidden();
+    }
+    if (
+      (typeof assignedUser === "string" || assignedUser === null) &&
+      (assignedUser || null) !== (existing.assignedUser || null) &&
+      !canPerformProjectAction(role, "assignTicket")
+    ) {
+      return forbidden();
+    }
+    if (
+      (typeof sprintId === "string" || sprintId === null) &&
+      (sprintId || null) !== (existing.sprintId || null) &&
+      !canPerformProjectAction(role, "manageSprints")
+    ) {
+      return forbidden();
+    }
+
+    const labelsChanging =
+      Array.isArray(labels) &&
+      labels.join(",") !== (existing.labels ?? []).join(",");
+    const contentChanging =
+      (typeof issueTitle === "string" && issueTitle !== existing.title) ||
+      (typeof issueDescription === "string" &&
+        issueDescription !== (existing.description ?? "")) ||
+      labelsChanging ||
+      (typeof estimate === "number" && estimate !== existing.estimate) ||
+      (estimate === null && existing.estimate !== null) ||
+      (requesterName !== undefined &&
+        (requesterName?.trim() || null) !== (existing.requesterName ?? null)) ||
+      (requesterEmail !== undefined &&
+        (requesterEmail?.trim() || null) !== (existing.requesterEmail ?? null)) ||
+      ((typeof parentIssueId === "string" || parentIssueId === null) &&
+        (parentIssueId || null) !== (existing.parentIssueId || null)) ||
+      (ticketType !== undefined && ticketType !== existing.ticketType) ||
+      startDate !== undefined ||
+      endDate !== undefined ||
+      durationMinutes !== undefined;
+
+    if (contentChanging && !canPerformProjectAction(role, "updateTicket")) {
+      return forbidden();
     }
 
     const effectiveType = ticketType ?? existing.ticketType;

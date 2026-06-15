@@ -2,11 +2,12 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { prisma } from "@/db";
-import { assertProjectRole } from "@/lib/authz";
+import { assertProjectPermission } from "@/lib/authz";
 import { logIssueActivity, notifyUsers } from "@/lib/collaboration";
 import { findDuplicateIssueCandidates } from "@/lib/ai/duplicates";
-import { Role, TicketType, TicketUrgency } from "@prisma/client";
+import { TicketType, TicketUrgency } from "@prisma/client";
 import { createIssueBodySchema } from "@/lib/ticket-schemas";
+import { canPerformProjectAction } from "@/lib/rbac-permissions";
 import { computeDueDateFromPolicy } from "@/lib/ticket-due-date-policy";
 import {
   allocateGlobalTicketNumber,
@@ -71,10 +72,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "Kindly log in!" }, { status: 401 });
   }
 
-  const access = await assertProjectRole({
+  const access = await assertProjectPermission({
     userId: session.user.id,
     projectId,
-    minimum: Role.ENGINEER,
+    permission: "createTicket",
   });
   if (!access.ok) {
     return Response.json(
@@ -82,6 +83,17 @@ export async function POST(request: NextRequest) {
       { status: access.status },
     );
   }
+
+  const role = access.role;
+  const resolvedStatus = canPerformProjectAction(role, "updateTicketStatus")
+    ? (issueStatus ?? "Backlog")
+    : "Backlog";
+  const resolvedAssignedUser =
+    canPerformProjectAction(role, "assignTicket") &&
+    typeof assignedUser === "string" &&
+    assignedUser.length > 0
+      ? assignedUser
+      : null;
 
   const normalizedTitle = normalizeIdentity(issueTitle);
   const recentIssues = await prisma.issue.findMany({
@@ -184,7 +196,7 @@ export async function POST(request: NextRequest) {
     data: {
       title: issueTitle.trim(),
       description: descriptionText,
-      status: issueStatus ?? "Backlog",
+      status: resolvedStatus,
       priority: effectivePriority,
       urgency: effectiveUrgency,
       ticketNumber,
@@ -201,10 +213,7 @@ export async function POST(request: NextRequest) {
       endDate: end,
       durationMinutes: durationMinutes ?? null,
       slaDueAt,
-      assignedUser:
-        typeof assignedUser === "string" && assignedUser.length > 0
-          ? assignedUser
-          : null,
+      assignedUser: resolvedAssignedUser,
     },
   });
 
@@ -226,8 +235,8 @@ export async function POST(request: NextRequest) {
       [
         project?.createdBy ?? "",
         ...(project?.projectMembers.map((member) => member.userId) ?? []),
-        typeof assignedUser === "string" && assignedUser.length > 0
-          ? assignedUser
+        typeof resolvedAssignedUser === "string" && resolvedAssignedUser.length > 0
+          ? resolvedAssignedUser
           : "",
       ].filter(Boolean),
     );

@@ -41,6 +41,8 @@ export default function IssueLabel({
   globalTicketNumber,
   dueDate,
   issueStatus,
+  canChangeStatus = false,
+  canChangePriority = false,
 }: {
   title: string;
   description?: string;
@@ -66,6 +68,8 @@ export default function IssueLabel({
   dueDate?: string | null;
   /** Ticket status for overdue calculation (avoids shadowing `status` prop). */
   issueStatus?: string | null;
+  canChangeStatus?: boolean;
+  canChangePriority?: boolean;
 }) {
   const date = new Date(updatedAt ? updatedAt : "");
   const router = useRouter();
@@ -289,68 +293,91 @@ export default function IssueLabel({
         {projectKey ? projectKey.slice(0, 3).toUpperCase() : "ZEN-1"}
       </p>
       <div className="col-span-1 relative " ref={statusDropdownRef}>
-        <div
-          className="w-fit flex items-center px-2 h-8 rounded border border-transparent hover:bg-(--surface-3) transition-colors duration-150 cursor-pointer text-(--foreground)"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowOptionsDropdown(
-              showOptionsDropdown == "status" ? false : "status",
-            );
-          }}
-        >
-          {selectedStatusOption}
-        </div>
-        {showOptionsDropdown == "status" && (
+        {canChangeStatus ? (
+          <>
+            <div
+              className="w-fit flex items-center px-2 h-8 rounded border border-transparent hover:bg-(--surface-3) transition-colors duration-150 cursor-pointer text-(--foreground)"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowOptionsDropdown(
+                  showOptionsDropdown == "status" ? false : "status",
+                );
+              }}
+            >
+              {selectedStatusOption}
+            </div>
+            {showOptionsDropdown == "status" && (
+              <div
+                className="absolute w-40 top-full left-0 rounded-md border border-(--border) bg-(--surface-1) shadow-lg mt-1 z-50 py-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {statusMenu.map((option, key) => (
+                  <div
+                    key={key}
+                    className="px-2 flex gap-x-2 rounded items-center h-8 hover:bg-(--surface-2) cursor-pointer text-(--foreground) text-[13px]"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleStatusOptionClick(option.title);
+                    }}
+                  >
+                    <SVGIcon className="flex w-4" svgString={option.svg} />
+                    <p>{option.title}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
           <div
-            className="absolute w-40 top-full left-0 rounded-md border border-(--border) bg-(--surface-1) shadow-lg mt-1 z-50 py-0.5"
+            className="w-fit flex items-center px-2 h-8 text-(--muted) cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
-            {statusMenu.map((option, key) => (
-              <div
-                key={key}
-                className="px-2 flex gap-x-2 rounded items-center h-8 hover:bg-(--surface-2) cursor-pointer text-(--foreground) text-[13px]"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleStatusOptionClick(option.title);
-                }}
-              >
-                <SVGIcon className="flex w-4" svgString={option.svg} />
-                <p>{option.title}</p>
-              </div>
-            ))}
+            {selectedStatusOption}
           </div>
         )}
       </div>
       <div className="col-span-1 relative " ref={priorityDropdownRef}>
-        <div
-          className="flex items-center justify-center h-8 w-8 rounded-md border border-transparent hover:bg-(--surface-3) transition-colors cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowOptionsDropdown(
-              showOptionsDropdown == "priority" ? false : "priority",
-            );
-          }}
-        >
-          {renderPrioritySvg(selectedPriorityOption)}
-        </div>
-        {showOptionsDropdown == "priority" && (
-          <div
-            className="absolute w-40 top-full left-0 rounded-md border border-(--border) bg-(--surface-1) shadow-lg mt-1 z-50 py-0.5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {priorityOptionsArray.map((option, key) => (
+        {canChangePriority ? (
+          <>
+            <div
+              className="flex items-center justify-center h-8 w-8 rounded-md border border-transparent hover:bg-(--surface-3) transition-colors cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowOptionsDropdown(
+                  showOptionsDropdown == "priority" ? false : "priority",
+                );
+              }}
+            >
+              {renderPrioritySvg(selectedPriorityOption)}
+            </div>
+            {showOptionsDropdown == "priority" && (
               <div
-                key={key}
-                className="px-2 h-8 hover:bg-(--surface-2) cursor-pointer text-(--foreground) flex items-center gap-x-2 rounded text-[13px]"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handlePriorityOptionClick(option.name);
-                }}
+                className="absolute w-40 top-full left-0 rounded-md border border-(--border) bg-(--surface-1) shadow-lg mt-1 z-50 py-0.5"
+                onClick={(e) => e.stopPropagation()}
               >
-                <SVGIcon className="flex w-4" svgString={option.svg} />
-                <p>{option.name}</p>
+                {priorityOptionsArray.map((option, key) => (
+                  <div
+                    key={key}
+                    className="px-2 h-8 hover:bg-(--surface-2) cursor-pointer text-(--foreground) flex items-center gap-x-2 rounded text-[13px]"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handlePriorityOptionClick(option.name);
+                    }}
+                  >
+                    <SVGIcon className="flex w-4" svgString={option.svg} />
+                    <p>{option.name}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+          </>
+        ) : (
+          <div
+            className="flex items-center justify-center h-8 w-8 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+            title={selectedPriorityOption}
+          >
+            {renderPrioritySvg(selectedPriorityOption)}
           </div>
         )}
       </div>

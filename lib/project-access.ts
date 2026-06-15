@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/db";
 import { ProjectServiceLine, Role } from "@prisma/client";
+import { getPrimaryWorkspaceId } from "@/lib/workspace-access";
 
 /**
  * When a user has explicit service-line grants, workspace-wide discovery is limited
@@ -20,22 +21,21 @@ export async function userPassesServiceLineForProject(params: {
   return grants.some((g) => g.serviceLine === serviceLine);
 }
 
+const NO_ACCESS: Prisma.ProjectWhereInput = { id: { in: [] } };
+
 export async function accessibleProjectsWhere(
   userId: string,
 ): Promise<Prisma.ProjectWhereInput> {
-  const memberships = await prisma.workspaceMember.findMany({
-    where: { userId },
-    select: { workspaceId: true, role: true },
-  });
-  const workspaceById = new Map<string, Role>();
-  for (const m of memberships) {
-    const prev = workspaceById.get(m.workspaceId);
-    const rank = (r: Role) =>
-      (({ ADMIN: 4, MANAGER: 3, ENGINEER: 2, QA: 1, VIEWER: 0, CUSTOMER: 0 }) as const)[r];
-    if (!prev || rank(m.role) > rank(prev))
-      workspaceById.set(m.workspaceId, m.role);
-  }
+  const workspaceId = await getPrimaryWorkspaceId();
+  if (!workspaceId) return NO_ACCESS;
 
+  const membership = await prisma.workspaceMember.findFirst({
+    where: { userId, workspaceId },
+    select: { role: true },
+  });
+  if (!membership) return NO_ACCESS;
+
+  const role = membership.role;
   const grants = await prisma.userServiceLineGrant.findMany({
     where: { userId },
     select: { serviceLine: true },
@@ -43,26 +43,24 @@ export async function accessibleProjectsWhere(
   const grantLines = [...new Set(grants.map((g) => g.serviceLine))];
 
   const or: Prisma.ProjectWhereInput[] = [
-    { createdBy: userId },
-    { projectMembers: { some: { userId } } },
+    { workspaceId, createdBy: userId },
+    { workspaceId, projectMembers: { some: { userId } } },
   ];
 
-  for (const [workspaceId, role] of workspaceById) {
-    const elevated = role === Role.ADMIN || role === Role.MANAGER;
-    if (elevated) {
-      or.push({ workspaceId });
-    } else if (grantLines.length > 0) {
-      or.push({
-        AND: [
-          { workspaceId },
-          {
-            OR: [{ serviceLine: null }, { serviceLine: { in: grantLines } }],
-          },
-        ],
-      });
-    } else {
-      or.push({ workspaceId });
-    }
+  const elevated = role === Role.ADMIN || role === Role.MANAGER;
+  if (elevated) {
+    or.push({ workspaceId });
+  } else if (grantLines.length > 0) {
+    or.push({
+      AND: [
+        { workspaceId },
+        {
+          OR: [{ serviceLine: null }, { serviceLine: { in: grantLines } }],
+        },
+      ],
+    });
+  } else {
+    or.push({ workspaceId });
   }
 
   return { OR: or };

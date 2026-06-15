@@ -7,6 +7,11 @@ import { NextAuthOptions } from "next-auth";
 import { customToast } from "./custom-toast";
 import { prisma } from "@/db";
 import { defaultUsername } from "@/lib/default-username";
+import {
+  canEmailSignIn,
+  ensureOwnerWorkspace,
+  isWorkspaceOwnerEmail,
+} from "@/lib/workspace-access";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -21,8 +26,18 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // to add custom logic whenever user signin
+    async signIn({ user }) {
+      const email = user.email?.trim();
+      if (!email) return "/auth/access-denied";
+
+      if (!(await canEmailSignIn(email))) {
+        return "/auth/access-denied";
+      }
+
+      if (isWorkspaceOwnerEmail(email) && user.id) {
+        await ensureOwnerWorkspace(user.id, user.name);
+      }
+
       return true;
     },
     async session({ session, token, user }) {
@@ -64,7 +79,11 @@ export const authOptions: NextAuthOptions = {
 
         const workspaceName =
           (user.name?.split(" ")[0] ? `${user.name.split(" ")[0]}'s Workspace` : null) ??
-          "My Workspace";
+          "ExporaFlow Workspace";
+
+        if (!isWorkspaceOwnerEmail(user.email)) {
+          return;
+        }
 
         await prisma.$transaction(async (tx) => {
           const workspace = await tx.workspace.create({

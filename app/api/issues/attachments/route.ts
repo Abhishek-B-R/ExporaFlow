@@ -1,5 +1,5 @@
 import { authOptions } from "@/lib/auth";
-import { assertProjectRole } from "@/lib/authz";
+import { assertProjectRole, assertProjectPermission } from "@/lib/authz";
 import { prisma } from "@/db";
 import {
   ALLOWED_ATTACHMENT_MIME,
@@ -86,10 +86,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "Ticket not found." }, { status: 404 });
   }
 
-  const access = await assertProjectRole({
+  const access = await assertProjectPermission({
     userId: session.user.id,
     projectId: issue.projectId,
-    minimum: Role.ENGINEER,
+    permission: "uploadAttachment",
   });
   if (!access.ok) {
     return Response.json({ message: access.message }, { status: access.status });

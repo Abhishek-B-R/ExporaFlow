@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { Prisma, Role } from "@prisma/client";
 import { isProjectServiceLineValue } from "@/utils/project-service-line";
 import { parseStoredDate } from "@/lib/ticket-sla";
-import { assertWorkspaceMember } from "@/lib/rbac-permissions";
+import { assertWorkspaceMember, canPerformProjectAction } from "@/lib/rbac-permissions";
 
 function normalizeName(value: string) {
   return value
@@ -54,6 +54,15 @@ export async function POST(request: NextRequest) {
     return Response.json(
       { message: workspaceAccess.message },
       { status: workspaceAccess.status },
+    );
+  }
+
+  if (
+    !canPerformProjectAction(workspaceAccess.membership.role, "createProject")
+  ) {
+    return Response.json(
+      { message: "Only managers can create projects." },
+      { status: 403 },
     );
   }
 

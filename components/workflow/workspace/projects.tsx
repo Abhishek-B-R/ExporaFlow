@@ -37,6 +37,7 @@ import {
   EmployeeMultiPicker,
   type EmployeeOption,
 } from "@/components/workflow/employee-multi-picker";
+import { useWorkspaceRole } from "@/hooks/use-workspace-role";
 
 function formatProjectDate(value: unknown): string {
   if (value == null || value === "") return "—";
@@ -100,6 +101,8 @@ export default function Projects() {
   const [createWindowOpen, setCreateWindowOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectBody[]>();
   const [isLoading, setIsLoading] = useState(false);
+  const { can: canWorkspace, loading: workspaceRoleLoading } = useWorkspaceRole();
+  const canCreateProject = !workspaceRoleLoading && canWorkspace("createProject");
 
   const fetchProjects = async () => {
     try {
@@ -135,14 +138,16 @@ export default function Projects() {
           </span>
         }
         actions={
-          <button
-            type="button"
-            onClick={() => setCreateWindowOpen(true)}
-            className="ef-icon-btn-primary h-8 gap-1.5 px-3 text-xs font-medium"
-          >
-            <SVGIcon className="flex w-3.5 h-3.5" svgString={RAW_ICONS.Add} />
-            New project
-          </button>
+          canCreateProject ? (
+            <button
+              type="button"
+              onClick={() => setCreateWindowOpen(true)}
+              className="ef-icon-btn-primary h-8 gap-1.5 px-3 text-xs font-medium"
+            >
+              <SVGIcon className="flex w-3.5 h-3.5" svgString={RAW_ICONS.Add} />
+              New project
+            </button>
+          ) : null
         }
       >
         <div className="flex flex-col flex-1 min-h-0">
@@ -231,6 +236,8 @@ export default function Projects() {
                           project={elem}
                           openDeleteWindow={setDeleteWindowOpen}
                           setProjectIdToDelete={setDeleteProjectId}
+                          canUpdateProject={canWorkspace("updateProject")}
+                          canDeleteProject={canWorkspace("deleteProject")}
                         />
                       ))}
                     </tbody>
@@ -253,13 +260,15 @@ export default function Projects() {
                     Create a project to link a customer, assign a service line,
                     and start tracking incidents and changes.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setCreateWindowOpen(true)}
-                    className="ef-btn-primary mt-6 h-10 rounded-lg px-4 text-sm"
-                  >
-                    Create your first project
-                  </button>
+                  {canCreateProject ? (
+                    <button
+                      type="button"
+                      onClick={() => setCreateWindowOpen(true)}
+                      className="ef-btn-primary mt-6 h-10 rounded-lg px-4 text-sm"
+                    >
+                      Create your first project
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -268,12 +277,16 @@ export default function Projects() {
       </WorkflowLayout>
 
       {createWindowOpen && (
-        <CreateProjectWindow setClose={setCreateWindowOpen} />
+        <CreateProjectWindow
+          setClose={setCreateWindowOpen}
+          onCreated={fetchProjects}
+        />
       )}
       {deleteWindowOpen && (
         <DeleteWindow
           closeDeleteWindow={setDeleteWindowOpen}
           projectID={deleteProjectId}
+          onDeleted={fetchProjects}
         />
       )}
     </>
@@ -284,10 +297,14 @@ const ProjectLabel = ({
   project,
   openDeleteWindow,
   setProjectIdToDelete,
+  canUpdateProject,
+  canDeleteProject,
 }: {
   project: ProjectBody;
   openDeleteWindow: React.Dispatch<React.SetStateAction<boolean>>;
   setProjectIdToDelete: React.Dispatch<React.SetStateAction<string>>;
+  canUpdateProject: boolean;
+  canDeleteProject: boolean;
 }) => {
   const projectID = project.id;
   const [selectedHealthOption, setSelectedHealthOption] = useState(
@@ -432,69 +449,86 @@ const ProjectLabel = ({
         </span>
       </td>
       <td className="px-3 py-2 align-middle">
-        <div className="relative inline-block" ref={healthDropdownRef}>
-          <button
-            type="button"
+        {canUpdateProject ? (
+          <div className="relative inline-block" ref={healthDropdownRef}>
+            <button
+              type="button"
+              className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${stateBadgeClass(selectedHealthOption)}`}
+              onClick={() =>
+                setShowOptionsDropdown((v) => (v === "health" ? false : "health"))
+              }
+            >
+              {selectedHealthOption}
+            </button>
+            {showOptionsDropdown === "health" ? (
+              <div className={menuPanel}>
+                {healthOptions.map((option, key) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                    onClick={() => handleHealthOptionClick(option.name)}
+                  >
+                    <SVGIcon
+                      className="flex w-4 shrink-0"
+                      svgString={option.svg}
+                    />
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <span
             className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${stateBadgeClass(selectedHealthOption)}`}
-            onClick={() =>
-              setShowOptionsDropdown((v) => (v === "health" ? false : "health"))
-            }
           >
             {selectedHealthOption}
-          </button>
-          {showOptionsDropdown === "health" ? (
-            <div className={menuPanel}>
-              {healthOptions.map((option, key) => (
-                <button
-                  type="button"
-                  key={key}
-                  className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
-                  onClick={() => handleHealthOptionClick(option.name)}
-                >
-                  <SVGIcon
-                    className="flex w-4 shrink-0"
-                    svgString={option.svg}
-                  />
-                  {option.name}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
+          </span>
+        )}
       </td>
       <td className="px-3 py-2 align-middle">
-        <div className="relative inline-flex" ref={priorityDropdownRef}>
-          <button
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors"
-            onClick={() =>
-              setShowOptionsDropdown((v) =>
-                v === "priority" ? false : "priority",
-              )
-            }
-            aria-label="Change priority"
+        {canUpdateProject ? (
+          <div className="relative inline-flex" ref={priorityDropdownRef}>
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-(--border) bg-(--surface-2) hover:bg-(--surface-3) transition-colors"
+              onClick={() =>
+                setShowOptionsDropdown((v) =>
+                  v === "priority" ? false : "priority",
+                )
+              }
+              aria-label="Change priority"
+            >
+              {renderPrioritySvg(selectedPriorityOption)}
+            </button>
+            {showOptionsDropdown === "priority" ? (
+              <div className={menuPanel}>
+                {priorityOptionsArray.map((option, key) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                    onClick={() => handlePriorityOptionClick(option.name)}
+                  >
+                    <SVGIcon
+                      className="flex w-4 shrink-0"
+                      svgString={option.svg}
+                    />
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div
+            className="flex h-8 w-8 items-center justify-center"
+            title={selectedPriorityOption}
           >
             {renderPrioritySvg(selectedPriorityOption)}
-          </button>
-          {showOptionsDropdown === "priority" ? (
-            <div className={menuPanel}>
-              {priorityOptionsArray.map((option, key) => (
-                <button
-                  type="button"
-                  key={key}
-                  className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
-                  onClick={() => handlePriorityOptionClick(option.name)}
-                >
-                  <SVGIcon
-                    className="flex w-4 shrink-0"
-                    svgString={option.svg}
-                  />
-                  {option.name}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
+          </div>
+        )}
       </td>
       <td className="px-3 py-2 align-middle text-(--muted) text-[12px] hidden md:table-cell max-w-[140px]">
         <span className="line-clamp-2" title={leadLabel(project)}>
@@ -548,17 +582,19 @@ const ProjectLabel = ({
         )}
       </td>
       <td className="px-3 py-2 align-middle text-right">
-        <button
-          type="button"
-          onClick={() => {
-            setProjectIdToDelete(projectID);
-            openDeleteWindow(true);
-          }}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-(--muted-2) hover:text-(--danger) hover:bg-(--surface-2) hover:border-(--border) transition-colors"
-          aria-label="Delete project"
-        >
-          <SVGIcon className="flex w-4" svgString={RAW_ICONS.Delete} />
-        </button>
+        {canDeleteProject ? (
+          <button
+            type="button"
+            onClick={() => {
+              setProjectIdToDelete(projectID);
+              openDeleteWindow(true);
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-(--muted-2) hover:text-(--danger) hover:bg-(--surface-2) hover:border-(--border) transition-colors"
+            aria-label="Delete project"
+          >
+            <SVGIcon className="flex w-4" svgString={RAW_ICONS.Delete} />
+          </button>
+        ) : null}
       </td>
     </tr>
   );
@@ -566,8 +602,10 @@ const ProjectLabel = ({
 
 const CreateProjectWindow = ({
   setClose,
+  onCreated,
 }: {
   setClose: React.Dispatch<React.SetStateAction<boolean>>;
+  onCreated?: () => void | Promise<void>;
 }) => {
   const [projTitle, setProjTitle] = useState("");
   const [projDescription, setProjDescription] = useState("");
@@ -661,6 +699,7 @@ const CreateProjectWindow = ({
         title: "",
         description: "Project created succesfully!",
       });
+      await onCreated?.();
     } catch (error) {
       const description = axios.isAxiosError(error)
         ? (error.response?.data?.message ?? "Could not create project.")
@@ -873,9 +912,11 @@ const CreateProjectWindow = ({
 const DeleteWindow = ({
   projectID,
   closeDeleteWindow,
+  onDeleted,
 }: {
   projectID: string;
   closeDeleteWindow: React.Dispatch<React.SetStateAction<boolean>>;
+  onDeleted?: () => void | Promise<void>;
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -890,6 +931,7 @@ const DeleteWindow = ({
         title: "",
         description: "Project deleted succesfully!",
       });
+      await onDeleted?.();
     } catch (error) {
       customToast.error({
         title: "",

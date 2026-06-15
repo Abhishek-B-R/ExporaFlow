@@ -18,6 +18,7 @@ import {
 } from "@/utils/project-view-options";
 import { customToast } from "@/lib/custom-toast";
 import { projectServiceLineLabel } from "@/utils/project-service-line";
+import { useProjectRole } from "@/hooks/use-project-role";
 
 
 
@@ -39,6 +40,8 @@ export default function Project({
   const [project_id, setProjectID] = useState<string | null>(null);
   const [project, setProject] = useState<ProjectBody | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { can: canProject } = useProjectRole(project_id);
+  const canUpdateProject = canProject("updateProject");
 
   useEffect(() => {
     const fetchParams = async () => {
@@ -189,59 +192,71 @@ export default function Project({
                   <p className="mt-2 text-sm text-(--muted-2) max-w-3xl">{project.description}</p>
 
                   <div className="flex flex-wrap gap-2 my-6 text-xs">
-                    <div
-                      ref={statusDropdownRef}
-                      className="h-8 relative rounded-md flex items-center border border-(--border) bg-(--surface-2) cursor-pointer hover:bg-(--surface-3) transition-colors"
-                    >
+                    {canUpdateProject ? (
                       <div
-                        className="h-full px-3 flex items-center rounded-md text-(--foreground) font-medium"
-                        onClick={() => setShowOptionsDropdown("status")}
+                        ref={statusDropdownRef}
+                        className="h-8 relative rounded-md flex items-center border border-(--border) bg-(--surface-2) cursor-pointer hover:bg-(--surface-3) transition-colors"
                       >
+                        <div
+                          className="h-full px-3 flex items-center rounded-md text-(--foreground) font-medium"
+                          onClick={() => setShowOptionsDropdown("status")}
+                        >
+                          {project.status ? project.status : "Status"}
+                        </div>
+                        {showOptionsDropdown == "status" && (
+                          <div className="z-10 absolute top-full left-0 mt-1 min-w-[10rem] rounded-md border border-(--border) bg-(--surface-1) py-0.5 shadow-lg">
+                            {healthOptions.map((option, key) => (
+                              <button
+                                type="button"
+                                key={key}
+                                className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                                onClick={() => handleHealthOptionClick(option.name)}
+                              >
+                                <SVGIcon className="flex w-4" svgString={option.svg} />
+                                {option.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-8 px-3 rounded-md flex items-center border border-(--border) bg-(--surface-2) text-(--foreground) font-medium">
                         {project.status ? project.status : "Status"}
                       </div>
-                      {showOptionsDropdown == "status" && (
-                        <div className="z-10 absolute top-full left-0 mt-1 min-w-[10rem] rounded-md border border-(--border) bg-(--surface-1) py-0.5 shadow-lg">
-                          {healthOptions.map((option, key) => (
-                            <button
-                              type="button"
-                              key={key}
-                              className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
-                              onClick={() => handleHealthOptionClick(option.name)}
-                            >
-                              <SVGIcon className="flex w-4" svgString={option.svg} />
-                              {option.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    )}
 
-                    <div
-                      ref={priorityDropdownRef}
-                      className="h-8 w-8 relative rounded-md flex items-center justify-center border border-(--border) bg-(--surface-2) cursor-pointer hover:bg-(--surface-3) transition-colors"
-                    >
+                    {canUpdateProject ? (
                       <div
-                        className="flex items-center justify-center w-full h-full rounded-md"
-                        onClick={() => setShowOptionsDropdown("priority")}
+                        ref={priorityDropdownRef}
+                        className="h-8 w-8 relative rounded-md flex items-center justify-center border border-(--border) bg-(--surface-2) cursor-pointer hover:bg-(--surface-3) transition-colors"
                       >
+                        <div
+                          className="flex items-center justify-center w-full h-full rounded-md"
+                          onClick={() => setShowOptionsDropdown("priority")}
+                        >
+                          {renderPrioritySvg(project.priority)}
+                        </div>
+                        {showOptionsDropdown == "priority" && (
+                          <div className="z-10 absolute top-full left-0 mt-1 min-w-[10rem] rounded-md border border-(--border) bg-(--surface-1) py-0.5 shadow-lg">
+                            {priorityOptionsArray.map((option, key) => (
+                              <button
+                                type="button"
+                                key={key}
+                                className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
+                                onClick={() => handlePriorityOptionClick(option.name)}
+                              >
+                                <SVGIcon className="flex w-3" svgString={option.svg} />
+                                {option.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-8 w-8 rounded-md flex items-center justify-center border border-(--border) bg-(--surface-2)">
                         {renderPrioritySvg(project.priority)}
                       </div>
-                      {showOptionsDropdown == "priority" && (
-                        <div className="z-10 absolute top-full left-0 mt-1 min-w-[10rem] rounded-md border border-(--border) bg-(--surface-1) py-0.5 shadow-lg">
-                          {priorityOptionsArray.map((option, key) => (
-                            <button
-                              type="button"
-                              key={key}
-                              className="w-full px-2.5 py-1.5 text-left text-[12px] text-(--foreground) hover:bg-(--surface-2) flex items-center gap-2"
-                              onClick={() => handlePriorityOptionClick(option.name)}
-                            >
-                              <SVGIcon className="flex w-3" svgString={option.svg} />
-                              {option.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    )}
                     <div className="h-8 px-3 rounded-md flex items-center border border-(--border) bg-(--surface-2) text-(--muted) text-[12px]">
                       Lead: {project.lead?.trim() || "—"}
                     </div>

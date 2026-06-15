@@ -31,7 +31,7 @@ type PersonRow = {
   isActive?: boolean;
 };
 
-const ROLES = ["ADMIN", "MANAGER", "ENGINEER", "QA", "VIEWER"] as const;
+const ROLES = ["MANAGER", "ENGINEER", "QA", "VIEWER"] as const;
 
 const ROLE_COLORS: Record<string, string> = {
   ADMIN: "text-[#e05f5f]",

@@ -23,6 +23,8 @@ import { EnterpriseDatePicker } from "@/components/workflow/enterprise-date-pick
 import { MentionTextarea } from "@/components/workflow/mentions/mention-textarea";
 import { IssueAttachmentsPanel } from "@/components/workflow/issues/issue-attachments-panel";
 import { useProjectRole } from "@/hooks/use-project-role";
+import { RoleBadge } from "@/components/workflow/role-badge";
+import { Role } from "@prisma/client";
 import { mentionHandleFromUser, type MentionSuggestion } from "@/lib/mention-utils";
 
 type WorkspaceMember = {
@@ -85,8 +87,20 @@ export default function Issue({
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [employees, setEmployees] = useState<StoreEmployee[]>([]);
   const router = useRouter();
-  const { can: canProject, loading: roleLoading } = useProjectRole(projectId);
-  const canEditTicket = canProject("updateTicket");
+  const { can: canProject, loading: roleLoading, role } = useProjectRole(projectId);
+  const canEditContent = canProject("updateTicket");
+  const canChangeStatus = canProject("updateTicketStatus");
+  const canChangePriority = canProject("updateTicketPriority");
+  const canAssign = canProject("assignTicket");
+  const canManageSprints = canProject("manageSprints");
+  const canOverrideDue = canProject("overrideDueDate");
+  const canSaveChanges =
+    canEditContent ||
+    canChangeStatus ||
+    canChangePriority ||
+    canAssign ||
+    canManageSprints ||
+    canOverrideDue;
 
   const [titleInput, setTitleInput] = useState("");
   const [descriptionInput, setDescriptionInput] = useState("");
@@ -372,6 +386,7 @@ export default function Issue({
           ) : null}
         </div>
         <div className="flex items-center gap-2">
+          <RoleBadge role={role} loading={roleLoading} />
           {!roleLoading && canProject("deleteTicket") ? (
             <button
               onClick={deleteIssue}
@@ -381,7 +396,7 @@ export default function Issue({
               {isDeleting ? "Deleting…" : "Delete ticket"}
             </button>
           ) : null}
-          {!roleLoading && canProject("updateTicket") ? (
+          {!roleLoading && canSaveChanges ? (
             <button
               onClick={saveIssueMeta}
               disabled={isSaving || isDeleting}
@@ -393,6 +408,12 @@ export default function Issue({
         </div>
       </div>
 
+      {!roleLoading && role === Role.VIEWER ? (
+        <div className="mx-4 sm:mx-6 md:mx-10 mt-3 rounded-md border border-(--border) bg-(--surface-2) px-3 py-2 text-xs text-(--muted)">
+          You can create and view tickets. Changing status (completed, working, etc.) requires a manager or admin.
+        </div>
+      ) : null}
+
       {/* Main content — two-column layout */}
       <div className="grow flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
         {/* Left — main content area */}
@@ -401,7 +422,7 @@ export default function Issue({
           <input
             value={titleInput}
             onChange={(e) => setTitleInput(e.target.value)}
-            readOnly={!canEditTicket}
+            readOnly={!canEditContent}
             className="w-full bg-transparent text-xl md:text-2xl font-semibold outline-none border-none placeholder:text-(--muted-2)"
             placeholder="Ticket title"
           />
@@ -428,7 +449,7 @@ export default function Issue({
             value={descriptionInput}
             onChange={(e) => setDescriptionInput(e.target.value)}
             rows={6}
-            readOnly={!canEditTicket}
+            readOnly={!canEditContent}
             className="w-full bg-transparent text-sm text-(--muted) outline-none border-none resize-none placeholder:text-(--muted-2) leading-relaxed"
             placeholder="Add a description… (supports markdown)"
           />
@@ -582,7 +603,7 @@ export default function Issue({
               <select
                 value={statusInput}
                 onChange={(e) => setStatusInput(e.target.value)}
-                disabled={!canEditTicket}
+                disabled={!canChangeStatus}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 {statusesForTicketType(issue.ticketType ?? TicketType.INCIDENT).map((s) => (
@@ -597,14 +618,14 @@ export default function Issue({
                 value={requesterNameInput}
                 onChange={(e) => setRequesterNameInput(e.target.value)}
                 placeholder="Who reported this?"
-                readOnly={!canEditTicket}
+                readOnly={!canEditContent}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
               />
               <input
                 value={requesterEmailInput}
                 onChange={(e) => setRequesterEmailInput(e.target.value)}
                 placeholder="Requester email"
-                readOnly={!canEditTicket}
+                readOnly={!canEditContent}
                 type="email"
                 className="w-full mt-1.5 rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
               />
@@ -615,7 +636,7 @@ export default function Issue({
               <select
                 value={urgencyInput}
                 onChange={(e) => setUrgencyInput(e.target.value as TicketUrgency)}
-                disabled={!canEditTicket}
+                disabled={!canChangePriority}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 {URGENCY_OPTIONS.map((u) => (
@@ -631,7 +652,7 @@ export default function Issue({
               <select
                 value={priorityInput}
                 onChange={(e) => setPriorityInput(e.target.value)}
-                disabled={!canEditTicket}
+                disabled={!canChangePriority}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 {PriorityOptionsArray.map((p) => (
@@ -645,7 +666,7 @@ export default function Issue({
               <select
                 value={assignedUserInput}
                 onChange={(e) => setAssignedUserInput(e.target.value)}
-                disabled={!canEditTicket}
+                disabled={!canAssign}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">Unassigned</option>
@@ -663,7 +684,7 @@ export default function Issue({
                 label=""
                 value={dueDateInput}
                 onChange={setDueDateInput}
-                disabled={!canEditTicket}
+                disabled={!canOverrideDue}
               />
               {issue.dueDate ? (
                 <p
@@ -686,7 +707,7 @@ export default function Issue({
               <select
                 value={sprintInput}
                 onChange={(e) => setSprintInput(e.target.value)}
-                disabled={!canEditTicket}
+                disabled={!canManageSprints}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">Backlog (no sprint)</option>
@@ -704,7 +725,7 @@ export default function Issue({
                 value={labelsInput}
                 onChange={(e) => setLabelsInput(e.target.value)}
                 placeholder="backend, urgent"
-                readOnly={!canEditTicket}
+                readOnly={!canEditContent}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none"
               />
               {labelsInput && (
@@ -723,7 +744,7 @@ export default function Issue({
               <select
                 value={estimateInput ?? ""}
                 onChange={(e) => setEstimateInput(e.target.value ? parseInt(e.target.value, 10) : null)}
-                disabled={!canEditTicket}
+                disabled={!canEditContent}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">No estimate</option>
@@ -738,7 +759,7 @@ export default function Issue({
               <select
                 value={parentIssueInput}
                 onChange={(e) => setParentIssueInput(e.target.value)}
-                disabled={!canEditTicket}
+                disabled={!canEditContent}
                 className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
               >
                 <option value="">No parent</option>

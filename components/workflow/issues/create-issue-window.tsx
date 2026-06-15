@@ -24,6 +24,7 @@ import {
   cloudinaryMediaPayload,
   type PendingTicketMedia,
 } from "@/components/workflow/issues/ticket-media-uploader";
+import { useProjectRole } from "@/hooks/use-project-role";
 
 type DuplicateCandidate = {
   id: string;
@@ -57,7 +58,7 @@ export const CreateIssueWindow = ({
   const [issueDescription, setIssueDescription] = useState("");
   const [selectedPriorityOption, setSelectedPriorityOption] =
     useState("No Priority");
-  const [selectedStatusOption, setSelectedStatusOption] = useState("Working");
+  const [selectedStatusOption, setSelectedStatusOption] = useState("Backlog");
   const [showOptionsDropdown, setShowOptionsDropdown] = useState<
     "status" | "priority" | "assignee" | false
   >(false);
@@ -84,6 +85,9 @@ export const CreateIssueWindow = ({
   const [urgency, setUrgency] = useState<TicketUrgency>(TicketUrgency.MEDIUM);
   const [requesterName, setRequesterName] = useState("");
   const [pendingMedia, setPendingMedia] = useState<PendingTicketMedia[]>([]);
+  const { can: canProject } = useProjectRole(project_id);
+  const canSetStatus = canProject("updateTicketStatus");
+  const canAssign = canProject("assignTicket");
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -137,7 +141,7 @@ export const CreateIssueWindow = ({
       const response = await axios.post("/api/issues/createissue", {
         issueTitle: issueTitle,
         issueDescription: issueDescription,
-        issueStatus: selectedStatusOption,
+        issueStatus: canSetStatus ? selectedStatusOption : "Backlog",
         issuePriority: selectedPriorityOption,
         projectId: project_id,
         ticketType,
@@ -146,7 +150,7 @@ export const CreateIssueWindow = ({
         durationMinutes: durationMinutes
           ? Number.parseInt(durationMinutes, 10)
           : undefined,
-        assignedUser: assignedUserId || null,
+        assignedUser: canAssign ? assignedUserId || null : null,
         urgency,
         requesterName: requesterName.trim() || undefined,
         cloudinaryMedia:
@@ -201,7 +205,7 @@ export const CreateIssueWindow = ({
         if (draft.priority && draft.priority !== "No Priority") {
           setSelectedPriorityOption(draft.priority);
         }
-        if (draft.status) {
+        if (draft.status && canSetStatus) {
           setSelectedStatusOption(draft.status);
         }
         customToast.success({ title: "AI Draft", description: "Issue drafted by AI. Review and edit before creating." });
@@ -467,44 +471,47 @@ export const CreateIssueWindow = ({
               )}
             </div>
 
-            <div className="relative">
-              <button
-                type="button"
-                className="flex ef-control items-center text-sm justify-center h-7 w-8 rounded-md cursor-pointer"
-                onClick={() => toggleDropdown("status")}
-                aria-expanded={showOptionsDropdown === "status"}
-                aria-haspopup="listbox"
-              >
-                <RenderStatusSvg status={selectedStatusOption} />
-              </button>
-              {showOptionsDropdown === "status" && (
-                <div className="absolute w-36 top-full left-0 ef-dropdown-panel rounded-lg mt-1 z-[110] py-0.5">
-                  {statusesForTicketType(ticketType).map((optionTitle) => (
-                    <button
-                      key={optionTitle}
-                      type="button"
-                      className="w-full px-2 flex gap-x-2 items-center py-2 ef-dropdown-item text-sm text-left"
-                      onClick={() => handleStatusOptionClick(optionTitle)}
-                    >
-                      <RenderStatusSvg status={optionTitle} />
-                      {optionTitle}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {canSetStatus ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  className="flex ef-control items-center text-sm justify-center h-7 w-8 rounded-md cursor-pointer"
+                  onClick={() => toggleDropdown("status")}
+                  aria-expanded={showOptionsDropdown === "status"}
+                  aria-haspopup="listbox"
+                >
+                  <RenderStatusSvg status={selectedStatusOption} />
+                </button>
+                {showOptionsDropdown === "status" && (
+                  <div className="absolute w-36 top-full left-0 ef-dropdown-panel rounded-lg mt-1 z-[110] py-0.5">
+                    {statusesForTicketType(ticketType).map((optionTitle) => (
+                      <button
+                        key={optionTitle}
+                        type="button"
+                        className="w-full px-2 flex gap-x-2 items-center py-2 ef-dropdown-item text-sm text-left"
+                        onClick={() => handleStatusOptionClick(optionTitle)}
+                      >
+                        <RenderStatusSvg status={optionTitle} />
+                        {optionTitle}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
 
-            <div className="relative">
-              <button
-                type="button"
-                className="ef-control rounded-md text-sm px-2 h-7 max-w-[9rem] truncate"
-                onClick={() => toggleDropdown("assignee")}
-                aria-expanded={showOptionsDropdown === "assignee"}
-                aria-haspopup="listbox"
-              >
-                {assigneeLabel ?? "Assignee"}
-              </button>
-              {showOptionsDropdown === "assignee" && (
+            {canAssign ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  className="ef-control rounded-md text-sm px-2 h-7 max-w-[9rem] truncate"
+                  onClick={() => toggleDropdown("assignee")}
+                  aria-expanded={showOptionsDropdown === "assignee"}
+                  aria-haspopup="listbox"
+                >
+                  {assigneeLabel ?? "Assignee"}
+                </button>
+                {showOptionsDropdown === "assignee" && (
                 <div className="absolute left-0 top-full z-[110] mt-1 w-52 max-h-56 overflow-y-auto rounded-lg border border-(--border-strong) bg-(--surface-1) shadow-lg py-1">
                   <button
                     type="button"
@@ -559,7 +566,8 @@ export const CreateIssueWindow = ({
                   )}
                 </div>
               )}
-            </div>
+              </div>
+            ) : null}
 
             <button
               type="button"

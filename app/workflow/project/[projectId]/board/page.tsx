@@ -20,7 +20,7 @@ export default function ProjectBoardPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params?.projectId;
   const { can: canProject } = useProjectRole(projectId);
-  const canMoveIssues = canProject("updateTicket");
+  const canMoveIssues = canProject("updateTicketStatus");
 
   const [issues, setIssues] = useState<IssueBody[]>([]);
   const [isLoading, setIsLoading] = useState(false);

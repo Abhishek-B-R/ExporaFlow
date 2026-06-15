@@ -17,7 +17,7 @@ import { ProjectNavbar } from "@/components/workflow/project-navbar";
 import { useProjectRole } from "@/hooks/use-project-role";
 import { useSession } from "next-auth/react";
 import { TICKET_TYPE_OPTIONS } from "@/lib/ticket-type-labels";
-import { TicketType, Role } from "@prisma/client";
+import { TicketType } from "@prisma/client";
 
 
 
@@ -72,13 +72,13 @@ export default function Issue() {
   const [aiLoading, setAiLoading] = useState(false);
   const searchParams = useSearchParams();
   const latestSearchRequest = useRef(0);
-  const { can: canProject, loading: roleLoading, role } = useProjectRole(project_id);
+  const { can: canProject, loading: roleLoading } = useProjectRole(project_id);
   const { status: sessionStatus } = useSession();
   const actionsReady = sessionStatus === "authenticated" && !roleLoading;
-  const showExport =
-    actionsReady && (canProject("exportTickets") || role === Role.ADMIN);
-  const showCreate =
-    actionsReady && (canProject("createTicket") || role === Role.ADMIN);
+  const showExport = actionsReady && canProject("exportTickets");
+  const showCreate = actionsReady && canProject("createTicket");
+  const canChangeStatus = actionsReady && canProject("updateTicketStatus");
+  const canChangePriority = actionsReady && canProject("updateTicketPriority");
 
   const filteredIssues = useMemo(
     () =>
@@ -266,7 +266,9 @@ export default function Issue() {
                 .join("\n")}`
             : "",
         ].join(""),
-        issueStatus: aiDraft.status ?? "Backlog",
+        issueStatus: canProject("updateTicketStatus")
+          ? (aiDraft.status ?? "Backlog")
+          : "Backlog",
         issuePriority: aiTriage?.priority ?? aiDraft.priority ?? "Medium",
         projectId: project_id,
         labels: Array.isArray(aiDraft?.labels) ? aiDraft.labels : [],
@@ -636,6 +638,8 @@ export default function Issue() {
                     updatedAt={elem.updatedAt}
                     assigneeInfo={elem.User}
                     selected={selectedIssueIndex === key}
+                    canChangeStatus={canChangeStatus}
+                    canChangePriority={canChangePriority}
                   />
                 );
               })

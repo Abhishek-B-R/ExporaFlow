@@ -1,11 +1,28 @@
 import { prisma } from "@/db";
 import { Role } from "@prisma/client";
 import { accessibleProjectsWhere } from "@/lib/project-access";
+import {
+  getPrimaryWorkspaceId,
+  isWorkspaceOwnerEmail,
+} from "@/lib/workspace-access";
 
 /** Workspace roles that can see the full customer and employee directory. */
 export async function userIsWorkspaceElevated(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  if (isWorkspaceOwnerEmail(user?.email)) return true;
+
+  const workspaceId = await getPrimaryWorkspaceId();
+  if (!workspaceId) return false;
+
   const m = await prisma.workspaceMember.findFirst({
-    where: { userId, role: { in: [Role.ADMIN, Role.MANAGER] } },
+    where: {
+      userId,
+      workspaceId,
+      role: { in: [Role.ADMIN, Role.MANAGER] },
+    },
     select: { id: true },
   });
   return !!m;
@@ -88,8 +105,11 @@ export async function getAccessibleEmployeesForUser(
     });
   }
 
+  const primaryWorkspaceId = await getPrimaryWorkspaceId();
   const memberships = await prisma.workspaceMember.findMany({
-    where: { userId },
+    where: primaryWorkspaceId
+      ? { userId, workspaceId: primaryWorkspaceId }
+      : { userId },
     select: { workspaceId: true },
   });
   const workspaceIds = memberships.map((m) => m.workspaceId);
@@ -116,11 +136,11 @@ export async function getAccessibleEmployeesForUser(
 }
 
 export async function canAccessCustomerRecord(userId: string, customerId: string): Promise<boolean> {
-  const list = await getAccessibleCustomersForUser(userId);
+  const list = await getAccessibleCustomersForUser(userId, { status: "all" });
   return list.some((c) => c.id === customerId);
 }
 
 export async function canAccessEmployeeRecord(userId: string, employeeId: string): Promise<boolean> {
-  const list = await getAccessibleEmployeesForUser(userId);
+  const list = await getAccessibleEmployeesForUser(userId, { status: "all" });
   return list.some((e) => e.id === employeeId);
 }

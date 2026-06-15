@@ -1,5 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/db";
+import { getPrimaryWorkspaceId, isWorkspaceOwnerEmail } from "@/lib/workspace-access";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { Prisma, Role } from "@prisma/client";
@@ -20,7 +21,7 @@ function getAppUrl(): string {
   );
 }
 
-const VALID_ROLES: Role[] = ["ADMIN", "MANAGER", "ENGINEER", "QA", "VIEWER"];
+const VALID_ROLES: Role[] = ["MANAGER", "ENGINEER", "QA", "VIEWER"];
 
 // ── POST: Send an invitation ──────────────────────────
 export async function POST(request: NextRequest) {
@@ -45,9 +46,14 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "Invalid role." }, { status: 400 });
   }
 
-  // Find the sender's workspace
+  // Find the sender's membership in the primary workspace
+  const workspaceId = await getPrimaryWorkspaceId();
+  if (!workspaceId) {
+    return Response.json({ message: "Workspace is not set up yet." }, { status: 400 });
+  }
+
   const membership = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, workspaceId },
     select: { workspaceId: true, role: true, workspace: { select: { name: true } } },
   });
 
@@ -55,9 +61,12 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "You don't belong to any workspace." }, { status: 400 });
   }
 
-  // Only ADMIN can invite
-  if (membership.role !== "ADMIN") {
-    return Response.json({ message: "Only workspace admins can invite members." }, { status: 403 });
+  // Only the workspace owner can invite new people
+  if (!isWorkspaceOwnerEmail(session.user.email)) {
+    return Response.json(
+      { message: "Only the workspace owner can invite people." },
+      { status: 403 },
+    );
   }
 
   // Check if user is already a workspace member
@@ -212,15 +221,18 @@ export async function GET() {
     return Response.json({ message: "Log in first!" }, { status: 401 });
   }
 
+  const workspaceId = await getPrimaryWorkspaceId();
+  if (!workspaceId) return Response.json([]);
+
   const membership = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, workspaceId },
     select: { workspaceId: true },
   });
 
   if (!membership) return Response.json([]);
 
   const invitations = await prisma.invitation.findMany({
-    where: { workspaceId: membership.workspaceId },
+    where: { workspaceId },
     include: {
       invitedBy: { select: { name: true, email: true, image: true } },
     },

@@ -1,11 +1,10 @@
 import { authOptions } from "@/lib/auth";
-import { assertProjectRole } from "@/lib/authz";
+import { assertProjectPermission } from "@/lib/authz";
 import { prisma } from "@/db";
 import { cloudinaryMediaSchema } from "@/lib/ticket-schemas";
 import { saveCloudinaryAttachments } from "@/lib/save-cloudinary-attachments";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
-import { Role } from "@prisma/client";
 import { z } from "zod";
 
 const bodySchema = z.object({
@@ -34,10 +33,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "Ticket not found." }, { status: 404 });
   }
 
-  const access = await assertProjectRole({
+  const access = await assertProjectPermission({
     userId: session.user.id,
     projectId: issue.projectId,
-    minimum: Role.ENGINEER,
+    permission: "uploadAttachment",
   });
   if (!access.ok) {
     return Response.json({ message: access.message }, { status: access.status });
