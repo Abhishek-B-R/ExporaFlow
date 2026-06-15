@@ -5,6 +5,7 @@ import {
   AuthDivider,
   CredentialsForm,
   OAuthProviders,
+  SignInOAuthHint,
 } from "@/components/auth/credentials-auth";
 import { getWorkspaceOwnerEmail } from "@/lib/workspace-access";
 import { useSearchParams } from "next/navigation";
@@ -26,7 +27,7 @@ function SignInContent() {
       lead={
         accessDenied
           ? "This account isn't on the invite list. Use the link from your invite email, or ask the admin below."
-          : "Sign in with your email and password, or continue with Google or GitHub."
+          : "Sign in with email and password, or continue with Google or GitHub."
       }
     >
       <div className="space-y-4">
@@ -47,6 +48,8 @@ function SignInContent() {
             </a>
           </p>
         ) : null}
+
+        <SignInOAuthHint />
 
         <CredentialsForm mode="signin" callbackUrl={callbackUrl} />
 

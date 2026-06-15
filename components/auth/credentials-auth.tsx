@@ -1,7 +1,45 @@
 "use client";
 
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+
+export function AuthInfoCallout({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex gap-2.5 rounded-xl border border-sky-200/80 bg-sky-50/90 px-3.5 py-3 text-left">
+      <span
+        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-[11px] font-bold text-sky-700"
+        aria-hidden
+      >
+        i
+      </span>
+      <p className="text-xs text-sky-950 leading-relaxed">{children}</p>
+    </div>
+  );
+}
+
+export function SignInOAuthHint() {
+  return (
+    <AuthInfoCallout>
+      <span className="font-medium">Joined with Google or GitHub before?</span> Use that option
+      below. Email sign-in only works after you&apos;ve set a password —{" "}
+      <Link href="/signup" className="font-medium text-sky-800 underline underline-offset-2 hover:text-sky-950">
+        add one on sign-up
+      </Link>{" "}
+      with the same email.
+    </AuthInfoCallout>
+  );
+}
+
+export function SignUpOAuthHint() {
+  return (
+    <AuthInfoCallout>
+      <span className="font-medium">Already use Google or GitHub?</span> Enter the same work email
+      below to add a password. You can keep signing in with Google or GitHub anytime.
+    </AuthInfoCallout>
+  );
+}
 
 export function AuthDivider({ label = "or continue with" }: { label?: string }) {
   return (
@@ -80,11 +118,13 @@ export function CredentialsForm({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showOAuthHelp, setShowOAuthHelp] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setShowOAuthHelp(false);
     setLoading(true);
 
     try {
@@ -101,7 +141,19 @@ export function CredentialsForm({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.message ?? "Something went wrong. Try again.");
+        const action = isSignup ? "Sign-up" : "Sign-in";
+        const message =
+          (typeof data.message === "string" && data.message) ||
+          (typeof data.error === "string" && data.error) ||
+          (res.status === 500
+            ? "Server error — restart the dev server if you're running locally, then try again."
+            : `${action} failed (${res.status}). Try again.`);
+        setError(message);
+        setShowOAuthHelp(
+          !isSignup &&
+            typeof message === "string" &&
+            (message.includes("Google or GitHub") || message.includes("No password set")),
+        );
         return;
       }
 
@@ -116,9 +168,23 @@ export function CredentialsForm({
   return (
     <form onSubmit={submit} className="space-y-3">
       {error ? (
-        <p className="text-sm text-red-600 rounded-lg bg-red-50 border border-red-100 px-3 py-2">
-          {error}
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-red-600 rounded-lg bg-red-50 border border-red-100 px-3 py-2">
+            {error}
+          </p>
+          {showOAuthHelp ? (
+            <p className="text-xs text-(--muted-2) leading-relaxed px-0.5">
+              Use Google or GitHub below, or{" "}
+              <Link
+                href="/signup"
+                className="font-medium text-sky-700 hover:underline"
+              >
+                add a password on sign-up
+              </Link>{" "}
+              with this email.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {isSignup ? (

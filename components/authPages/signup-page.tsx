@@ -5,6 +5,7 @@ import {
   AuthDivider,
   CredentialsForm,
   OAuthProviders,
+  SignUpOAuthHint,
 } from "@/components/auth/credentials-auth";
 import { getWorkspaceOwnerEmail } from "@/lib/workspace-access";
 import Link from "next/link";
@@ -29,9 +30,11 @@ function SignUpContent() {
     <AuthShell
       kicker="Get started"
       title="Create your account"
-      lead="Use the email your admin invited. You'll join the workspace automatically when you sign up."
+      lead="Use your invited work email. New here? Create a password. Already on Google or GitHub? Add a password with the same email."
     >
       <div className="space-y-4">
+        <SignUpOAuthHint />
+
         <CredentialsForm mode="signup" callbackUrl={callbackUrl} />
 
         <AuthDivider />

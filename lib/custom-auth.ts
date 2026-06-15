@@ -139,7 +139,8 @@ export async function loginWithPassword(params: {
       return {
         ok: false,
         status: 401,
-        message: "This account uses Google or GitHub. Continue with those options below.",
+        message:
+          "This email is linked to Google or GitHub. Sign in with those below, or add a password on the sign-up page.",
       };
     }
     return {
