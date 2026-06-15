@@ -64,6 +64,30 @@ export async function getPendingInvitationForEmail(email: string) {
   });
 }
 
+export type WorkspaceAccess =
+  | { kind: "member" }
+  | { kind: "pending"; token: string }
+  | { kind: "denied" };
+
+/** Whether the user may use the app, has a pending invite, or should be turned away. */
+export async function resolveWorkspaceAccess(
+  userId: string,
+  email?: string | null,
+): Promise<WorkspaceAccess> {
+  if (await isWorkspaceMember(userId)) {
+    return { kind: "member" };
+  }
+
+  if (email) {
+    const pending = await getPendingInvitationForEmail(email);
+    if (pending) {
+      return { kind: "pending", token: pending.token };
+    }
+  }
+
+  return { kind: "denied" };
+}
+
 /** Gate OAuth sign-in: owner, existing member, or valid pending invite only. */
 export async function canEmailSignIn(email: string): Promise<boolean> {
   const normalized = email.trim().toLowerCase();

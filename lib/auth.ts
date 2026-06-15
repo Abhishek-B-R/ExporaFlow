@@ -4,7 +4,6 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Role } from "@prisma/client";
 import { NextAuthOptions } from "next-auth";
-import { customToast } from "./custom-toast";
 import { prisma } from "@/db";
 import { defaultUsername } from "@/lib/default-username";
 import {
@@ -40,10 +39,12 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
-    async session({ session, token, user }) {
-      // adding user.id to session
-      if (session.user) {
+    async session({ session, user }) {
+      if (session.user && user?.id) {
         session.user.id = user.id;
+        const { resolveWorkspaceAccess } = await import("@/lib/workspace-access");
+        const access = await resolveWorkspaceAccess(user.id, session.user.email);
+        session.user.workspaceMember = access.kind === "member";
       }
       return session;
     },

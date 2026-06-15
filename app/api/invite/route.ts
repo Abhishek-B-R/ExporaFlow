@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
   // Send the email via Resend
   const resend = getResend();
   const appUrl = getAppUrl();
-  const inviteLink = `${appUrl}/invite/accept?token=${token}`;
+  const inviteLink = `${appUrl}/invite/join?token=${token}`;
   const workspaceName = membership.workspace.name;
   const senderName = session.user.name ?? session.user.email ?? "A teammate";
 
@@ -155,32 +155,60 @@ export async function POST(request: NextRequest) {
       const result = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? "ExporaFlow <onboarding@resend.dev>",
         to: [email],
-        subject: `${senderName} invited you to join "${workspaceName}" on ExporaFlow`,
+        subject: `You're invited to ${workspaceName} on ExporaFlow`,
         html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto;">
-            <div style="padding: 32px 24px; background: #f0f9ff; border-radius: 12px; border: 1px solid rgba(14,165,233,0.25);">
-              <h1 style="margin: 0 0 8px; font-size: 22px; color: #0c4a6e; font-weight: 600;">
-                You're invited to ${workspaceName}
-              </h1>
-              <p style="margin: 0 0 24px; color: #64748b; font-size: 14px; line-height: 1.6;">
-                <strong style="color: #0369a1;">${senderName}</strong> has invited you to collaborate on
-                <strong style="color: #0369a1;">${workspaceName}</strong> as a <strong style="color: #0ea5e9;">${role}</strong>.
-              </p>
-              <a href="${inviteLink}"
-                 style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #0ea5e9, #0284c7);
-                        color: #fff; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px;">
-                Accept Invitation
-              </a>
-              <p style="margin: 24px 0 0; color: #6a6c75; font-size: 12px; line-height: 1.5;">
-                This invitation expires in 7 days.<br/>
-                If the button doesn't work, copy and paste this link:<br/>
-                <a href="${inviteLink}" style="color: #0ea5e9; word-break: break-all;">${inviteLink}</a>
-              </p>
-            </div>
-            <p style="margin: 16px 0 0; color: #6a6c75; font-size: 11px; text-align: center;">
-              Sent by ExporaFlow
-            </p>
-          </div>
+          <!DOCTYPE html>
+          <html>
+          <body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 16px;">
+              <tr>
+                <td align="center">
+                  <table width="100%" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid rgba(15,23,42,0.08);overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,0.06);">
+                    <tr>
+                      <td style="padding:32px 28px 8px;text-align:center;">
+                        <div style="display:inline-block;width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#0ea5e9,#0284c7);line-height:48px;color:#fff;font-weight:700;font-size:20px;">E</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:8px 28px 0;text-align:center;">
+                        <h1 style="margin:0;font-size:22px;font-weight:600;color:#0f172a;letter-spacing:-0.02em;">You're invited</h1>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 28px 24px;text-align:center;">
+                        <p style="margin:0;font-size:15px;line-height:1.6;color:#64748b;">
+                          <strong style="color:#0369a1;">${senderName}</strong> added you to
+                          <strong style="color:#0f172a;">${workspaceName}</strong> as
+                          <strong style="color:#0284c7;">${role}</strong>.
+                        </p>
+                        <p style="margin:16px 0 0;font-size:14px;line-height:1.5;color:#94a3b8;">
+                          One click — no password, no Google sign-in. Your invite link signs you in automatically.
+                        </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:0 28px 28px;text-align:center;">
+                        <a href="${inviteLink}"
+                           style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:10px;box-shadow:0 2px 8px rgba(2,132,199,0.35);">
+                          Join workspace →
+                        </a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:0 28px 28px;">
+                        <p style="margin:0;font-size:12px;line-height:1.6;color:#94a3b8;text-align:center;">
+                          Link expires in 7 days.<br/>
+                          <a href="${inviteLink}" style="color:#0284c7;word-break:break-all;">${inviteLink}</a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:20px 0 0;font-size:11px;color:#94a3b8;text-align:center;">ExporaFlow · Incident & change management</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
         `,
       });
       // Resend returns { data, error }

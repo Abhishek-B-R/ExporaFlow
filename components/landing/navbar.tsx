@@ -29,6 +29,7 @@ export default function Navbar() {
   }, [mobileOpen]);
 
   const isLoggedIn = Boolean(session?.user?.id);
+  const canUseApp = session?.user?.workspaceMember === true;
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 border-b border-(--border) bg-(--surface-1)/90 backdrop-blur-md">
@@ -49,31 +50,35 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-0.5 flex-1">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                pathname === link.href || pathname.startsWith(`${link.href}/`)
-                  ? "text-(--foreground) font-medium bg-(--surface-3)"
-                  : "text-(--muted) hover:text-(--foreground) hover:bg-(--surface-3)/70"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {canUseApp
+            ? NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    pathname === link.href || pathname.startsWith(`${link.href}/`)
+                      ? "text-(--foreground) font-medium bg-(--surface-3)"
+                      : "text-(--muted) hover:text-(--foreground) hover:bg-(--surface-3)/70"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))
+            : null}
         </nav>
 
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-2 shrink-0">
           {isLoggedIn ? (
             <>
-              <Link
-                href="/profile"
-                className="px-3 py-1.5 text-sm text-(--muted) hover:text-(--foreground) rounded-lg hover:bg-(--surface-3)/70 transition-colors"
-              >
-                Profile
-              </Link>
+              {canUseApp ? (
+                <Link
+                  href="/profile"
+                  className="px-3 py-1.5 text-sm text-(--muted) hover:text-(--foreground) rounded-lg hover:bg-(--surface-3)/70 transition-colors"
+                >
+                  Profile
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={() => signOut()}
@@ -81,9 +86,11 @@ export default function Navbar() {
               >
                 Sign out
               </button>
-              <Link href="/workflow/dashboard" className="ef-btn-primary h-9 rounded-lg px-4 text-sm">
-                Open app
-              </Link>
+              {canUseApp ? (
+                <Link href="/workflow/dashboard" className="ef-btn-primary h-9 rounded-lg px-4 text-sm">
+                  Open app
+                </Link>
+              ) : null}
             </>
           ) : (
             <>
@@ -115,24 +122,28 @@ export default function Navbar() {
       {/* Mobile drawer */}
       {mobileOpen ? (
         <div className="md:hidden border-t border-(--border) bg-(--surface-1) px-4 py-3 space-y-1">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="block rounded-lg px-3 py-2.5 text-sm font-medium text-(--foreground) hover:bg-(--surface-3) transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {canUseApp
+            ? NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-(--foreground) hover:bg-(--surface-3) transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))
+            : null}
           <div className="pt-2 mt-2 border-t border-(--border) flex flex-col gap-1">
             {isLoggedIn ? (
               <>
-                <Link
-                  href="/profile"
-                  className="block rounded-lg px-3 py-2.5 text-sm text-(--foreground) hover:bg-(--surface-3)"
-                >
-                  Profile
-                </Link>
+                {canUseApp ? (
+                  <Link
+                    href="/profile"
+                    className="block rounded-lg px-3 py-2.5 text-sm text-(--foreground) hover:bg-(--surface-3)"
+                  >
+                    Profile
+                  </Link>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => signOut()}
@@ -140,12 +151,14 @@ export default function Navbar() {
                 >
                   Sign out
                 </button>
-                <Link
-                  href="/workflow/dashboard"
-                  className="ef-btn-primary mt-1 h-10 rounded-lg text-sm text-center flex items-center justify-center"
-                >
-                  Open app
-                </Link>
+                {canUseApp ? (
+                  <Link
+                    href="/workflow/dashboard"
+                    className="ef-btn-primary mt-1 h-10 rounded-lg text-sm text-center flex items-center justify-center"
+                  >
+                    Open app
+                  </Link>
+                ) : null}
               </>
             ) : (
               <>

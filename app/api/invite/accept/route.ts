@@ -1,9 +1,10 @@
-import { prisma } from "@/db";
+import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { NextRequest } from "next/server";
-import { Prisma } from "@prisma/client";
+import { acceptInvitationByMagicToken } from "@/lib/invite-accept";
+import { createDatabaseSession } from "@/lib/auth-session";
 
+/** Accept invite for an already signed-in user (OAuth), or via JSON body. */
 export async function POST(request: NextRequest) {
   const { token } = await request.json();
 
@@ -11,124 +12,33 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "Invalid or missing token." }, { status: 400 });
   }
 
-  const invitation = await prisma.invitation.findUnique({
-    where: { token },
-    include: {
-      workspace: { select: { id: true, name: true } },
-      invitedBy: { select: { name: true, email: true } },
-    },
-  });
-
-  if (!invitation) {
-    return Response.json({ message: "Invitation not found." }, { status: 404 });
+  const result = await acceptInvitationByMagicToken(token);
+  if (!result.ok) {
+    return Response.json({ message: result.message }, { status: result.status });
   }
 
-  if (invitation.status !== "pending") {
-    return Response.json(
-      { message: `This invitation has already been ${invitation.status}.` },
-      { status: 410 },
-    );
-  }
-
-  if (new Date() > invitation.expiresAt) {
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "expired" },
-    });
-    return Response.json({ message: "This invitation has expired." }, { status: 410 });
-  }
-
-  // Require the accepting user to be logged in
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return Response.json(
-      { message: "Please sign in first to accept this invitation." },
-      { status: 401 },
-    );
-  }
-
-  // Verify the logged-in user's email matches the invitation
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, email: true },
-  });
-
-  if (!user?.email || user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-    return Response.json(
-      {
-        message: `This invitation was sent to ${invitation.email}. Please sign in with that email address.`,
-        expectedEmail: invitation.email,
-      },
-      { status: 403 },
-    );
-  }
-
-  // Check if already a member
-  const existingMembership = await prisma.workspaceMember.findFirst({
-    where: { userId: user.id, workspaceId: invitation.workspaceId },
-  });
-
-  if (existingMembership) {
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "accepted" },
-    });
-    return Response.json({
-      message: "You are already a member of this workspace.",
-      workspaceName: invitation.workspace.name,
-      alreadyMember: true,
-    });
-  }
-
-  // Accept: add user to workspace + mark invitation as accepted
-  await prisma.$transaction([
-    prisma.workspaceMember.create({
-      data: {
-        userId: user.id,
-        workspaceId: invitation.workspaceId,
-        role: invitation.role,
-      },
-    }),
-    prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "accepted" },
-    }),
-  ]);
-
-  const existingEmployee = await prisma.employee.findUnique({
-    where: { email: invitation.email.toLowerCase() },
-  });
-  if (existingEmployee) {
-    await prisma.employee.update({
-      where: { id: existingEmployee.id },
-      data: {
-        userId: user.id,
-        role: invitation.role,
-        organizationAccess: Array.isArray(existingEmployee.organizationAccess)
-          ? ([
-              ...new Set([
-                ...(existingEmployee.organizationAccess as string[]),
-                invitation.workspaceId,
-              ]),
-            ] as Prisma.InputJsonValue)
-          : ([invitation.workspaceId] as Prisma.InputJsonValue),
-      },
-    });
+  if (session?.user?.id) {
+    const userEmail = session.user.email?.toLowerCase();
+    if (userEmail && userEmail !== result.user.email.toLowerCase()) {
+      return Response.json(
+        {
+          message: `This invitation was sent to ${result.user.email}. Sign out and open your invite link again.`,
+          expectedEmail: result.user.email,
+        },
+        { status: 403 },
+      );
+    }
   } else {
-    await prisma.employee.create({
-      data: {
-        fullName: session.user.name?.trim() || invitation.email.split("@")[0] || invitation.email,
-        email: invitation.email.toLowerCase(),
-        role: invitation.role,
-        userId: user.id,
-        organizationAccess: [invitation.workspaceId] as Prisma.InputJsonValue,
-      },
-    });
+    await createDatabaseSession(result.user.id);
   }
 
   return Response.json({
-    message: `You've joined "${invitation.workspace.name}" as ${invitation.role}.`,
-    workspaceName: invitation.workspace.name,
-    role: invitation.role,
+    message: result.alreadyMember
+      ? "You are already a member of this workspace."
+      : `You've joined "${result.workspaceName}" as ${result.role}.`,
+    workspaceName: result.workspaceName,
+    role: result.role,
+    alreadyMember: result.alreadyMember,
   });
 }

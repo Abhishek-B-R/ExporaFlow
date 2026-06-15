@@ -3,10 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import {
-  getPendingInvitationForEmail,
-  isWorkspaceMember,
-} from "@/lib/workspace-access";
+import { resolveWorkspaceAccess } from "@/lib/workspace-access";
 import WorkflowSidebar from "@/components/workflow/sidebar/workflow-sidebar";
 import BottomDock from "@/components/workflow/sidebar/bottom-dock";
 import CommandPalette from "@/components/workflow/command-palette";
@@ -26,15 +23,11 @@ export default async function RootLayout({
     redirect("/auth/signin?callbackUrl=/workflow/dashboard");
   }
 
-  const member = await isWorkspaceMember(session.user.id);
-  if (!member) {
-    const email = session.user.email;
-    if (email) {
-      const pending = await getPendingInvitationForEmail(email);
-      if (pending) {
-        redirect(`/invite/accept?token=${pending.token}`);
-      }
-    }
+  const access = await resolveWorkspaceAccess(session.user.id, session.user.email);
+  if (access.kind === "pending") {
+    redirect(`/invite/join?token=${access.token}`);
+  }
+  if (access.kind === "denied") {
     redirect("/auth/access-denied");
   }
 

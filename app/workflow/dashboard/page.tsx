@@ -21,6 +21,7 @@ export default function WorkflowDashboardPage() {
   const { status } = useSession({ required: true });
   const router = useRouter();
   const [m, setM] = useState<Metrics | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -30,10 +31,13 @@ export default function WorkflowDashboardPage() {
   useEffect(() => {
     const run = async () => {
       try {
+        setLoading(true);
         const res = await axios.get("/api/workflow/dashboard");
         setM(res.data);
       } catch {
         setM(null);
+      } finally {
+        setLoading(false);
       }
     };
     void run();
@@ -61,12 +65,19 @@ export default function WorkflowDashboardPage() {
           Incident and change tickets, SLA signals, and directory counts for your workspace.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {cards.map((c) => (
-            <div key={c.label} className="ef-metric">
-              <p className="ef-metric-label">{c.label}</p>
-              <p className="ef-metric-value">{c.value}</p>
-            </div>
-          ))}
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="ef-metric animate-pulse">
+                  <div className="h-3 w-24 rounded bg-(--surface-3) mb-3" />
+                  <div className="h-8 w-16 rounded bg-(--surface-3)" />
+                </div>
+              ))
+            : cards.map((c) => (
+                <div key={c.label} className="ef-metric">
+                  <p className="ef-metric-label">{c.label}</p>
+                  <p className="ef-metric-value">{c.value}</p>
+                </div>
+              ))}
         </div>
       </div>
     </WorkflowLayout>
