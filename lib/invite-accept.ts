@@ -1,5 +1,6 @@
 import { prisma } from "@/db";
 import { defaultUsername } from "@/lib/default-username";
+import { getPendingInvitationForEmail } from "@/lib/workspace-access";
 import { Prisma, Role } from "@prisma/client";
 
 export type InviteAcceptSuccess = {
@@ -199,4 +200,72 @@ export async function acceptInvitationByMagicToken(
     role: invitation.role,
     alreadyMember: false,
   };
+}
+
+/** Accept a pending invite for an existing user (e.g. email/password signup). */
+export async function completeWorkspaceJoinForEmail(
+  userId: string,
+  email: string,
+): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+
+  const pending = await getPendingInvitationForEmail(normalized);
+  if (!pending) return;
+
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: pending.id },
+    include: { workspace: { select: { id: true, name: true } } },
+  });
+  if (!invitation || invitation.status !== "pending") return;
+  if (new Date() > invitation.expiresAt) return;
+
+  const employee = await prisma.employee.findUnique({
+    where: { email: normalized },
+    select: { fullName: true },
+  });
+  const displayName =
+    employee?.fullName?.trim() || normalized.split("@")[0] || normalized;
+
+  const existingMembership = await prisma.workspaceMember.findFirst({
+    where: { userId, workspaceId: invitation.workspaceId },
+  });
+
+  if (existingMembership) {
+    if (invitation.status === "pending") {
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: { status: "accepted" },
+      });
+    }
+    await linkEmployeeToUser({
+      email: normalized,
+      userId,
+      role: invitation.role,
+      workspaceId: invitation.workspaceId,
+      fullName: displayName,
+    });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.workspaceMember.create({
+      data: {
+        userId,
+        workspaceId: invitation.workspaceId,
+        role: invitation.role,
+      },
+    }),
+    prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { status: "accepted" },
+    }),
+  ]);
+
+  await linkEmployeeToUser({
+    email: normalized,
+    userId,
+    role: invitation.role,
+    workspaceId: invitation.workspaceId,
+    fullName: displayName,
+  });
 }

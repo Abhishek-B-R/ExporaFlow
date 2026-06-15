@@ -1,86 +1,91 @@
 "use client";
 
-import Image from "next/image";
+import { AuthShell } from "@/components/auth/auth-shell";
+import {
+  AuthDivider,
+  CredentialsForm,
+  OAuthProviders,
+} from "@/components/auth/credentials-auth";
+import { getWorkspaceOwnerEmail } from "@/lib/workspace-access";
 import Link from "next/link";
-import { useEffect } from "react";
-import { signIn, useSession } from "@/utils/auth";
-import { useRouter } from "next/navigation";
-import AuthButton from "./auth-button";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useSession } from "@/utils/auth";
 
-type Provider = "google" | "github";
-
-export default function SignupPage() {
+function SignUpContent() {
+  const params = useSearchParams();
+  const callbackUrl = params.get("callbackUrl") ?? "/workflow/dashboard";
+  const adminEmail = getWorkspaceOwnerEmail();
   const { data: session } = useSession();
   const router = useRouter();
 
-  const [lastLoginPreference, setLastLoginPreference] =
-    useLocalStorage<Provider | null>("lastUsedLoginPreference", null);
-
   useEffect(() => {
-    if (session?.user?.email) {
-      router.push("/");
+    if (session?.user?.workspaceMember) {
+      router.replace("/workflow/dashboard");
     }
-  }, [session?.user?.email, router]);
-
-  const signUp = async (provider: Provider) => {
-    try {
-      setLastLoginPreference(provider);
-      await signIn(provider);
-    } catch (err) {
-      console.error(`Sign in failed for ${provider}`, err);
-      setLastLoginPreference(null);
-    }
-  };
+  }, [session?.user?.workspaceMember, router]);
 
   return (
-    <div className="relative min-h-screen ef-landing-page flex items-center justify-center px-4 py-16">
-      <div className="ef-landing-glow pointer-events-none fixed inset-x-0 top-0 h-[320px] z-0" />
-      <div className="relative z-10 w-full max-w-[400px]">
-        <div className="ef-card p-8 sm:p-10">
-          <div className="flex flex-col items-center text-center mb-8">
-            <div className="h-14 w-14 rounded-xl bg-(--surface-2) flex items-center justify-center mb-4">
-              <Image className="h-9 w-9 object-contain" src="/logo.png" alt="" width={36} height={36} />
-            </div>
-            <h1 className="text-xl font-semibold tracking-tight text-(--foreground)">
-              Sign in to ExporaFlow
-            </h1>
-            <p className="text-sm text-(--muted-2) mt-1.5 leading-relaxed">
-              Use your work account to access projects, tickets, and the store directory.
-            </p>
-          </div>
+    <AuthShell
+      kicker="Get started"
+      title="Create your account"
+      lead="Use the email your admin invited. You'll join the workspace automatically when you sign up."
+    >
+      <div className="space-y-4">
+        <CredentialsForm mode="signup" callbackUrl={callbackUrl} />
 
-          <div className="space-y-2.5">
-            <AuthButton
-              btnTitle="Continue with Google"
-              working
-              lastUsed={lastLoginPreference === "google"}
-              handleOnClickFunction={() => void signUp("google")}
-            />
-            <AuthButton
-              btnTitle="Continue with GitHub"
-              working
-              lastUsed={lastLoginPreference === "github"}
-              handleOnClickFunction={() => void signUp("github")}
-            />
-            <AuthButton btnTitle="Continue with SAML SSO" working={false} />
-          </div>
+        <AuthDivider />
 
-          <p className="text-xs text-center text-(--muted-2) mt-6 leading-relaxed">
-            By signing up, you agree to our{" "}
-            <Link href="/terms" className="text-(--accent) hover:underline">
-              terms and conditions
-            </Link>
-            .
+        <OAuthProviders callbackUrl={callbackUrl} />
+
+        {adminEmail ? (
+          <p className="text-[11px] text-center text-(--muted-2) leading-relaxed">
+            Not invited yet? Ask{" "}
+            <a href={`mailto:${adminEmail}`} className="text-sky-700 hover:underline font-medium">
+              {adminEmail}
+            </a>{" "}
+            for access.
           </p>
-        </div>
+        ) : null}
 
-        <p className="text-center text-xs text-(--muted-2) mt-4">
-          <Link href="/" className="hover:text-(--foreground) transition-colors">
-            ← Back to home
+        <p className="text-xs text-center text-(--muted-2)">
+          Already have an account?{" "}
+          <Link href="/auth/signin" className="text-sky-700 hover:underline font-medium">
+            Sign in
           </Link>
         </p>
+
+        <p className="text-[11px] text-center text-(--muted-2) leading-relaxed">
+          By creating an account, you agree to our{" "}
+          <Link href="/terms" className="text-sky-700 hover:underline">
+            terms
+          </Link>
+          .
+        </p>
+
+        <Link
+          href="/"
+          className="block text-center text-xs text-(--muted-2) hover:text-(--foreground) pt-1"
+        >
+          ← Back to home
+        </Link>
       </div>
-    </div>
+    </AuthShell>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell kicker="Get started" title="Create your account">
+          <div className="flex justify-center py-6">
+            <div className="h-8 w-8 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
+          </div>
+        </AuthShell>
+      }
+    >
+      <SignUpContent />
+    </Suspense>
   );
 }

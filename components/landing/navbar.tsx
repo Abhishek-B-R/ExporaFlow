@@ -95,7 +95,7 @@ export default function Navbar() {
           ) : (
             <>
               <Link
-                href="/signup"
+                href="/auth/signin"
                 className="px-3 py-1.5 text-sm text-(--muted) hover:text-(--foreground) rounded-lg hover:bg-(--surface-3)/70 transition-colors"
               >
                 Sign in
@@ -163,7 +163,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link
-                  href="/signup"
+                  href="/auth/signin"
                   className="block rounded-lg px-3 py-2.5 text-sm text-(--foreground) hover:bg-(--surface-3)"
                 >
                   Sign in
