@@ -103,7 +103,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see ExporaFlow in action
 
 - **PostgreSQL** - Primary database
 - **Prisma** - Database toolkit and ORM
-- **Vercel** - Deployment platform
+- **Self-hosted** - Runs on your own server or AWS (see [DEPLOYMENT.md](DEPLOYMENT.md))
 - **GitHub Actions** - CI/CD pipeline
 
 ## 🔐 Authentication & Roles
