@@ -5,6 +5,7 @@ import axios from "axios";
 import { useRef, useState, useEffect } from "react";
 import { TicketType, TicketUrgency } from "@prisma/client";
 import { useSession } from "next-auth/react";
+import { Sparkles, Wand2 } from "lucide-react";
 import { URGENCY_OPTIONS } from "@/lib/ticket-due-date-policy";
 import { isChangeManagementType } from "@/lib/ticket-types";
 import { TICKET_TYPE_OPTIONS } from "@/lib/ticket-type-labels";
@@ -598,17 +599,19 @@ export const CreateIssueWindow = ({
               type="button"
               onClick={aiDraft}
               disabled={isDrafting}
-              className="border border-sky-400 bg-sky-100 text-sky-800 rounded-md text-sm px-2 h-7 hover:bg-sky-200 font-medium transition-colors disabled:opacity-50"
+              className="ef-control inline-flex items-center gap-1.5 rounded-md text-sm px-2 h-7 font-medium transition-colors disabled:opacity-50"
             >
-              {isDrafting ? "Drafting…" : "✨ AI Draft"}
+              <Sparkles className="size-3.5 text-(--muted-2)" strokeWidth={2} aria-hidden />
+              {isDrafting ? "Drafting…" : "Draft"}
             </button>
             <button
               type="button"
               onClick={aiTriage}
               disabled={isTriaging}
-              className="border border-violet-400 bg-violet-100 text-violet-800 rounded-md text-sm px-2 h-7 hover:bg-violet-200 font-medium transition-colors disabled:opacity-50"
+              className="ef-control inline-flex items-center gap-1.5 rounded-md text-sm px-2 h-7 font-medium transition-colors disabled:opacity-50"
             >
-              {isTriaging ? "Triaging…" : "⚡ AI Triage"}
+              <Wand2 className="size-3.5 text-(--muted-2)" strokeWidth={2} aria-hidden />
+              {isTriaging ? "Triaging…" : "Triage"}
             </button>
           </div>
         </div>

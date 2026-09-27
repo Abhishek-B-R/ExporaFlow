@@ -20,8 +20,6 @@ export function AuthShell({
 
   return (
     <div className="ef-auth-scene min-h-[100dvh] flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden">
-      <div className="ef-auth-orb ef-auth-orb-a" aria-hidden />
-      <div className="ef-auth-orb ef-auth-orb-b" aria-hidden />
 
       <Link
         href="/"

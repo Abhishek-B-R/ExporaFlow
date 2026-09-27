@@ -86,6 +86,30 @@ body {
   letter-spacing: -0.011em;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Inter's contextual alternates and a more humanist single-storey a. */
+  font-feature-settings: "rlig" 1, "calt" 1, "cv11" 1;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings: tighter as they get larger, and never leave a single orphan word. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  letter-spacing: -0.022em;
+}
+
+h1 {
+  letter-spacing: -0.032em;
+}
+
+/* Numbers that sit in columns should not jitter between values. */
+time,
+[data-numeric],
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 * {
@@ -221,12 +245,9 @@ a:focus-visible {
   color: var(--foreground);
 }
 
+/* Intentionally flat: the page reads as a product surface, not a splash page. */
 .ef-landing-glow {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(186, 230, 253, 0.45),
-    transparent 70%
-  );
+  background: none;
 }
 
 /* Controls */
@@ -380,8 +401,7 @@ a:focus-visible {
 .ef-nav-active {
   background: var(--sidebar-active-bg);
   color: var(--foreground);
-  font-weight: 500;
-  box-shadow: inset 3px 0 0 var(--sidebar-active-indicator);
+  font-weight: 550;
 }
 
 .ef-tab-active {
@@ -600,35 +620,7 @@ textarea::placeholder {
 
 /* Auth / invite flows */
 .ef-auth-scene {
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14, 165, 233, 0.12), transparent),
-    var(--background);
-}
-
-.ef-auth-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  pointer-events: none;
-  opacity: 0.5;
-}
-
-.ef-auth-orb-a {
-  width: 280px;
-  height: 280px;
-  top: 10%;
-  left: -80px;
-  background: rgba(14, 165, 233, 0.2);
-  animation: ef-auth-float 8s ease-in-out infinite;
-}
-
-.ef-auth-orb-b {
-  width: 240px;
-  height: 240px;
-  bottom: 5%;
-  right: -60px;
-  background: rgba(5, 150, 105, 0.15);
-  animation: ef-auth-float 10s ease-in-out infinite reverse;
+  background: var(--background);
 }
 
 @keyframes ef-auth-float {

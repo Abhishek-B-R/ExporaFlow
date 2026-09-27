@@ -1,5 +1,7 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
+
 import { customToast } from "@/lib/custom-toast";
 import { IssueBody, ProjectBody, SprintBody } from "@/utils/types";
 import axios from "axios";
@@ -253,9 +255,10 @@ export default function SprintsPage() {
               <button
                 onClick={runAiSprintPlan}
                 disabled={isPlanning || issues.length === 0}
-                className="h-8 px-3 rounded-md border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 text-[#0ea5e9] text-sm hover:bg-[#0ea5e9]/20 transition-colors disabled:opacity-50"
+                className="ef-control inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm transition-colors disabled:opacity-50"
               >
-                {isPlanning ? "Planning…" : "✨ AI Sprint Plan"}
+                <Sparkles className="size-3.5 text-(--muted-2)" strokeWidth={2} aria-hidden />
+                {isPlanning ? "Planning…" : "Plan sprint"}
               </button>
             ) : null}
           </div>

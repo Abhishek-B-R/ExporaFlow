@@ -72,8 +72,8 @@ function leadLabel(project: ProjectBody): string {
   return "—";
 }
 
-function stateBadgeClass(name: string) {
-  const n = name.toLowerCase();
+function stateBadgeClass(name: string | null | undefined) {
+  const n = (name ?? "").toLowerCase();
   if (n.includes("work"))
     return "bg-emerald-50 text-emerald-800 border-emerald-300";
   if (n.includes("plan")) return "bg-sky-50 text-sky-800 border-sky-300";
@@ -169,9 +169,9 @@ export default function Projects() {
               {isLoading ? (
                 <div className="ef-card overflow-hidden">
                   <div className="border-b border-(--border) bg-(--surface-2) px-3 py-2.5 flex gap-6">
-                    {[88, 56, 48, 48, 32].map((w) => (
+                    {[88, 56, 48, 48, 32].map((w, i) => (
                       <div
-                        key={w}
+                        key={i}
                         className="h-3 rounded-md bg-(--surface-3) animate-pulse"
                         style={{ width: `${w}px` }}
                       />

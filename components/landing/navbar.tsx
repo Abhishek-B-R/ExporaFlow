@@ -95,13 +95,13 @@ export default function Navbar() {
           ) : (
             <>
               <Link
-                href="/auth/signin"
+                href="/#request-access"
                 className="px-3 py-1.5 text-sm text-(--muted) hover:text-(--foreground) rounded-lg hover:bg-(--surface-3)/70 transition-colors"
               >
-                Sign in
+                Request access
               </Link>
-              <Link href="/signup" className="ef-btn-primary h-9 rounded-lg px-4 text-sm">
-                Get started
+              <Link href="/auth/signin" className="ef-btn-primary h-9 rounded-lg px-4 text-sm">
+                Sign in
               </Link>
             </>
           )}
@@ -169,10 +169,10 @@ export default function Navbar() {
                   Sign in
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/auth/signin"
                   className="ef-btn-primary mt-1 h-10 rounded-lg text-sm text-center flex items-center justify-center"
                 >
-                  Get started
+                  Sign in
                 </Link>
               </>
             )}

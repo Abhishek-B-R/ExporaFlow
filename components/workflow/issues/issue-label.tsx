@@ -430,8 +430,8 @@ export default function IssueLabel({
   );
 }
 
-export const renderPrioritySvg = (priority: string) => {
-  switch (priority.split(" ").join().toLowerCase()) {
+export const renderPrioritySvg = (priority: string | null | undefined) => {
+  switch ((priority ?? "").split(" ").join().toLowerCase()) {
     case "urgent":
       return (
         <SVGIcon className="flex w-4" svgString={RAW_ICONS.UrgentPriority} />
@@ -451,8 +451,8 @@ export const renderPrioritySvg = (priority: string) => {
   }
 };
 
-export const RenderStatusSvg = ({ status }: { status: string }) => {
-  switch (status.split(" ").join().toLowerCase()) {
+export const RenderStatusSvg = ({ status }: { status: string | null | undefined }) => {
+  switch ((status ?? "").split(" ").join().toLowerCase()) {
     case "working":
       return <SVGIcon className="flex w-5" svgString={RAW_ICONS.InProgress} />;
     case "completed":

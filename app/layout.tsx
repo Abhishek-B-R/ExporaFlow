@@ -9,6 +9,9 @@ import { Inter } from "next/font/google";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  // No explicit `weight`: that would pull four static cuts instead of the
+  // single variable font, which covers the whole 100–900 range in one file.
+  display: "swap",
 });
 
 export const metadata: Metadata = siteConfig;

@@ -12,28 +12,29 @@ export default function Hero() {
       <div className="ef-page-gutter flex justify-center items-center min-h-[340px] sm:min-h-[400px] py-16 sm:py-20">
         <div className="flex flex-col items-center text-center max-w-3xl">
           <p className="ef-kicker mb-3">Operations for consulting teams</p>
-          <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] font-semibold tracking-[-0.03em] text-(--foreground) leading-[1.15]">
-            Projects, incidents, and change —{" "}
+          <h1 className="text-[1.75rem] sm:text-4xl lg:text-[2.75rem] font-semibold text-(--foreground) leading-[1.12] text-balance">
+            Projects, incidents, and change in{" "}
             <span className="text-(--accent)">one workspace</span>
           </h1>
-          <p className="mt-4 text-[0.9375rem] sm:text-base text-(--muted-2) max-w-xl leading-relaxed">
-            Built for SAP, Oracle, managed services, and software delivery — with SLA-aware
-            change management, customer directory, and the same dashboard your leads use daily.
+          <p className="mt-4 text-[0.9375rem] sm:text-base text-(--muted-2) max-w-[34rem] leading-relaxed text-balance">
+            SLA-aware change management, a shared customer directory, and the dashboard
+            your delivery leads already use — for SAP, Oracle, managed services and
+            software teams.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
+            <Link
+              href="/auth/signin"
+              className="ef-btn-primary h-10 gap-2 rounded-lg px-4 text-sm"
+            >
+              Sign in
+              <ArrowRight className="size-3.5 opacity-70" strokeWidth={2} />
+            </Link>
             <Link
               href="/workflow/dashboard"
               className="ef-btn-outline h-10 gap-2 rounded-lg px-4 text-sm"
             >
-              <LayoutDashboard className="size-4 text-(--accent)" strokeWidth={2} />
+              <LayoutDashboard className="size-4 text-(--muted-2)" strokeWidth={2} />
               Open dashboard
-              <ArrowRight className="size-3.5 opacity-60" strokeWidth={2} />
-            </Link>
-            <Link
-              href="/signup"
-              className="ef-btn-primary h-10 rounded-lg px-4 text-sm"
-            >
-              Get started
             </Link>
           </div>
         </div>
@@ -153,12 +154,13 @@ function WaitlistStrip() {
   };
 
   return (
-    <div className="ef-page-gutter pb-16">
+    <div id="request-access" className="ef-page-gutter pb-16 scroll-mt-20">
       <div className="ef-card max-w-3xl mx-auto px-4 py-4 sm:px-5 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-(--foreground)">Join the waitlist</p>
+          <p className="text-sm font-medium text-(--foreground)">Request access</p>
           <p className="text-xs text-(--muted-2) mt-0.5">
-            Early access for consulting and MSP operations teams.
+            ExporaFlow is invite-only. Leave your work email and an admin will send
+            you an invite.
           </p>
         </div>
         <div className="flex w-full sm:w-auto gap-2">
@@ -176,7 +178,7 @@ function WaitlistStrip() {
             onClick={() => void waitListCall()}
             className="ef-btn-outline h-10 shrink-0 rounded-lg px-4 text-sm disabled:opacity-50"
           >
-            {isLoading ? "…" : "Notify me"}
+            {isLoading ? "Sending…" : "Request"}
           </button>
         </div>
       </div>
