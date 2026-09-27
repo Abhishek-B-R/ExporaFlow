@@ -237,6 +237,7 @@ export default function AllTicketsPage() {
                 priority={issue.priority}
                 updatedAt={issue.updatedAt}
                 assigneeInfo={issue.User}
+                extraAssigneeCount={Math.max(0, (issue.assignees?.length ?? 0) - 1)}
                 ticketType={issue.ticketType}
                 ticketNumber={issue.ticketNumber}
                 globalTicketNumber={issue.globalTicketNumber}

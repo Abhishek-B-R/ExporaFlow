@@ -32,6 +32,7 @@ export default function IssueLabel({
   update,
   assigedUser,
   assigneeInfo,
+  extraAssigneeCount = 0,
   projectID,
   issueID,
   updatedAt,
@@ -58,6 +59,8 @@ export default function IssueLabel({
     email?: string | null;
     image?: string | null;
   } | null;
+  /** Assignees beyond the primary owner, shown as a +N chip. */
+  extraAssigneeCount?: number;
   projectID: string | null;
   issueID: string;
   updatedAt?: string;
@@ -385,7 +388,16 @@ export default function IssueLabel({
       <div title={fullDate} className="col-span-1 cursor-pointer ">
         {shortDate}
       </div>
-      <div className="col-span-1" title={assigneeName ?? "Unassigned"}>
+      <div
+        className="col-span-1 flex items-center gap-1"
+        title={
+          assigneeName
+            ? extraAssigneeCount > 0
+              ? `${assigneeName} +${extraAssigneeCount} more`
+              : assigneeName
+            : "Unassigned"
+        }
+      >
         {assigneeInfo?.image ? (
           <img
             src={assigneeInfo.image}
@@ -401,9 +413,18 @@ export default function IssueLabel({
             <SVGIcon className="flex w-6" svgString={RAW_ICONS.AssignedUser} />
           </div>
         )}
+        {extraAssigneeCount > 0 ? (
+          <span className="h-7 min-w-7 px-1 rounded-full bg-(--surface-3) border border-(--border) flex items-center justify-center text-[10px] font-medium text-(--muted-2) tabular-nums">
+            +{extraAssigneeCount}
+          </span>
+        ) : null}
       </div>
       <p className="col-span-3 truncate text-xs text-(--muted-2)">
-        {assigneeName ? `Assigned to ${assigneeName.split(" ")[0]}` : ""}
+        {assigneeName
+          ? extraAssigneeCount > 0
+            ? `Assigned to ${assigneeName.split(" ")[0]} +${extraAssigneeCount}`
+            : `Assigned to ${assigneeName.split(" ")[0]}`
+          : ""}
       </p>
     </div>
   );

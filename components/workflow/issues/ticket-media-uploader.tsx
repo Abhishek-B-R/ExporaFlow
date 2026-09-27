@@ -59,6 +59,11 @@ export function TicketMediaUploader({
 }: Props) {
   const [uploading, setUploading] = useState(false);
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  // CldUploadWidget needs the public API key too for signed uploads. Without
+  // it the widget throws during render and takes the whole ticket page down,
+  // so treat a half-configured Cloudinary the same as an unconfigured one.
+  const publicApiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+  const cloudinaryReady = Boolean(cloudName && publicApiKey);
 
   const addMedia = useCallback(
     async (item: PendingTicketMedia) => {
@@ -90,7 +95,7 @@ export function TicketMediaUploader({
     onChange(value.filter((item) => item.publicId !== publicId));
   };
 
-  if (!cloudName) {
+  if (!cloudinaryReady) {
     return (
       <p className="text-xs text-(--muted-2)">
         Media uploads are unavailable (Cloudinary is not configured).

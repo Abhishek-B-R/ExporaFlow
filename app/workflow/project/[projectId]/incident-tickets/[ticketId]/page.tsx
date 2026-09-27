@@ -374,8 +374,8 @@ export default function Issue({
   return (
     <div className="grow min-h-screen flex flex-col">
       {/* Top bar */}
-      <div className="h-11 border-b border-(--border) bg-(--surface-1) flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="min-h-11 md:h-11 border-b border-(--border) bg-(--surface-1) flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-1 px-4 py-1.5 md:py-0 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
           {projectId && (
             <Link
               href={`/workflow/project/${projectId}/incident-tickets`}
@@ -386,7 +386,7 @@ export default function Issue({
             </Link>
           )}
           <span className="text-(--muted-2) text-xs">·</span>
-          <p className="text-xs text-(--muted-2) font-mono font-semibold">
+          <p className="text-xs text-(--muted-2) font-mono font-semibold whitespace-nowrap">
             {formatTicketKey({
               globalTicketNumber: issue.globalTicketNumber,
               ticketType: issue.ticketType,
@@ -395,19 +395,19 @@ export default function Issue({
           </p>
           {issue.ticketType ? (
             <span
-              className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${ticketTypeBadgeClass(issue.ticketType)}`}
+              className={`hidden sm:inline-block rounded border px-1.5 py-0.5 text-[10px] font-medium ${ticketTypeBadgeClass(issue.ticketType)}`}
             >
               {ticketTypeLabel(issue.ticketType)}
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <RoleBadge role={role} loading={roleLoading} />
           {!roleLoading && canProject("deleteTicket") ? (
             <button
               onClick={deleteIssue}
               disabled={isDeleting || isSaving}
-              className="h-7 px-3 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium transition-colors disabled:opacity-50"
+              className="h-7 px-3 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
             >
               {isDeleting ? "Deleting…" : "Delete ticket"}
             </button>
@@ -416,7 +416,7 @@ export default function Issue({
             <button
               onClick={saveIssueMeta}
               disabled={isSaving || isDeleting}
-              className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
+              className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
             >
               {isSaving ? "Saving…" : "Save changes"}
             </button>
@@ -446,16 +446,14 @@ export default function Issue({
 
           <div className="flex flex-wrap gap-2 items-center">
             <span
-              className={`text-[10px] uppercase tracking-wide rounded px-2 py-0.5 border ${
-                issue.ticketType === TicketType.CHANGE
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                  : "border-sky-500/40 bg-sky-500/10 text-sky-100"
-              }`}
+              className={`text-[10px] uppercase tracking-wide rounded px-2 py-0.5 border ${ticketTypeBadgeClass(
+                issue.ticketType,
+              )}`}
             >
               {issue.ticketType === TicketType.CHANGE ? "Change management" : "Incident management"}
             </span>
             {issue.status === "Hold" && issue.ticketType === TicketType.CHANGE ? (
-              <span className="text-[10px] uppercase tracking-wide rounded px-2 py-0.5 border border-orange-400/50 bg-orange-500/15 text-orange-100">
+              <span className="text-[10px] uppercase tracking-wide rounded px-2 py-0.5 border border-orange-200 bg-orange-50 text-orange-800">
                 On hold · SLA paused
               </span>
             ) : null}

@@ -639,6 +639,7 @@ export default function Issue() {
                     issueStatus={elem.status}
                     updatedAt={elem.updatedAt}
                     assigneeInfo={elem.User}
+                extraAssigneeCount={Math.max(0, (elem.assignees?.length ?? 0) - 1)}
                     selected={selectedIssueIndex === key}
                     canChangeStatus={canChangeStatus}
                     canChangePriority={canChangePriority}
