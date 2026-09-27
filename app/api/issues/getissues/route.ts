@@ -49,6 +49,13 @@ export async function POST(request: NextRequest) {
       ...ticketFilter,
     },
     include: {
+      assignees: {
+        select: {
+          userId: true,
+          user: { select: { id: true, name: true, email: true, image: true } },
+        },
+        orderBy: { assignedAt: "asc" },
+      },
       User: {
         select: { id: true, name: true, email: true, image: true },
       },

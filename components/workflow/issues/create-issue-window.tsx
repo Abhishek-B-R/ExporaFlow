@@ -64,7 +64,17 @@ export const CreateIssueWindow = ({
   >(false);
   const actionsRef = useRef<HTMLDivElement>(null);
   const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [assignedUserId, setAssignedUserId] = useState("");
+  // Ordered assignee list; index 0 is the primary/accountable owner.
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const assignedUserId = assigneeIds[0] ?? "";
+
+  const toggleAssignee = (userId: string) => {
+    setAssigneeIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
+  };
 
   const [isDrafting, setIsDrafting] = useState(false);
   const [isTriaging, setIsTriaging] = useState(false);
@@ -151,6 +161,7 @@ export const CreateIssueWindow = ({
           ? Number.parseInt(durationMinutes, 10)
           : undefined,
         assignedUser: canAssign ? assignedUserId || null : null,
+        assigneeIds: canAssign ? assigneeIds : [],
         urgency,
         requesterName: requesterName.trim() || undefined,
         cloudinaryMedia:
@@ -257,6 +268,7 @@ export const CreateIssueWindow = ({
   };
 
   const assigneeMember = members.find((m) => m.user.id === assignedUserId);
+  const extraAssigneeCount = Math.max(0, assigneeIds.length - 1);
   const assigneeLabel =
     assigneeMember?.user.name ||
     assigneeMember?.user.email?.split("@")[0] ||
@@ -509,7 +521,11 @@ export const CreateIssueWindow = ({
                   aria-expanded={showOptionsDropdown === "assignee"}
                   aria-haspopup="listbox"
                 >
-                  {assigneeLabel ?? "Assignee"}
+                  {assigneeLabel
+                    ? extraAssigneeCount > 0
+                      ? `${assigneeLabel} +${extraAssigneeCount}`
+                      : assigneeLabel
+                    : "Assignee"}
                 </button>
                 {showOptionsDropdown === "assignee" && (
                 <div className="absolute left-0 top-full z-[110] mt-1 w-52 max-h-56 overflow-y-auto rounded-lg border border-(--border-strong) bg-(--surface-1) shadow-lg py-1">
@@ -517,7 +533,7 @@ export const CreateIssueWindow = ({
                     type="button"
                     className="w-full px-3 py-2 text-left text-sm text-(--foreground) hover:bg-(--surface-3)"
                     onClick={() => {
-                      setAssignedUserId("");
+                      setAssigneeIds([]);
                       setShowOptionsDropdown(false);
                     }}
                   >
@@ -533,7 +549,8 @@ export const CreateIssueWindow = ({
                         member.user.name ||
                         member.user.email ||
                         "Team member";
-                      const active = member.user.id === assignedUserId;
+                      const active = assigneeIds.includes(member.user.id);
+                      const isPrimary = member.user.id === assignedUserId;
                       return (
                         <button
                           key={member.id}
@@ -543,10 +560,9 @@ export const CreateIssueWindow = ({
                               ? "bg-sky-100 text-sky-900"
                               : "text-(--foreground) hover:bg-(--surface-3)"
                           }`}
-                          onClick={() => {
-                            setAssignedUserId(member.user.id);
-                            setShowOptionsDropdown(false);
-                          }}
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => toggleAssignee(member.user.id)}
                         >
                           {member.user.image ? (
                             <img
@@ -560,6 +576,15 @@ export const CreateIssueWindow = ({
                             </span>
                           )}
                           <span className="truncate">{name}</span>
+                          {isPrimary ? (
+                            <span className="ml-auto shrink-0 rounded bg-sky-200 px-1.5 py-0.5 text-[10px] font-medium text-sky-900">
+                              Owner
+                            </span>
+                          ) : active ? (
+                            <span className="ml-auto shrink-0 text-sky-700" aria-hidden="true">
+                              ✓
+                            </span>
+                          ) : null}
                         </button>
                       );
                     })

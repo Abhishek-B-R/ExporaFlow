@@ -19,6 +19,13 @@ export async function POST(request: NextRequest) {
   const issue = await prisma.issue.findUnique({
     where: { id: issueId },
     include: {
+      assignees: {
+        select: {
+          userId: true,
+          user: { select: { id: true, name: true, email: true, image: true } },
+        },
+        orderBy: { assignedAt: "asc" },
+      },
       User: {
         select: { id: true, name: true, email: true, image: true },
       },

@@ -2,6 +2,7 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { prisma } from "@/db";
+import { resolveAssignees, syncIssueAssignees } from "@/lib/issue-assignees";
 import { assertProjectPermission } from "@/lib/authz";
 import { logIssueActivity, notifyUsers } from "@/lib/collaboration";
 import { findDuplicateIssueCandidates } from "@/lib/ai/duplicates";
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
     endDate,
     durationMinutes,
     assignedUser,
+    assigneeIds,
     urgency,
     requesterName,
     requesterEmail,
@@ -88,12 +90,18 @@ export async function POST(request: NextRequest) {
   const resolvedStatus = canPerformProjectAction(role, "updateTicketStatus")
     ? (issueStatus ?? "Backlog")
     : "Backlog";
-  const resolvedAssignedUser =
-    canPerformProjectAction(role, "assignTicket") &&
-    typeof assignedUser === "string" &&
-    assignedUser.length > 0
-      ? assignedUser
-      : null;
+  const canAssign = canPerformProjectAction(role, "assignTicket");
+  const { assigneeIds: resolvedAssigneeIds, primaryId: resolvedAssignedUser } =
+    canAssign
+      ? await resolveAssignees({
+          projectId,
+          requestedIds: assigneeIds,
+          preferredPrimaryId:
+            typeof assignedUser === "string" && assignedUser.length > 0
+              ? assignedUser
+              : null,
+        })
+      : { assigneeIds: [] as string[], primaryId: null };
 
   const normalizedTitle = normalizeIdentity(issueTitle);
   const recentIssues = await prisma.issue.findMany({
@@ -216,6 +224,13 @@ export async function POST(request: NextRequest) {
       assignedUser: resolvedAssignedUser,
     },
   });
+
+  if (resolvedAssigneeIds.length > 0) {
+    await syncIssueAssignees({
+      issueId: response.id,
+      assigneeIds: resolvedAssigneeIds,
+    });
+  }
 
   try {
     await logIssueActivity({

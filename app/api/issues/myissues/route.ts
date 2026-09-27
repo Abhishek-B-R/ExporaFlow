@@ -10,7 +10,12 @@ export async function GET() {
 
   const issues = await prisma.issue.findMany({
     where: {
-      OR: [{ assignedUser: session.user.id }, { Project: { createdBy: session.user.id } }],
+      OR: [
+        { assignedUser: session.user.id },
+        // Tickets where the user is an assignee but not the primary owner.
+        { assignees: { some: { userId: session.user.id } } },
+        { Project: { createdBy: session.user.id } },
+      ],
     },
     include: {
       Project: {

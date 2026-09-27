@@ -152,12 +152,14 @@ export default function AllTicketsPage() {
         <div className="border-b border-(--border) px-4 py-2 flex flex-wrap items-center gap-2 bg-(--surface-1)">
           <input
             type="search"
+            aria-label="Search tickets by title, project, or ticket number"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search title, project, or EXP-000001…"
             className="h-8 min-w-[200px] flex-1 max-w-md rounded-md border border-(--border) bg-(--surface-2) px-2.5 text-xs outline-none focus:border-sky-400/50"
           />
           <select
+            aria-label="Filter by project"
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
             className="h-8 max-w-[180px] rounded-md border border-(--border) bg-(--surface-2) px-2 text-xs outline-none truncate"
@@ -170,6 +172,7 @@ export default function AllTicketsPage() {
             ))}
           </select>
           <select
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-8 rounded-md border border-(--border) bg-(--surface-2) px-2 text-xs outline-none"
@@ -182,6 +185,7 @@ export default function AllTicketsPage() {
             ))}
           </select>
           <select
+            aria-label="Filter by ticket type"
             value={ticketTypeFilter}
             onChange={(e) => setTicketTypeFilter(e.target.value as "" | TicketType)}
             className="h-8 rounded-md border border-(--border) bg-(--surface-2) px-2 text-xs outline-none"
@@ -194,7 +198,11 @@ export default function AllTicketsPage() {
             ))}
           </select>
           {!isLoading ? (
-            <span className="text-xs text-(--muted-2) tabular-nums ml-auto">
+            <span
+              role="status"
+              aria-live="polite"
+              className="text-xs text-(--muted-2) tabular-nums ml-auto"
+            >
               {filteredIssues.length} ticket{filteredIssues.length === 1 ? "" : "s"}
             </span>
           ) : null}

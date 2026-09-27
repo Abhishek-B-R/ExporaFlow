@@ -35,6 +35,9 @@ export const createIssueBodySchema = z
     labels: z.array(z.string()).optional(),
     parentIssueId: z.string().nullable().optional(),
     assignedUser: z.union([z.string(), z.null()]).optional(),
+    /// Full assignee list. assignedUser becomes the primary owner; if it is
+    /// omitted the first entry here is promoted to primary.
+    assigneeIds: z.array(z.string().min(1)).max(20).optional(),
     urgency: z.nativeEnum(TicketUrgency).optional(),
     requesterName: z.string().trim().min(1).optional(),
     requesterEmail: z.string().email().optional().or(z.literal("")),
@@ -78,6 +81,7 @@ export const updateIssueBodySchema = z.object({
   issuePriority: z.string().optional(),
   issueStatus: z.string().optional(),
   assignedUser: z.union([z.string(), z.null()]).optional(),
+  assigneeIds: z.array(z.string().min(1)).max(20).optional(),
   parentIssueId: z.union([z.string(), z.null()]).optional(),
   sprintId: z.union([z.string(), z.null()]).optional(),
   dueDate: z.union([z.string(), z.null()]).optional(),

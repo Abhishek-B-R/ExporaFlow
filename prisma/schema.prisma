@@ -98,6 +98,7 @@ model User {
   employee          Employee?
   managedTeams      Team[]              @relation("TeamManager")
   requestedIssues   Issue[]             @relation("IssueRequester")
+  issueAssignments  IssueAssignee[]
   issueAttachments  IssueAttachment[]
   customerProfile   Customer? @relation("CustomerPortalUsers", fields: [customerProfileId], references: [id], onDelete: SetNull)
   customerProfileId String?
@@ -214,8 +215,12 @@ model Issue {
   requesterUserId String?
   update       String?
   ticketType   TicketType @default(INCIDENT)
+  /// Primary/accountable owner. Kept as the single source of truth for
+  /// "My Issues", filters, exports and SLA. Mirrors assignees[0].
   User         User?    @relation(fields: [assignedUser], references: [id])
   assignedUser String?
+  /// Full assignee list (includes the primary owner above).
+  assignees    IssueAssignee[]
   labels       String[] @default([])
   dueDate      DateTime?
   startDate    DateTime?
@@ -250,6 +255,19 @@ model Issue {
   mentionEmailLogs MentionEmailLog[]
 
   @@unique([projectId, ticketNumber])
+}
+
+/// Many-to-many assignees for a ticket. The primary owner is also mirrored
+/// onto Issue.assignedUser so existing queries keep working.
+model IssueAssignee {
+  issue      Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueId    String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  assignedAt DateTime @default(now())
+
+  @@id([issueId, userId])
+  @@index([userId])
 }
 
 model MentionEmailLog {

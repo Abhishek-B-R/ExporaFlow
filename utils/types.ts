@@ -29,6 +29,7 @@ export type IssueBody = {
   priority?: string;
   dueDate?: string | null;
   labels?: string[];
+  /** Primary/accountable owner. Mirrors assignees[0]. */
   assignedUser?: string | null;
   User?: {
     id: string;
@@ -36,6 +37,16 @@ export type IssueBody = {
     email?: string | null;
     image?: string | null;
   } | null;
+  /** Full assignee list, including the primary owner above. */
+  assignees?: Array<{
+    userId: string;
+    user?: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    } | null;
+  }>;
   sprintId?: string | null;
   parentIssueId?: string | null;
   projectId: string;

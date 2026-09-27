@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/db";
+import { resolveAssignees, syncIssueAssignees } from "@/lib/issue-assignees";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { assertProjectRole, assertProjectPermission } from "@/lib/authz";
@@ -41,6 +42,7 @@ export async function PATCH(request: NextRequest) {
     issuePriority,
     issueStatus,
     assignedUser,
+    assigneeIds,
     parentIssueId,
     sprintId,
     dueDate,
@@ -150,6 +152,12 @@ export async function PATCH(request: NextRequest) {
     if (
       (typeof assignedUser === "string" || assignedUser === null) &&
       (assignedUser || null) !== (existing.assignedUser || null) &&
+      !canPerformProjectAction(role, "assignTicket")
+    ) {
+      return forbidden();
+    }
+    if (
+      Array.isArray(assigneeIds) &&
       !canPerformProjectAction(role, "assignTicket")
     ) {
       return forbidden();
@@ -327,6 +335,19 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    // Resolve the assignee list first so the primary owner can be written
+    // onto assignedUser in the same update, keeping the two in sync.
+    const assigneeUpdate = Array.isArray(assigneeIds)
+      ? await resolveAssignees({
+          projectId: existing.projectId,
+          requestedIds: assigneeIds,
+          preferredPrimaryId:
+            typeof assignedUser === "string" && assignedUser.length > 0
+              ? assignedUser
+              : null,
+        })
+      : null;
+
     const updatedIssue = await prisma.issue.update({
       where: { id: issueId },
       data: {
@@ -350,8 +371,9 @@ export async function PATCH(request: NextRequest) {
           durationMinutes !== undefined ? nextDuration : undefined,
         ...(nextSlaDueAt !== undefined ? { slaDueAt: nextSlaDueAt } : {}),
         ...holdSlaPatch,
-        assignedUser:
-          typeof assignedUser === "string"
+        assignedUser: assigneeUpdate
+          ? assigneeUpdate.primaryId
+          : typeof assignedUser === "string"
             ? assignedUser || null
             : assignedUser === null
               ? null
@@ -378,6 +400,13 @@ export async function PATCH(request: NextRequest) {
               : undefined,
       },
     });
+
+    if (assigneeUpdate) {
+      await syncIssueAssignees({
+        issueId,
+        assigneeIds: assigneeUpdate.assigneeIds,
+      });
+    }
 
     if (updatedIssue) {
       const changes: Array<{ field: string; from: string; to: string }> = [];

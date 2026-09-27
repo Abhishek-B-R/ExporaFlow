@@ -494,10 +494,12 @@ export default function Issue() {
 
         <div className="px-2 py-2 border-b border-(--border) bg-(--surface-1)">
           <input
+            type="search"
+            aria-label="Search incident and change tickets in this project"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search incident & change tickets in this project  •  Use J/K + Enter"
-            className="w-full h-8 rounded-md border border-(--border) bg-(--surface-2) px-2 text-sm"
+            className="w-full h-8 rounded-md border border-(--border) bg-(--surface-2) px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
           />
         </div>
 

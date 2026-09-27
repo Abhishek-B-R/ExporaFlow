@@ -7,6 +7,7 @@ import axios from "axios";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RenderStatusSvg, renderPrioritySvg } from "@/components/workflow/issues/issue-label";
+import { AssigneePicker } from "@/components/workflow/issues/assignee-picker";
 import { useRouter } from "next/navigation";
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
@@ -106,7 +107,9 @@ export default function Issue({
   const [descriptionInput, setDescriptionInput] = useState("");
   const [statusInput, setStatusInput] = useState("Backlog");
   const [priorityInput, setPriorityInput] = useState("No Priority");
-  const [assignedUserInput, setAssignedUserInput] = useState("");
+  // Ordered assignee ids; index 0 is the primary owner (mirrors assignedUser).
+  const [assigneeIdsInput, setAssigneeIdsInput] = useState<string[]>([]);
+  const assignedUserInput = assigneeIdsInput[0] ?? "";
   const [parentIssueInput, setParentIssueInput] = useState("");
   const [labelsInput, setLabelsInput] = useState("");
   const [dueDateInput, setDueDateInput] = useState("");
@@ -135,7 +138,19 @@ export default function Issue({
     setDescriptionInput(issueData.description ?? "");
     setStatusInput(issueData.status ?? "Backlog");
     setPriorityInput(issueData.priority ?? "No Priority");
-    setAssignedUserInput(issueData.assignedUser ?? "");
+    setAssigneeIdsInput(
+      issueData.assignees?.length
+        ? // Server returns assignees oldest-first; make the primary owner lead.
+          [
+            ...(issueData.assignedUser ? [issueData.assignedUser] : []),
+            ...issueData.assignees
+              .map((a) => a.userId)
+              .filter((id) => id !== issueData.assignedUser),
+          ]
+        : issueData.assignedUser
+          ? [issueData.assignedUser]
+          : [],
+    );
     setParentIssueInput(issueData.parentIssueId ?? "");
     setLabelsInput((issueData.labels ?? []).join(", "));
     setDueDateInput(
@@ -219,6 +234,7 @@ export default function Issue({
         issueStatus: statusInput,
         issuePriority: priorityInput,
         assignedUser: assignedUserInput || null,
+        assigneeIds: assigneeIdsInput,
         parentIssueId: parentIssueInput || null,
         sprintId: sprintInput || null,
         dueDate: dueDateInput || null,
@@ -420,10 +436,11 @@ export default function Issue({
         <div className="grow md:overflow-y-auto px-4 sm:px-6 md:px-10 py-6 space-y-6 shrink-0">
           {/* Title */}
           <input
+            aria-label="Ticket title"
             value={titleInput}
             onChange={(e) => setTitleInput(e.target.value)}
             readOnly={!canEditContent}
-            className="w-full bg-transparent text-xl md:text-2xl font-semibold outline-none border-none placeholder:text-(--muted-2)"
+            className="w-full bg-transparent text-xl md:text-2xl font-semibold outline-none border-none rounded placeholder:text-(--muted-2) focus-visible:ring-2 focus-visible:ring-sky-500"
             placeholder="Ticket title"
           />
 
@@ -662,20 +679,13 @@ export default function Issue({
             </SidebarField>
 
             {/* Assignee */}
-            <SidebarField label="Assignee">
-              <select
-                value={assignedUserInput}
-                onChange={(e) => setAssignedUserInput(e.target.value)}
+            <SidebarField label="Assignees">
+              <AssigneePicker
+                options={members.map((member) => member.user)}
+                value={assigneeIdsInput}
+                onChange={setAssigneeIdsInput}
                 disabled={!canAssign}
-                className="w-full rounded-md border border-(--border) bg-(--surface-2) px-2 h-8 text-sm outline-none disabled:opacity-70"
-              >
-                <option value="">Unassigned</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.user.id}>
-                    {member.user.name || member.user.email || member.user.id}
-                  </option>
-                ))}
-              </select>
+              />
             </SidebarField>
 
             {/* Due date */}
