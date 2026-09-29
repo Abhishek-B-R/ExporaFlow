@@ -152,6 +152,7 @@ export default function AllTicketsPage() {
         <div className="border-b border-(--border) px-4 py-2 flex flex-wrap items-center gap-2 bg-(--surface-1)">
           <input
             type="search"
+            data-shortcut="search"
             aria-label="Search tickets by title, project, or ticket number"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

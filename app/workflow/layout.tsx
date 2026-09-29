@@ -7,6 +7,7 @@ import { resolveWorkspaceAccess } from "@/lib/workspace-access";
 import WorkflowSidebar from "@/components/workflow/sidebar/workflow-sidebar";
 import BottomDock from "@/components/workflow/sidebar/bottom-dock";
 import CommandPalette from "@/components/workflow/command-palette";
+import KeyboardLayer from "@/components/workflow/keyboard-layer";
 
 export const metadata: Metadata = {
   title: "ExporaFlow",
@@ -40,6 +41,7 @@ export default async function RootLayout({
         </div>
       </div>
       <CommandPalette />
+      <KeyboardLayer />
       <BottomDock />
     </>
   );

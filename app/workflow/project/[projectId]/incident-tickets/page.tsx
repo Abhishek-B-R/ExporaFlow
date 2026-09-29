@@ -381,6 +381,7 @@ export default function Issue() {
               type="button"
               onClick={() => setCreateIssueWindowOpen(true)}
               className="ef-icon-btn-primary gap-1.5 px-2.5 text-xs font-medium"
+              data-shortcut="new-ticket"
               aria-label="New ticket"
             >
               <SVGIcon className="w-4 h-4" svgString={RAW_ICONS.Add} />
@@ -495,6 +496,7 @@ export default function Issue() {
         <div className="px-2 py-2 border-b border-(--border) bg-(--surface-1)">
           <input
             type="search"
+            data-shortcut="search"
             aria-label="Search incident and change tickets in this project"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}

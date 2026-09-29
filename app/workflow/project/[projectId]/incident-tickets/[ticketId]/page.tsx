@@ -120,6 +120,11 @@ export default function Issue({
   const [estimateInput, setEstimateInput] = useState<number | null>(null);
   const [commentInput, setCommentInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  // Autosave status shown in the header instead of a Save button.
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  // Serialised snapshot of what the server last accepted. While it is null the
+  // form has not hydrated yet, so nothing is autosaved on first paint.
+  const savedSnapshotRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPostingComment, setIsPostingComment] = useState(false);
   const [activityTab, setActivityTab] = useState<"comments" | "activity">("comments");
@@ -218,10 +223,29 @@ export default function Issue({
     }
   };
 
-  const saveIssueMeta = async () => {
+  // Every field that autosaves, in one comparable string.
+  const formSnapshot = JSON.stringify({
+    titleInput,
+    descriptionInput,
+    statusInput,
+    priorityInput,
+    assigneeIdsInput,
+    parentIssueInput,
+    sprintInput,
+    dueDateInput,
+    urgencyInput,
+    requesterNameInput,
+    requesterEmailInput,
+    labelsInput,
+    estimateInput,
+  });
+
+  const saveIssueMeta = useCallback(async (options?: { silent?: boolean }) => {
     if (!issueId || !issue) return;
+    const silent = options?.silent ?? false;
     try {
-      setIsSaving(true);
+      if (silent) setSaveState("saving");
+      else setIsSaving(true);
       const labels = labelsInput
         .split(",")
         .map((label) => label.trim())
@@ -246,14 +270,49 @@ export default function Issue({
         manualDueDateOverride: Boolean(dueDateInput),
       });
 
-      customToast.success({ title: "", description: "Issue details updated." });
-      await fetchIssueData({ resetForm: true });
+      if (silent) {
+        // Record what the server accepted; do NOT refetch, or a reset would
+        // clobber anything typed while the request was in flight.
+        savedSnapshotRef.current = formSnapshot;
+        setSaveState("saved");
+      } else {
+        customToast.success({ title: "", description: "Issue details updated." });
+        await fetchIssueData({ resetForm: true });
+      }
     } catch {
-      customToast.error({ title: "", description: "Failed to update issue details." });
+      if (silent) setSaveState("error");
+      else customToast.error({ title: "", description: "Failed to update issue details." });
     } finally {
-      setIsSaving(false);
+      if (silent) setIsSaving(false);
+      else setIsSaving(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issueId, issue, titleInput, descriptionInput, statusInput, priorityInput,
+      assignedUserInput, assigneeIdsInput, parentIssueInput, sprintInput,
+      dueDateInput, urgencyInput, requesterNameInput, requesterEmailInput,
+      labelsInput, estimateInput]);
+
+  // Seed the baseline the first time the form is populated so hydration does
+  // not look like an edit.
+  useEffect(() => {
+    if (issue && savedSnapshotRef.current === null) {
+      savedSnapshotRef.current = formSnapshot;
+    }
+  }, [issue, formSnapshot]);
+
+  // Autosave. One debounce covers both pickers and typing: short enough that a
+  // dropdown feels immediate, long enough that it does not fire per keystroke.
+  useEffect(() => {
+    if (!issue || savedSnapshotRef.current === null) return;
+    if (formSnapshot === savedSnapshotRef.current) return;
+    if (!canSaveChanges) return;
+
+    const timer = setTimeout(() => {
+      void saveIssueMeta({ silent: true });
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [formSnapshot, issue, canSaveChanges, saveIssueMeta]);
+
 
   const deleteIssue = async () => {
     if (!issueId || !projectId) return;
@@ -413,13 +472,28 @@ export default function Issue({
             </button>
           ) : null}
           {!roleLoading && canSaveChanges ? (
-            <button
-              onClick={saveIssueMeta}
-              disabled={isSaving || isDeleting}
-              className="h-7 px-3 rounded-md bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
-            >
-              {isSaving ? "Saving…" : "Save changes"}
-            </button>
+            saveState === "error" ? (
+              // Autosave failed: the edit is still in the form, so offer a retry
+              // rather than silently dropping it.
+              <button
+                onClick={() => void saveIssueMeta({ silent: true })}
+                className="h-7 px-3 rounded-md bg-red-500/10 text-red-600 text-xs font-medium transition-colors whitespace-nowrap shrink-0 focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                Not saved · Retry
+              </button>
+            ) : (
+              <span
+                role="status"
+                aria-live="polite"
+                className="text-xs text-(--muted-2) whitespace-nowrap shrink-0 tabular-nums"
+              >
+                {saveState === "saving"
+                  ? "Saving…"
+                  : saveState === "saved"
+                    ? "Saved"
+                    : ""}
+              </span>
+            )
           ) : null}
         </div>
       </div>
