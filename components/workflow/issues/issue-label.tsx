@@ -44,6 +44,8 @@ export default function IssueLabel({
   issueStatus,
   canChangeStatus = false,
   canChangePriority = false,
+  checked = false,
+  onToggleSelect,
 }: {
   title: string;
   description?: string;
@@ -73,6 +75,9 @@ export default function IssueLabel({
   issueStatus?: string | null;
   canChangeStatus?: boolean;
   canChangePriority?: boolean;
+  /** Bulk selection state. Omitting onToggleSelect hides the checkbox. */
+  checked?: boolean;
+  onToggleSelect?: (issueId: string, shiftKey: boolean) => void;
 }) {
   const date = new Date(updatedAt ? updatedAt : "");
   const router = useRouter();
@@ -241,6 +246,25 @@ export default function IssueLabel({
       }}
     >
       <div className=" col-span-5 sm:col-span-4 flex items-center gap-x-3 min-w-0 ">
+        {onToggleSelect ? (
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={checked}
+            aria-label={checked ? `Deselect ${title}` : `Select ${title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleSelect(issueID, event.shiftKey);
+            }}
+            className={`h-4 w-4 shrink-0 rounded border flex items-center justify-center text-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-sky-500 ${
+              checked
+                ? "bg-sky-600 border-sky-600 text-white"
+                : "border-(--border-strong) hover:border-sky-500"
+            }`}
+          >
+            {checked ? "✓" : ""}
+          </button>
+        ) : null}
         {status ? (
           <RenderStatusSvg status={status} />
         ) : (

@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "@/utils/auth";
 import { usePathname } from "next/navigation";
+import { brand } from "@/config/brand";
 
 const NAV_LINKS = [
   { label: "Dashboard", href: "/workflow/dashboard" },
@@ -38,13 +39,13 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2.5 shrink-0 mr-2">
           <Image
             src="/logo.png"
-            alt="ExporaFlow"
+            alt={brand.name}
             width={32}
             height={32}
             className="size-8"
           />
           <span className="text-[15px] font-semibold tracking-tight text-(--foreground)">
-            ExporaFlow
+            {brand.name}
           </span>
         </Link>
 

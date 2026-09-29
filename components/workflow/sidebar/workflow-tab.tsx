@@ -1,6 +1,7 @@
 import Image from "next/image";
 import applogotwo from "@/public/logo.png";
 import Link from "next/link";
+import { brand } from "@/config/brand";
 
 export const WorkflowTab = () => {
   return (
@@ -16,7 +17,7 @@ export const WorkflowTab = () => {
           href="/"
           className="text-sm font-semibold tracking-tight text-(--foreground) truncate hover:text-(--muted) transition-colors"
         >
-          ExporaFlow
+          {brand.name}
         </Link>
       </div>
     </div>

@@ -5,10 +5,11 @@ import SVGIcon from "@/lib/svg-icon";
 import { IssueBody, ProjectBody } from "@/utils/types";
 import axios from "axios";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import IssueLabel from "@/components/workflow/issues/issue-label";
-import { IssueViewOptArray } from "@/utils/issues-view-options";
+import { IssueViewOptArray, PriorityOptionsArray } from "@/utils/issues-view-options";
+import BulkActionBar from "@/components/workflow/issues/bulk-action-bar";
 import { CreateIssueWindow } from "@/components/workflow/issues/create-issue-window";
 import IssuesTopTile from "@/components/workflow/issues/issues-top-tile";
 import { WorkflowLayout } from "@/components/workflow/workflow-layout";
@@ -79,6 +80,15 @@ export default function Issue() {
   const showCreate = actionsReady && canProject("createTicket");
   const canChangeStatus = actionsReady && canProject("updateTicketStatus");
   const canChangePriority = actionsReady && canProject("updateTicketPriority");
+  const canAssign = actionsReady && canProject("assignTicket");
+
+  // Bulk selection.
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // Anchor for shift-click range selection.
+  const lastToggledRef = useRef<string | null>(null);
+  const [members, setMembers] = useState<
+    Array<{ id: string; name?: string | null; email?: string | null }>
+  >([]);
 
   const filteredIssues = useMemo(
     () =>
@@ -112,6 +122,65 @@ export default function Issue() {
       return Math.min(prev, filteredIssues.length - 1);
     });
   }, [selectionScopeKey, filteredIssues]);
+
+  const toggleSelect = useCallback(
+    (issueId: string, shiftKey: boolean) => {
+      setSelectedIds((prev) => {
+        const anchor = lastToggledRef.current;
+        // Shift-click selects the run between the anchor and this row.
+        if (shiftKey && anchor) {
+          const ids = filteredIssues.map((issue) => issue.id);
+          const from = ids.indexOf(anchor);
+          const to = ids.indexOf(issueId);
+          if (from !== -1 && to !== -1) {
+            const range = ids.slice(Math.min(from, to), Math.max(from, to) + 1);
+            return Array.from(new Set([...prev, ...range]));
+          }
+        }
+        lastToggledRef.current = issueId;
+        return prev.includes(issueId)
+          ? prev.filter((id) => id !== issueId)
+          : [...prev, issueId];
+      });
+    },
+    [filteredIssues],
+  );
+
+  // Selection is meaningless once the visible set changes underneath it.
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const visible = new Set(filteredIssues.map((issue) => issue.id));
+      const next = prev.filter((id) => visible.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [filteredIssues]);
+
+  const refetchIssues = useCallback(async () => {
+    if (!project_id) return;
+    const response = await axios.post("/api/issues/getissues", {
+      project_id,
+      ...(ticketTypeFilter ? { ticketType: ticketTypeFilter } : {}),
+    });
+    setIssues(response.data);
+  }, [project_id, ticketTypeFilter]);
+
+  useEffect(() => {
+    if (!project_id || !canAssign) return;
+    axios
+      .post("/api/workflow/getmembers", { projectId: project_id })
+      .then((response) => {
+        const rows = Array.isArray(response.data) ? response.data : [];
+        type MemberRow = { user?: { id: string; name?: string | null; email?: string | null } };
+        setMembers(
+          rows
+            .map((row: MemberRow) => row.user)
+            .filter((user: MemberRow["user"]): user is NonNullable<MemberRow["user"]> =>
+              Boolean(user),
+            ),
+        );
+      })
+      .catch(() => setMembers([]));
+  }, [project_id, canAssign]);
 
   useEffect(() => {
     const fetchIssues = async () => {
@@ -319,6 +388,17 @@ export default function Issue() {
         event.preventDefault();
         setSelectedIssueIndex((prev) => Math.max(prev - 1, 0));
       }
+      if (event.key.toLowerCase() === "x") {
+        const issue = filteredIssues[selectedIssueIndex];
+        if (issue?.id) {
+          event.preventDefault();
+          toggleSelect(issue.id, false);
+        }
+      }
+      if (event.key === "Escape" && selectedIds.length > 0) {
+        event.preventDefault();
+        setSelectedIds([]);
+      }
       if (event.key === "Enter") {
         const issue = filteredIssues[selectedIssueIndex];
         if (issue?.id && project_id) {
@@ -329,7 +409,7 @@ export default function Issue() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [filteredIssues, project_id, router, selectedIssueIndex]);
+  }, [filteredIssues, project_id, router, selectedIssueIndex, toggleSelect, selectedIds.length]);
 
   return (
     <>
@@ -622,6 +702,7 @@ export default function Issue() {
             ))}
           </div>
         ) : (
+          <>
           <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pt-1 ">
             {filteredIssues.length > 0 ? (
               filteredIssues.map((elem, key) => {
@@ -645,6 +726,8 @@ export default function Issue() {
                     selected={selectedIssueIndex === key}
                     canChangeStatus={canChangeStatus}
                     canChangePriority={canChangePriority}
+                    checked={selectedIds.includes(elem.id)}
+                    onToggleSelect={toggleSelect}
                   />
                 );
               })
@@ -654,6 +737,22 @@ export default function Issue() {
               </div>
             )}
           </div>
+
+          <BulkActionBar
+            selectedIds={selectedIds}
+            statusOptions={IssueViewOptArray.map((option) => option.title)}
+            priorityOptions={PriorityOptionsArray.map((option) => option.name)}
+            members={members}
+            canChangeStatus={canChangeStatus}
+            canChangePriority={canChangePriority}
+            canAssign={canAssign}
+            onClear={() => setSelectedIds([])}
+            onDone={async () => {
+              await refetchIssues();
+              setSelectedIds([]);
+            }}
+          />
+          </>
         )}
         </div>
       </WorkflowLayout>

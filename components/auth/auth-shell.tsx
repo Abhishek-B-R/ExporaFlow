@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { brand } from "@/config/brand";
 
 export function AuthShell({
   children,
@@ -25,9 +26,9 @@ export function AuthShell({
         href="/"
         className="relative z-10 flex items-center gap-2.5 mb-8 opacity-90 hover:opacity-100 transition-opacity"
       >
-        <Image src="/logo.png" alt="ExporaFlow" width={36} height={36} className="size-9" />
+        <Image src={brand.logo} alt={brand.name} width={36} height={36} className="size-9" />
         <span className="text-[15px] font-semibold tracking-tight text-(--foreground)">
-          ExporaFlow
+          {brand.name}
         </span>
       </Link>
 

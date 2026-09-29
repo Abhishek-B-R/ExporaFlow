@@ -1,13 +1,21 @@
 import { Metadata } from "next";
+import { brand } from "@/config/brand";
 
-const TITLE = "ExporaFlow - Explore your work, flow faster.";
-const DESCRIPTION =
-  "A modern issue tracker for teams: projects, issues, boards, and sprint planning—built to keep work flowing.";
+const TITLE = brand.tagline ? `${brand.name} — ${brand.tagline}` : brand.name;
+const DESCRIPTION = brand.tagline;
 
-// Update these when you deploy ExporaFlow.
-const PREVIEW_IMAGE_URL = "https://exporaflow.vercel.app/opengraph-image.png";
-const ALT_TITLE = "ExporaFlow - Explore your work, flow faster.";
-const BASE_URL = "https://exporaflow.vercel.app";
+/**
+ * Canonical origin. Read from the deployment's own URL rather than a
+ * hard-coded host, so a self-hosted install does not advertise someone else's
+ * domain in its canonical link and OG tags.
+ */
+const BASE_URL =
+  process.env.NEXTAUTH_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "http://localhost:3000";
+
+const PREVIEW_IMAGE_URL = `${BASE_URL.replace(/\/$/, "")}/opengraph-image.png`;
+const ALT_TITLE = TITLE;
 
 export const siteConfig: Metadata = {
   title: TITLE,
@@ -15,26 +23,11 @@ export const siteConfig: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
-  applicationName: "ExporaFlow",
-  creator: "abhitwt",
-  twitter: {
-    creator: "@abhitwt",
-    title: TITLE,
-    description: DESCRIPTION,
-    card: "summary_large_image",
-    images: [
-      {
-        url: PREVIEW_IMAGE_URL,
-        width: 1200,
-        height: 630,
-        alt: ALT_TITLE,
-      },
-    ],
-  },
+  applicationName: brand.name,
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
-    siteName: "ExporaFlow",
+    siteName: brand.name,
     url: BASE_URL,
     locale: "en_US",
     type: "website",
@@ -51,27 +44,10 @@ export const siteConfig: Metadata = {
   alternates: {
     canonical: BASE_URL,
   },
-  keywords: [
-    "project management",
-    "software development",
-    "task tracking",
-    "issue tracking",
-    "agile workflows",
-    "roadmap planning",
-    "team collaboration",
-    "developer tools",
-    "modern workflows",
-    "productivity tools",
-    "sprint planning",
-    "scrum management",
-    "project dashboards",
-    "workflow automation",
-    "team communication",
-    "kanban boards",
-    "software lifecycle management",
-    "bug tracking software",
-    "resource allocation",
-    "timeline management",
-  ],
+  // Internal tool: keep it out of search results.
+  robots: {
+    index: false,
+    follow: false,
+  },
   metadataBase: new URL(BASE_URL),
 };
