@@ -2,6 +2,7 @@
 
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
+import { Plus } from "lucide-react";
 import { IssueBody, ProjectBody } from "@/utils/types";
 import axios from "axios";
 import Link from "next/link";
@@ -460,11 +461,11 @@ export default function Issue() {
             <button
               type="button"
               onClick={() => setCreateIssueWindowOpen(true)}
-              className="ef-icon-btn-primary gap-1.5 px-2.5 text-xs font-medium"
+              className="ef-btn-primary h-7 gap-1 pl-2 pr-2.5 rounded-md text-xs"
               data-shortcut="new-ticket"
               aria-label="New ticket"
             >
-              <SVGIcon className="w-4 h-4" svgString={RAW_ICONS.Add} />
+              <Plus className="w-3.5 h-3.5" strokeWidth={2.25} />
               <span className="hidden sm:inline">New ticket</span>
             </button>
           ) : null}

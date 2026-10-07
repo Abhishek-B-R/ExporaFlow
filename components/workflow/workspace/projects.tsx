@@ -2,6 +2,7 @@
 
 import { RAW_ICONS } from "@/lib/icons";
 import SVGIcon from "@/lib/svg-icon";
+import { Plus } from "lucide-react";
 import {
   ProjectBody,
   ProjectPriorityType,
@@ -142,9 +143,9 @@ export default function Projects() {
             <button
               type="button"
               onClick={() => setCreateWindowOpen(true)}
-              className="ef-icon-btn-primary h-8 gap-1.5 px-3 text-xs font-medium"
+              className="ef-btn-primary h-8 gap-1 pl-2.5 pr-3 rounded-md text-xs"
             >
-              <SVGIcon className="flex w-3.5 h-3.5" svgString={RAW_ICONS.Add} />
+              <Plus className="w-3.5 h-3.5" strokeWidth={2.25} />
               New project
             </button>
           ) : null
